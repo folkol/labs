@@ -1,0 +1,7 @@
+set title 'Index of string in a large list of longer strings (worst case)';
+set key left top;
+plot 'plot_large.dat' using 1:2 with lines title "Python 2 string", \
+     'plot_large.dat' using 1:3 with lines title "Python 2 unicode", \
+     'plot_large.dat' using 1:4 with lines title "Python 3 bytes", \
+     'plot_large.dat' using 1:5 with lines title "Python 3 unicode";
+
