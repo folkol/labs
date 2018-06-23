@@ -1,0 +1,3 @@
+/Users/folkol/code/labs/python/list_index/CMakeFiles/rebuild_cache.dir
+/Users/folkol/code/labs/python/list_index/CMakeFiles/edit_cache.dir
+/Users/folkol/code/labs/python/list_index/CMakeFiles/indexof.dir
