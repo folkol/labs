@@ -1,4 +1,9 @@
 def match(s, re, si=0, rei=0):
+    if '|' in re:
+        for part in re.split('|'):
+            if match(s, part):
+                return True
+
     if rei < len(re) - 1 and re[rei + 1] == '*':
         for i in range(len(s) + 1):
             prefix = s[si:si + i]
@@ -40,3 +45,6 @@ if __name__ == '__main__':
     assert match('abbbbba', 'ab*a')
     assert match('abbbbbbbbbbbaaaaa', 'ab*a*')
     assert match('abbbbbbbbbbbaaaaa', 'abb*bba*aa*aaa')
+    assert match('foo', 'foo|bar')
+    assert match('foo', 'bar|foo')
+    assert match('foo', 'bar|fo*')
