@@ -1,0 +1,40 @@
+def match(s, re, si=0, rei=0):
+    if rei < len(re) - 1 and re[rei + 1] == '*':
+        for i in range(len(s) + 1) :
+            if match(s[si:si + i], re[rei] * i):
+                if match(s[si + i:], re[rei + 2:]):
+                    return True
+
+    if si == len(s):
+        return rei == len(re)
+    if rei == len(re):
+        return si == len(s)
+
+    if re[rei] in s[si] + '.' and match(s[si + 1:], re[rei + 1:]):
+        return True
+
+    return False
+
+
+if __name__ == '__main__':
+    assert match('', '')
+    assert not match('abc', '')
+    assert not match('', 'abc')
+    assert match('abc', 'abc')
+    assert not match('abc', 'bca')
+    assert not match('abc', 'abcde')
+    assert not match('abcde', 'abc')
+    assert match('abc', 'ab.')
+    assert match('abc', '...')
+    assert match('', 'a*')
+    assert match('a', 'a*')
+    assert match('aa', 'a*')
+    assert match('aaa', 'a*')
+    assert match('a' * 666, 'a*')
+    assert match('a', 'ab*')
+    assert match('ab', 'ab*')
+    assert match('abb', 'ab*')
+    assert not match('abb', 'ab*a')
+    assert match('abba', 'ab*a')
+    assert match('abbbbbbbbbbba', 'ab*a')
+    assert match('abbbbbbbbbbbaaaaa', 'ab*a*')
