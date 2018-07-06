@@ -1,0 +1,25 @@
+vagrant init ubuntu/xenial64
+vagrant up
+vagrant ssh
+	sudo apt install -y python
+
+pip install ansible
+
+ansible all -i 'localhost:2222,' -u vagrant --key-file .vagrant/machines/default/virtualbox/private_key -m shell -a hostname
+
+cat hosts
+[nagios-server]
+127.0.0.1   ansible_port=2222
+
+ansible-playbook -u vagrant -i hosts --key-file .vagrant/machines/default/virtualbox/private_key nagios-server.yaml
+
+cat nagios-server.yaml
+---
+- hosts:
+    - nagios-server
+  become: true
+  tasks:
+    - shell: hostname
+    - apt: name=nagios3
+    - template: src=templates/etc/nagios3/conf.d/services.cfg dest=/etc/nagios3/conf.d/services.cfg
+    - systemd: name=nagios3 state=restarted

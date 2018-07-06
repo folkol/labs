@@ -1,0 +1,9 @@
+---
+- hosts:
+    - nagios-server
+  become: true
+  tasks:
+    - shell: hostname
+    - apt: name=nagios3
+    - template: src=templates/etc/nagios3/conf.d/services.cfg dest=/etc/nagios3/conf.d/services.cfg
+    - systemd: name=nagios3 state=restarted

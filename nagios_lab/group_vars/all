@@ -1,0 +1,11 @@
+override_hosts:
+ jenkins1: jenkins-slave-1
+ jenkins0: jenkins-slave-1
+
+hosts:
+ - admin.safe.ivbar.com
+ - front.safe.ivbar.com
+ - mirror.safe.ivbar.com
+ - vpn.safe.ivbar.com
+ - jenkins0.safe.ivbar.com
+ - jenkins1.safe.ivbar.com
