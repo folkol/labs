@@ -1,9 +1,10 @@
 def match(s, re, si=0, rei=0):
     if rei < len(re) - 1 and re[rei + 1] == '*':
-        for i in range(len(s) + 1) :
-            if match(s[si:si + i], re[rei] * i):
-                if match(s[si + i:], re[rei + 2:]):
-                    return True
+        for i in range(len(s) + 1):
+            prefix = s[si:si + i]
+            suffix = s[si + i:]
+            if match(prefix, re[rei] * i) and match(suffix, re[rei + 2:]):
+                return True
 
     if si == len(s):
         return rei == len(re)
@@ -36,5 +37,6 @@ if __name__ == '__main__':
     assert match('abb', 'ab*')
     assert not match('abb', 'ab*a')
     assert match('abba', 'ab*a')
-    assert match('abbbbbbbbbbba', 'ab*a')
+    assert match('abbbbba', 'ab*a')
     assert match('abbbbbbbbbbbaaaaa', 'ab*a*')
+    assert match('abbbbbbbbbbbaaaaa', 'abb*bba*aa*aaa')
