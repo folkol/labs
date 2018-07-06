@@ -1,8 +1,10 @@
-override_hosts:
- jenkins1: jenkins-slave-1
- jenkins0: jenkins-slave-1
+env_id: safe.ivbar.com
 
-hosts:
+log_hostname_overrides:
+ jenkins0: jenkins-slave-1
+ jenkins1: jenkins-slave-1
+
+my_hosts:
  - admin.safe.ivbar.com
  - front.safe.ivbar.com
  - mirror.safe.ivbar.com

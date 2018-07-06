@@ -6,4 +6,8 @@
     - shell: hostname
     - apt: name=nagios3
     - template: src=templates/etc/nagios3/conf.d/services.cfg dest=/etc/nagios3/conf.d/services.cfg
+      vars:
+        hosts: "{{ my_hosts | map('regex_replace', '.' + env_id) | override(log_hostname_overrides) | unique }}"
+      #{% set host = host | regex_replace('.safe.ivbar.com','') %}
+      #{% set newhost = override_hosts.get(host, host) %}
     - systemd: name=nagios3 state=restarted
