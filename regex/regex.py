@@ -13,10 +13,14 @@ def match(s, re, si=0, rei=0):
 
     if si == len(s):
         return rei == len(re)
+
     if rei == len(re):
         return si == len(s)
 
-    if re[rei] in s[si] + '.' and match(s[si + 1:], re[rei + 1:]):
+    if s[si] == re[rei] and match(s[si + 1:], re[rei + 1:]):
+        return True
+
+    if re[rei] == '.' and match(s[si + 1:], re[rei + 1:]):
         return True
 
     return False
@@ -48,3 +52,56 @@ if __name__ == '__main__':
     assert match('foo', 'foo|bar')
     assert match('foo', 'bar|foo')
     assert match('foo', 'bar|fo*')
+
+    # From Python's re_test.py
+    assert match('acb', 'a.b')
+    assert match('abc', 'abc')
+    assert not match('xbc', 'abc')
+    assert not match('axc', 'abc')
+    assert not match('abx', 'abc')
+    assert match('xabcy', '.*abc.*')
+    assert match('ababc', '.*abc.*')
+    assert match('abc', 'ab*c')
+    assert match('abc', 'ab*bc')
+    assert match('abbc', 'ab*bc')
+    assert match('abbbbc', 'ab*bc')
+    assert match('abc', 'a.c')
+    assert match('axc', 'a.c')
+    assert match('axyzc', 'a.*c')
+    assert not match('axyzd', 'a.*c')
+    assert match('a]', 'a]')
+    assert match('abc', '.*ab.*|.*cd.*')
+    assert match('abcd', 'ab|cd')
+    assert not match('', 'abc')
+    assert match('', 'a*')
+    assert match('e', 'a|b|c|d|e')
+    assert match('abcdefg', 'abcd*efg')
+    assert match('xabyabbbz', '.*ab*.*')
+    assert match('xayabbbz', '.*ab*.*')
+    assert not match('uh-uh', 'multiple words of text')
+    assert match('multiple words yeah', '.*multiple words.*')
+    assert match('abc', 'abc')
+    assert not match('xbc', 'abc')
+    assert not match('axc', 'abc')
+    assert not match('abx', 'abc')
+    assert match('xabcy', '.*abc.*')
+    assert match('ababc', '.*abc.*')
+    assert match('abc', '.*ab*c.*')
+    assert match('abc', '.*ab*bc.*')
+    assert match('abbc', '.*ab*bc.*')
+    assert match('abbbbc', '.*ab*bc.*')
+    assert match('abc', 'a.c')
+    assert match('axc', 'a.c')
+    assert match('axyzc', 'a.*c')
+    assert not match('axyzd', 'a.*c')
+    assert match('a]', 'a]')
+    assert match('abc', '.*ab.*|.*cd.*')
+    assert match('abcd', 'ab|cd')
+    assert not match('', 'abc')
+    assert match('', 'a*')
+    assert match('e', 'a|b|c|d|e')
+    assert match('abcdefg', 'abcd*efg')
+    assert match('xabyabbbz', '.*ab*.*')
+    assert match('xayabbbz', '.*ab*.*')
+    assert not match('uh-uh', 'multiple words of text')
+    assert match('multiple words, yead', '.*multiple words.*')
