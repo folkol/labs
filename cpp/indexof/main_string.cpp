@@ -21,7 +21,8 @@ int main(int argc, char *argv[]) {
     auto begin = chrono::system_clock::now();
 
     for (const auto& word : shuffled) {
-        find(words.begin(), words.end(), word);
+        auto it = find(words.begin(), words.end(), word);
+        //cout << "Found " << *it << " at " << (it - words.begin()) << "\n";
     }
 
     chrono::duration<double> elapsed = chrono::system_clock::now() - begin;

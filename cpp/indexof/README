@@ -1,0 +1,8 @@
+Find words in dictionary
+
+```
+$ c++ -std=c++17 -O3 main_string.cpp -o cpp_string && ./cpp_string words.txt shuffled_words.txt
+Took 0.73 seconds
+$ c++ -std=c++17 -O3 main_c_str.cpp -o c_str && ./c_str words.txt shuffled_words.txt
+1.37
+```

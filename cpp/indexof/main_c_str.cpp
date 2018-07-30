@@ -25,13 +25,13 @@ int main(int argc, char *argv[]) {
         int i;
         for (i = 0; i < words.size(); i++) {
             if (strcmp(word, words[i]) == 0) {
-                //printf("Found %s at %d\n", word, i);
+   //             printf("Found %s at %d\n", word, i);
                 break;
             }
         }
-        //if(i == words.size()) {
-            //printf("WARNING: Couldn't find %s\n", word);
-        //}
+//        if(i == words.size()) {
+ //           printf("WARNING: Couldn't find %s\n", word);
+  //      }
     }
 
     chrono::duration<double> elapsed = chrono::system_clock::now() - begin;
