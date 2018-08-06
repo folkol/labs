@@ -10,7 +10,14 @@
 
 struct termios original;
 
+void clear_screen() {
+    write(STDOUT_FILENO, "\x1b[2J", 4);
+    write(STDOUT_FILENO, "\x1b[H", 3);
+}
+
 void die(const char *s) {
+    clear_screen();
+
     perror(s);
     exit(1);
 }
@@ -53,6 +60,9 @@ int main() {
                     // suspend
                 case CTRL_KEY('q'):
                     running = 0;
+                    break;
+                case CTRL_KEY('k'):
+                    clear_screen();
                     break;
                 default:
                     printf("%c\r\n> ", c);
