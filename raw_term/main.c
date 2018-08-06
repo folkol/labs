@@ -6,6 +6,8 @@
 #include <termios.h>
 
 
+#define CTRL_KEY(k) ((k) & 0x1f)
+
 struct termios original;
 
 void die(const char *s) {
@@ -49,7 +51,7 @@ int main() {
                     break;
                 case 26:
                     // suspend
-                case 'q':
+                case CTRL_KEY('q'):
                     running = 0;
                     break;
                 default:
