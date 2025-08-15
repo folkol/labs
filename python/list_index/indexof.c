@@ -42,6 +42,7 @@ int main(void)
         for(int j = 0; j < num_words; j++) {
             if(strcmp(shuffled_words[i], words[j]) == 0) {
                 pos += j;
+                printf("%d\n", j);
                 break;
             }
         }

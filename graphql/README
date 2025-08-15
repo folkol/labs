@@ -1,0 +1,316 @@
+https://graphql.org/learn/execution/
+
+https://www.edx.org/course/exploring-graphql-a-query-language-for-apis
+
+	edX is now part of 2U!
+	We’re excited to share the news that we have moved on from our nonprofit roots to expand as part of one of the world’s leading education technology companies. Our combined offerings provide you new opportunities to accelerate your learning journey and we hope you'll continue learning with us.
+
+	More flexible than REST.
+	Developed by Facebook, open sourced.
+
+	Welcome to LFS141x - Exploring GraphQL: A Query Language for APIs!
+
+	We strongly recommend that you review the course syllabus before jumping into the content. It provides the most important information related to the course, including:
+
+	- Course overview
+	- Instructors biographies and targeted audience
+	- Course prerequisites and length
+	- Course learning objectives and the outline
+	- edX platform guidelines
+	- Discussion forums, course timing, and learning aids
+	- Grading, progress, and course completion
+	- Professional Certificate Program Audit and verified tracks
+	- The Linux Foundation's history, events, training, and certifications.
+
+	Prisma, Novvum and Hasura
+	- Prisma replaces ORM
+	- Novvum som company...
+	- Hasura is an open source engine that connects to your database and microservices and auto-generates a production-ready GraphQL backend. Hasura gives you realtime GraphQL APIs that are high-performance, scalable, extensible and secure (with authorization baked in).
+
+	Chapter 1.
+	Objectives; define what GraphQL is, explain what the advantages of GraphQL over REST APIs are. Present the history of GraphQL.
+
+	- GraphQL is a new API standard. POST queries instead of GET resources. enables declarative data fetching.
+	- Instead of exposing multiple endpoints that exposes static data structures, GraphQL exposes a single endpoint and responds to queries.
+
+	How does it work?
+	- client sends request to server
+	- minimizes data that needs to be transferred
+	- Facebook started using it in 2012, first publicly mentioned at 2015 react conf, it was most often used in react — but it is not bound to react
+
+	Chapter 2.
+	Why is GraphQL the better REST.
+	Objectives: Differentiate between examples of REST and GraphQL queries. Explain how GraphQL solves the overfetching and underfetching problem of REST APIs. Discuss why GraphQL allows frontend and backend teams to work independently.
+
+	Insightful analytics.
+
+	Major benefit: Type System
+	- uses strong typing to define the API, all types that are available are descripted with the schema definition language
+	- this schema also acts as a contract beteen the server and the client
+
+	Chapter 3.
+	Core concepts.
+	Queries, mutations, descriptins and the schema description language.
+
+	TODO: Read/watch https://www.graphql.com/articles/4-years-of-graphql-lee-byron
+	Best practices:
+	- naming matters
+	- think in graphs, not endpoints
+	- describe the data, not the view
+	- GraphQL is a thin interface, GraphQL is intended to set aop your existing and future systems. What it's not intended to do are things like authentication, authorization, caching, database query and optimization. By handling these concerns below the GraphQL service layer, your application becomes more resilient as your platform evolves and as you migrate between different services.
+	- Hide implementation details, GraphQL should be a seam between your data and the details of its sorage and retrieval.
+	Principles and lessons:
+	- Solve a real problem. For GraphQL, the problem was getting the data needed for the Facebook news feed on iOS devices over poor mobile network connections. This was an extremely pressing issue for Facebook as more and more daily users accessed the services on mobile devices. Identifying the real problem helps keep you grounded about which fetures to prioritize.
+	- Think like the client. Make sure you understand who will be using the technology and what they want to accomplish.
+	- Have a first client. It is easy to ponder all possible future use cases, but start with what you have and work from there.
+	- Incremental adoption. Make it easy for your first client to replace their endpoints, resources or data models one by one.
+	- YAGNI. Avoid implementing things that you might need in the future.
+	- Avoid 'second system syndrome' from Fred Brooks mythical man month. The risk is that when you build a new hting for the second time, you'll feel less cautions and more experienced — and end up over designing the whole thing. The best way to combat this is to have someone playing the devil's advocate and provide a second opinion.
+	- Timing is critical, recogize inflection points. Making changes to your product is easier at the beginning when you're working closely with your first client. Once it sees wider adoption, it becomes significantly harder to change. Consider making your code base open-source opnly when your product has matured.
+	- Encourage taking measured risks. When you're solving an important problem, it's easy to be risk-averse and stick to what you know. However, managers and teams should be able to trust experienced engineers to decide when certain risks are worth taking and to be accountable for those decisions. If your strongest engineers are telling you that it's time for something new, give their thoughts a listen.
+
+	Chapter 4.
+	By the end of this section, you should be able to: explain what GraphQL queries and mutations are. Understand how to create a GraphQL schema.
+
+	Core Conceps:
+	- The Schema Definition Language (SDL)
+		type Person {
+			name: String!  // required
+			age: Int!
+			posts: [Post!]!
+		}
+		type Post {
+			title: String!
+			author: Person!
+		}
+
+		Defined 1-to-many relation between Person and Posts
+	- Queries
+		Send request with 'the shape of the queried data'
+		[Query] {  // query is optional
+			allPersons {  // root field
+				name  // payload
+			}
+		}
+		example respons:
+		{
+			"allPersons": [
+				{ "name": "Johnny" },
+				{ "name": "Johnny2" },
+				{ "name": "Johnny3" },
+			]
+		}
+
+		{
+			allPersons {
+				name
+				age
+			}
+		}
+
+		{
+			allPersons(last: 2) {  // now only return the last 2, needs to have support in the type
+				name
+				age
+			}
+		}
+
+		{
+			allPersons {
+				name
+					posts {
+						title
+					}
+			}
+		}
+
+		{
+			"allPersons": [
+				{
+					"name": "Johnny",
+					"posts": [
+						{ "title": "foo" },
+						{ "title": "bar" }
+					]
+				}
+			]
+		}
+
+
+	- Mutations, to update data
+		Three kinds of mutations: create, update, delete
+		generally looks like a query, but always starts with 'mutation'
+
+		mutation {
+			createPerson(name: "Bob", age: 36) {
+				name  // query at the same time as mutate, might be useful
+				age
+			}
+		}
+
+		response:
+		{
+			"createPerson": {
+				"name": "Bob",
+				"age": 36,
+			}
+		}
+
+		mutation {
+			createPerson(name: "Bob", age: 36) {
+				id  // auto-generated on the server
+			}
+		}
+
+	- Realtime updates with Subscriptions
+
+		subscription {
+			newPerson {
+				name
+				age
+			}
+		}
+
+
+	The GraphQL Schema for these examples:
+		- the Schema is one of the most important concepts when working with GraphQL
+		- often seen as a contract between server and client
+		- consists of all types
+		- the schema will also have some root types: Query, Mutation, Subscription.
+
+		The Query Type:
+			{
+				allPersons {
+					name
+				}
+			}
+			type Query {
+				allPersons(last: Int): [Person!]!
+			}
+
+		The Mutation Type:
+			mutation {
+				createPerson(name: "Bob", age: 36) {
+					id
+				}
+			}
+			type Mutation {
+				createPerson(name: String!, age: String!): Person!
+			}
+
+		The Subscription Type:
+			type Subscription {
+				newPerson: Person!
+			}
+
+		The complete schema consists of the model types Person and Post, and the three root types Query, Mutation and Subscription.
+
+		N.b. Note that we can't do anything with the Post type yet.
+
+		type Query {
+			allPersons(last: Int): [Person!]!
+			allPosts(last: Int): [Post!]!
+		}
+
+		type Mutation {
+			createPerson...
+			updatePerson...
+			deletePerson...
+			createPost...
+			updatePost...
+			deletePost...
+		}
+
+		The allPersons field in this query is called the root field of the query. Everything that follows the root field, is called the payload of the query. The only field that’s specified in this query’s payload is name.
+
+		allPersons(last: 2)  // query with argument
+
+		Mutations follow the same syntactical structure as queries, but they always need to start with the mutation keyword. Here’s an example of how we might create a new Person:
+
+		subscriptions, like queries but persistant stream
+
+	Defining a schema.
+
+		Generally, a schema is simply a collection of GraphQL types, when writing the schema for an API, there are some special root types.
+
+		type Query { ... }
+		type Mutation { ... }
+		type Subscription { ... }
+
+		The Query, Mutation and Subscription types are all entry points for the requests send by the client. To enable the allPersons query that we saw before, the Query type would have to be written as follows:
+
+			type Query {
+				allPersons: [Person!]!
+			}
+
+		allPersons is called a 'root field' of the API. Considering again the example where we added the last argument to the allPersons field, we would have to write the Query as follows:
+
+			type Query {
+				allPersons(last: Int): [Person!]!
+			}
+
+		Similarly, for the createPerson mutation, we will have to add a root field to the Mutation type:
+
+			type Mutation {
+				createPerson(name: String!, age: Int!): Person!
+			}
+
+		Notice that this root field takes two arguments as well, the name and the age of the new Person.
+
+		Finally, for subscriptions, we would have to add the newPerson root field.
+
+			type Subscription {
+				newPerson: Person!
+			}
+
+
+			Demo: https://auth0.com/blog/building-a-collaborative-todo-app-with-realtime-graphql-using-hasura/
+
+				To start, deploy the Hasura GraphQL Engine to Heroku. This will give you an instance of the Hasura app that you can use to follow along with this article. A PostgreSQL database will be automatically provisioned along with Hasura. If you don't currently have a Heroku account, you would be required to sign up.
+
+				https://dashboard.heroku.com/new?template=https%3A%2F%2Fgithub.com%2Fhasura%2Fgraphql-engine-heroku
+
+					template: https://github.com/hasura/graphql-engine-heroku
+
+					https://github.com/hasura/graphql-engine-heroku/blob/master/app.json
+
+						{
+						  "name": "Hasura GraphQL Engine",
+						  "description": "Blazing fast, instant realtime GraphQL APIs on Postgres with fine grained access control and webhook triggers for async business logic.",
+						  "logo": "https://storage.googleapis.com/hasura-graphql-engine/console/assets/favicon.png",
+						  "keywords": [
+						    "database",
+						    "api",
+						    "graphql",
+						    "heroku",
+						    "postgres",
+						    "hasura"
+						  ],
+						  "success_url": "/console",
+						  "website": "https://hasura.io",
+						  "repository": "https://github.com/hasura/graphql-engine-heroku",
+						  "formation": {
+						    "web": {
+						      "quantity": 1
+						    }
+						  },
+						  "stack": "container",
+						  "addons": [
+						    {
+						      "plan": "heroku-postgresql:hobby-dev"
+						    }
+						  ]
+						}
+
+
+				Add-ons
+				These add-ons will be provisioned when the app is deployed.
+
+				Heroku Postgres
+				Hobby Dev
+				Free
+
+
+			https://plotly.com/javascript/react/
+
+			

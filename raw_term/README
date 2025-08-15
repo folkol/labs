@@ -1,0 +1,1 @@
+ printf "\x1b[?25l"; printf "\n\n\n    |||||||||||||||||||||||||||||||||\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"; sleep 2; for _ in `seq 32`:; do for c in "/"; do printf "\b_%c" "$c"; sleep .1; done; done; printf "\b_"; sleep 2; printf "\n\n\n\n\x1b[?25h"

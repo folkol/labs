@@ -1,3 +1,6 @@
+from itertools import repeat
+from string import ascii_lowercase, digits
+
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
@@ -5,13 +8,15 @@ from mpl_toolkits.mplot3d import Axes3D
 fig = plt.figure()
 ax1 = fig.add_subplot(111, projection=Axes3D.name)
 
-xpos = list(range(10)) * 10
-ypos = [int(x / 10) for x in range(100)]
-zpos = np.zeros(100)
+ROWS = 32
+COLS = len(ascii_lowercase + digits)
+xpos = [x for y in range(COLS) for x in range(ROWS)]
+ypos = [y for x in range(ROWS) for y in repeat(x, COLS)]
+zpos = np.zeros(ROWS * COLS)
 
 dx = np.ones(len(xpos))
 dy = np.ones(len(ypos))
-dz = np.zeros(100)
+dz = np.zeros(ROWS * COLS)
 dz[17] = 2
 dz[19] = 3
 

@@ -1,0 +1,88 @@
+brew install gnu-prolog
+gprolog
+[db].   -- compiles and loads db.pl, short for consult('db.pl').
+listing.
+write('Hello World')
+
+| ?- write('Hello World'), nl,
+write('Let\'s Program').
+
+Add predicates to db.pl.
+predicate(Atom1, Atom2).
+
+
+
+lowercase = atom, Uppercase = variable.
+
+listing(male).
+
+
+parent(X, bob).
+parent(X, bob), dances(X).
+parent(Y, carl), parent(X, Y).
+
+male(_).        --- true if at least one predicate, does not bind to a value
+
+
+| ?- vertical(line(point(5, 10), X)).
+X = point(5,_)
+
+alice = 'alice'.
+yes
+
+\+ (alice = albert).
+
+3 >= 15.
+
+trace.
+
+X is 2 + 2.
+(3*10) >= (50/2).
+5+4 =:= 4+5.
+5+4 =\= 4+5.
+5 > 10; 10 < 100. -- or
+X = mod(7,2).
+
+between(0, 10, X).
+succ(2,X).
+X is abs(-8).
+X is max(10, 5).
+X is min(10, 5).
+
+X is round(10.56).
+X is truncate(10.56).
+X is floor(10.56).
+X is ceiling(10.56).
+
+X is 2**3.
+
+% sqrt, sin, cos, tan, asin, acos, atan, atan2, sinh, asinh, acosh, atanh,
+log, log10, exp, pi, e
+
+say_hi.
+    'foo bar'.
+
+retract(likes(mercutio, dancing)).
+retractall(father(_,_)).
+
+write([albert|[alice, bob]]), nl.  % | = list constructor
+
+length([1,2,3], X).
+[H|T] = [a, b, c].
+[X1, X2, X3, X4|T] = [1, b, c, d].
+
+[_, X2, _, _|T] = [a, b, c, d].
+[_, _, [X|Y], _, Z|T] = [a,b,[c,d,e],g,f,h].
+
+yes
+| ?- List1 = [a,b,c].
+
+List1 = [a,b,c]
+| ?- member(a, List1).
+
+reverse
+append([1,2,3], [a,c,b], X).
+
+name('Derek', List), nth0(0, List, FChar), put(FChar).
+atom_length('Derek', X).
+

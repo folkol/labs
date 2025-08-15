@@ -1,0 +1,4 @@
+/Users/folkol/code/labs/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/Users/folkol/code/labs/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/folkol/code/labs/cmake-build-debug/CMakeFiles/5b.dir
+/Users/folkol/code/labs/cmake-build-debug/CMakeFiles/labs.dir

@@ -1,0 +1,2 @@
+c++ -std=gnu++1z -O3 main.cpp -o cpp
+for i in `seq 1 10`; do cp words_$i.txt words.txt; gshuf words_$i.txt | head -1000 > shuffled_words.txt; python3 test.py; done

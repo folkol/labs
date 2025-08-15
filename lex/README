@@ -1,0 +1,11 @@
+https://www.ibm.com/developerworks/aix/tutorials/au-lexyacc/index.html
+
+UNIX® programmers often find that they need to understand text and other structures with a flexible, but standardized format. By using the lex and yacc tools, you can build a parsing engine that processes text according to specific rules. You can then incorporate it into your applications for everything from configuration parsing right up to building your own programming language. By the end of this tutorial, you'll understand how to define lexical elements, write yacc rules, and use the rule mechanism to build and define a range of different parsing engines and applications.
+
+https://www.tldp.org/HOWTO/Lex-YACC-HOWTO-3.html
+
+```
+lex example1.l
+cc lex.yy.c -o example1 -l1  # include the l (or fl) library, which in turn
+includes a main function
+```

@@ -1,0 +1,15 @@
+https://docs.python.org/3.7/extending/extending.html
+
+- Specific to CPython
+- 
+
+1. consider "ctypes" or "cffi" for portability
+2. module foo -> foomodule.c
+3. longer names can skip "module" module foobarbazquux -> foobarbazquux.c
+4. #include "Python.h" (before standard headers!)
+	- this includes stdio.h, string.h, errno.h and stdlib.h
+	- symbols defined in Python.h are prefixed with Py or PY
+5. spam.system(string) -> static PyObject* spam_system(PyObject *self, PyObject *args)
+	- args is a pointer to a Python tuple objecdt containing the arguments
+	- self points to module object for top level, and object instance for methods
+6. 
