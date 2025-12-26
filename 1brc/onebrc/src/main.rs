@@ -1,9 +1,7 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
 use std::io::{BufRead, Read, Seek, SeekFrom};
 use std::thread;
-
-type StatsMap = BTreeMap<String, Stats>;
 
 struct Stats {
     min: f64,
@@ -40,8 +38,8 @@ impl Default for Stats {
 }
 
 fn main() {
-    // let file_path = "../java-orig/measurements.txt";
-    let file_path = "/tmp/measurements_smol.txt";
+    let file_path = "../java-orig/measurements.txt";
+    // let file_path = "/tmp/measurements_smol.txt";
     let mut stats: BTreeMap<String, Stats> = Default::default();
 
     let num_shards = thread::available_parallelism().unwrap().get();
@@ -88,10 +86,10 @@ fn find_partitions(mut file: File, num_shards: usize) -> Vec<u64> {
     cuts
 }
 
-fn handle_shard(mut file: &File, begin: u64, end: u64) -> StatsMap {
+fn handle_shard(mut file: &File, begin: u64, end: u64) -> HashMap<String, Stats> {
     file.seek(SeekFrom::Start(begin)).unwrap();
     let reader = std::io::BufReader::new(file.take(end - begin));
-    let mut stats: StatsMap = Default::default();
+    let mut stats: HashMap<String, Stats> = Default::default();
     for line in reader.lines() {
         let line = line.unwrap();
         let (station, temp) = line.split_once(';').unwrap();
@@ -101,7 +99,7 @@ fn handle_shard(mut file: &File, begin: u64, end: u64) -> StatsMap {
     stats
 }
 
-fn merge(total: &mut StatsMap, partial: StatsMap) {
+fn merge(total: &mut BTreeMap<String, Stats>, partial: HashMap<String, Stats>) {
     for (station, stats) in &partial {
         total.entry(station.to_string()).or_default().merge(stats);
     }
