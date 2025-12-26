@@ -746,5 +746,209 @@ sys	0m1.116s
 
 We spend most of the time scanning the BTreeMap, so let's replace it with a HashMap in the threads and keep the BTreeMap in main for ordering.
 
+Down to ~3 s:
+
+$ git checkout 1f1d9e
+Note: switching to '1f1d9e'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+$ cargo build --release (and change so that we use the full measurements.txt)
+$ cp ./target/release/onebrc onebrc_btreemap
+$ git checkout -
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine ./onebrc_btreemap target/release/onebrc
+Benchmark 1: ./onebrc_btreemap
+  Time (mean ± σ):      4.687 s ±  0.113 s    [User: 102.803 s, System: 1.109 s]
+  Range (min … max):    4.524 s …  4.874 s    10 runs
+ 
+Benchmark 2: target/release/onebrc
+  Time (mean ± σ):      3.114 s ±  0.140 s    [User: 62.200 s, System: 1.130 s]
+  Range (min … max):    2.945 s …  3.363 s    10 runs
+ 
+Summary
+  target/release/onebrc ran
+    1.51 ± 0.08 times faster than ./onebrc_btreemap
+
+##### How heavy is the BTreeMap in main?
+
+Compare the BTreeMap solution with a HashMap + sort in main:
+
+diff --git a/1brc/onebrc/src/main.rs b/1brc/onebrc/src/main.rs
+index 445e17e..36f0cba 100644
+--- a/1brc/onebrc/src/main.rs
++++ b/1brc/onebrc/src/main.rs
+@@ -40,7 +40,7 @@ impl Default for Stats {
+ fn main() {
+     let file_path = "../java-orig/measurements.txt";
+     // let file_path = "/tmp/measurements_smol.txt";
+-    let mut stats: BTreeMap<String, Stats> = Default::default();
++    let mut stats: HashMap<String, Stats> = Default::default();
+ 
+     let num_shards = thread::available_parallelism().unwrap().get();
+     let file = File::open(file_path).unwrap();
+@@ -99,16 +99,18 @@ fn handle_shard(mut file: &File, begin: u64, end: u64) -> HashMap<String, Stats>
+     stats
+ }
+ 
+-fn merge(total: &mut BTreeMap<String, Stats>, partial: HashMap<String, Stats>) {
++fn merge(total: &mut HashMap<String, Stats>, partial: HashMap<String, Stats>) {
+     for (station, stats) in &partial {
+         total.entry(station.to_string()).or_default().merge(stats);
+     }
+ }
+ 
+-fn print_report(stats: &mut BTreeMap<String, Stats>) {
++fn print_report(stats: &mut HashMap<String, Stats>) {
+     print!("{{");
+-    let num_stations = stats.len();
+-    for (i, (station, stats)) in stats.iter().enumerate() {
++    let mut sorted_stations: Vec<_> = stats.iter().collect();
++    sorted_stations.sort_by_key(|(station, _)| *station);
++    let num_stations = sorted_stations.len();
++    for (i, (station, stats)) in sorted_stations.iter().enumerate() {
+         print!(
+             "{station}={:.1}/{:.1}/{:.1}",
+             stats.min,
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine ./onebrc_btreemap target/release/onebrc
+Benchmark 1: ./onebrc_btreemap
+  Time (mean ± σ):      3.115 s ±  0.160 s    [User: 61.405 s, System: 1.101 s]
+  Range (min … max):    2.924 s …  3.434 s    10 runs
+ 
+Benchmark 2: target/release/onebrc
+  Time (mean ± σ):      3.166 s ±  0.127 s    [User: 63.405 s, System: 1.112 s]
+  Range (min … max):    2.934 s …  3.357 s    10 runs
+ 
+Summary
+  ./onebrc_btreemap ran
+    1.02 ± 0.07 times faster than target/release/onebrc
+
+There is a measurable difference, I'll keep the BTreeMap for now -- but might revisit.
+
+#### What do we spend our time on now?
+
+With all threads (both performance and efficiency core)
+
+Samples: 39K of event 'cpu_atom/cycles/P', Event count (approx.): 190938550000
+  Children      Self  Command  Shared Object         Symbol
++   36.32%    11.13%  onebrc   onebrc                [.] onebrc::handle_shard
++   34.99%     0.00%  onebrc   [unknown]             [.] 0x0000000000001fff
++   22.82%    14.69%  onebrc   onebrc                [.] hashbrown::rustc_entry::<impl hashbrown::map::HashMap<K,V,S,A>>::rustc_entry
++   19.53%     0.00%  onebrc   onebrc                [.] hashbrown::raw::RawTable<T,A>::find (inlined)
++   19.53%     0.00%  onebrc   onebrc                [.] hashbrown::raw::RawTableInner::find_inner (inlined)
++   13.94%     0.00%  onebrc   onebrc                [.] core::str::<impl str>::parse (inlined)
++   12.96%     8.31%  onebrc   onebrc                [.] core::num::dec2flt::<impl core::str::traits::FromStr for f64>::from_str
++   12.95%     0.00%  onebrc   onebrc                [.] hashbrown::raw::RawTable<T,A>::find::{{closure}} (inlined)
++   12.30%     0.00%  onebrc   onebrc                [.] core::num::dec2flt::dec2flt (inlined)
++   11.44%    11.42%  onebrc   onebrc                [.] core::slice::memchr::memchr_aligned
++   11.43%     0.00%  onebrc   onebrc                [.] hashbrown::rustc_entry::<impl hashbrown::map::HashMap<K,V,S,A>>::rustc_entry::{{closure}} (inlined)
++   11.43%     0.00%  onebrc   onebrc                [.] <alloc::string::String as core::cmp::PartialEq>::eq (inlined)
++   11.43%     0.00%  onebrc   onebrc                [.] alloc::vec::partial_eq::<impl core::cmp::PartialEq<alloc::vec::Vec<U,A2>> for alloc::vec::Vec<T,A1>>::eq (inlined)
++   11.43%     0.00%  onebrc   onebrc                [.] core::slice::cmp::<impl core::cmp::PartialEq<[U]> for [T]>::eq (inlined)
++   11.43%     0.00%  onebrc   onebrc                [.] <[A] as core::slice::cmp::SlicePartialEq<B>>::equal (inlined)
++    9.73%     0.00%  onebrc   onebrc                [.] std::collections::hash::map::HashMap<K,V,S>::entry (inlined)
++    9.50%     7.00%  onebrc   onebrc                [.] std::io::append_to_string
++    9.16%     0.00%  onebrc   [unknown]             [.] 0x00000000000001fe
++    8.10%     8.08%  onebrc   onebrc                [.] core::hash::BuildHasher::hash_one
++    7.62%     0.00%  onebrc   onebrc                [.] core::slice::memchr::memchr_aligned::runtime (inlined)
++    7.24%     0.00%  onebrc   onebrc                [.] <std::hash::random::DefaultHasher as core::hash::Hasher>::finish (inlined)
++    7.24%     0.00%  onebrc   onebrc                [.] <core::hash::sip::SipHasher13 as core::hash::Hasher>::finish (inlined)
++    7.24%     0.00%  onebrc   onebrc                [.] <core::hash::sip::Hasher<S> as core::hash::Hasher>::finish (inlined)
++    7.15%     0.00%  onebrc   onebrc                [.] std::io::BufRead::read_line::{{closure}} (inlined)
++    7.15%     0.00%  onebrc   onebrc                [.] std::io::read_until (inlined)
++    6.67%     6.66%  onebrc   libc.so.6             [.] __memcmp_avx2_movbe
++    6.30%     3.59%  onebrc   onebrc                [.] alloc::raw_vec::RawVecInner<A>::finish_grow
++    5.80%     5.79%  onebrc   onebrc                [.] core::str::converts::from_utf8
++    5.18%     0.00%  onebrc   onebrc                [.] core::str::validations::run_utf8_validation (inlined)
+
+Samples: 23K of event 'cpu_core/cycles/P', Event count (approx.): 121426438946
+  Children      Self  Command  Shared Object      Symbol
++   33.88%    11.04%  onebrc   onebrc             [.] onebrc::handle_shard
++   31.36%     0.00%  onebrc   [unknown]          [.] 0x0000000000001fff
++   12.93%     8.65%  onebrc   onebrc             [.] hashbrown::rustc_entry::<impl hashbrown::map::HashMap<K,V,S,A>>::rustc_entry
++   12.15%     0.00%  onebrc   onebrc             [.] core::str::<impl str>::parse (inlined)
++   11.65%     4.79%  onebrc   onebrc             [.] core::num::dec2flt::<impl core::str::traits::FromStr for f64>::from_str
++   11.53%     8.67%  onebrc   onebrc             [.] std::io::append_to_string
++   10.21%     0.00%  onebrc   onebrc             [.] core::num::dec2flt::dec2flt (inlined)
++    9.23%     9.21%  onebrc   onebrc             [.] core::slice::memchr::memchr_aligned
++    8.85%     0.00%  onebrc   onebrc             [.] std::io::BufRead::read_line::{{closure}} (inlined)
++    8.85%     0.00%  onebrc   onebrc             [.] std::io::read_until (inlined)
++    8.66%     0.00%  onebrc   onebrc             [.] core::slice::memchr::memchr_aligned::runtime (inlined)
++    7.72%     4.70%  onebrc   onebrc             [.] alloc::raw_vec::RawVecInner<A>::finish_grow
++    7.63%     0.00%  onebrc   onebrc             [.] hashbrown::raw::RawTable<T,A>::find (inlined)
++    7.63%     0.00%  onebrc   onebrc             [.] hashbrown::raw::RawTableInner::find_inner (inlined)
++    7.55%     7.55%  onebrc   onebrc             [.] <core::hash::sip::Hasher<S> as core::hash::Hasher>::write
++    7.26%     0.00%  onebrc   onebrc             [.] std::collections::hash::map::HashMap<K,V,S>::entry (inlined)
++    7.17%     7.16%  onebrc   onebrc             [.] core::num::dec2flt::parse::parse_number
++    6.25%     0.00%  onebrc   [unknown]          [.] 0x00000000000001fe
++    6.20%     6.18%  onebrc   onebrc             [.] core::hash::BuildHasher::hash_one
++    5.61%     0.00%  onebrc   onebrc             [.] <T as alloc::string::ToString>::to_string (inlined)
++    5.61%     0.00%  onebrc   onebrc             [.] <str as alloc::string::SpecToString>::spec_to_string (inlined)
++    5.61%     0.00%  onebrc   onebrc             [.] <alloc::string::String as core::convert::From<&str>>::from (inlined)
++    5.61%     0.00%  onebrc   onebrc             [.] alloc::str::<impl alloc::borrow::ToOwned for str>::to_owned (inlined)
++    5.59%     0.00%  onebrc   onebrc             [.] core::slice::memchr::memchr_naive (inlined)
++    5.48%     5.48%  onebrc   onebrc             [.] core::str::converts::from_utf8
++    5.34%     0.00%  onebrc   onebrc             [.] alloc::slice::<impl alloc::borrow::ToOwned for [T]>::to_owned (inlined)
++    5.34%     0.00%  onebrc   onebrc             [.] alloc::slice::<impl [T]>::to_vec (inlined)
++    5.34%     0.00%  onebrc   onebrc             [.] alloc::slice::<impl [T]>::to_vec_in (inlined)
++    5.34%     0.00%  onebrc   onebrc             [.] <T as alloc::slice::<impl [T]>::to_vec_in::ConvertVec>::to_vec (inlined)
++    5.29%     0.00%  onebrc   onebrc             [.] core::num::dec2flt::parse::parse_partial_number (inlined)
++    5.24%     0.00%  onebrc   libc.so.6          [.] __GI___libc_malloc (inlined)
++    5.23%     5.23%  onebrc   libc.so.6          [.] malloc
++    5.13%     0.00%  onebrc   onebrc             [.] hashbrown::raw::RawTable<T,A>::find::{{closure}} (inlined)
+
+ Performance counter stats for 'target/release/onebrc':
+
+    62,805,535,309      task-clock                       #   21.188 CPUs utilized             
+             2,321      context-switches                 #   36.955 /sec                      
+                16      cpu-migrations                   #    0.255 /sec                      
+               582      page-faults                      #    9.267 /sec                      
+ 1,101,952,938,030      cpu_atom/instructions/           #    3.67  insn per cycle              (33.52%)
+ 1,439,279,081,364      cpu_core/instructions/           #    4.34  insn per cycle              (33.76%)
+   300,501,451,912      cpu_atom/cycles/                 #    4.785 GHz                         (33.52%)
+   331,291,271,751      cpu_core/cycles/                 #    5.275 GHz                         (33.76%)
+   224,317,942,723      cpu_atom/branches/               #    3.572 G/sec                       (33.55%)
+   293,072,808,968      cpu_core/branches/               #    4.666 G/sec                       (33.76%)
+     1,696,378,376      cpu_atom/branch-misses/          #    0.76% of all branches             (33.56%)
+     2,619,244,843      cpu_core/branch-misses/          #    0.89% of all branches             (30.95%)
+ #     22.6 %  tma_backend_bound        (33.58%)
+ #      9.3 %  tma_backend_bound      
+                                                  #     14.3 %  tma_bad_speculation    
+                                                  #     27.4 %  tma_frontend_bound     
+                                                  #     49.0 %  tma_retiring             (33.77%)
+ #      0.0 %  tma_retiring             (33.59%)
+ #     21.4 %  tma_bad_speculation    
+                                                  #      0.0 %  tma_frontend_bound       (33.60%)
+   225,864,578,513      cpu_atom/L1-dcache-loads/        #    3.596 G/sec                       (37.34%)
+   291,781,734,038      cpu_core/L1-dcache-loads/        #    4.646 G/sec                       (33.77%)
+       250,194,587      cpu_core/L1-dcache-load-misses/  #    0.09% of all L1-dcache accesses   (33.77%)
+        41,497,786      cpu_atom/LLC-loads/              #  660.735 K/sec                       (33.61%)
+       148,272,438      cpu_core/LLC-loads/              #    2.361 M/sec                       (33.77%)
+         4,780,625      cpu_atom/LLC-load-misses/        #   11.52% of all LL-cache accesses    (33.59%)
+        27,665,536      cpu_core/LLC-load-misses/        #   18.66% of all LL-cache accesses    (33.78%)
+   396,481,349,192      cpu_atom/L1-icache-loads/        #    6.313 G/sec                       (33.58%)
+       172,717,102      cpu_atom/L1-icache-load-misses/  #    0.04% of all L1-icache accesses   (33.56%)
+        29,633,877      cpu_core/L1-icache-load-misses/                                         (33.78%)
+   225,957,571,571      cpu_atom/dTLB-loads/             #    3.598 G/sec                       (33.55%)
+   291,814,034,674      cpu_core/dTLB-loads/             #    4.646 G/sec                       (33.79%)
+            43,543      cpu_atom/dTLB-load-misses/       #    0.00% of all dTLB cache accesses  (33.54%)
+           299,958      cpu_core/dTLB-load-misses/       #    0.00% of all dTLB cache accesses  (33.79%)
+            91,751      cpu_atom/iTLB-load-misses/                                              (29.80%)
+        38,116,211      cpu_core/iTLB-load-misses/                                              (30.95%)
+
+       2.964160906 seconds time elapsed
+
+      61.684945000 seconds user
+       1.120635000 seconds sys
+
+ChatGPT:
+
+ChatGPT said:
+
+Your run shows good parallel scaling (~21 CPUs active) and high core efficiency (high IPC, very low branch and L1D miss rates), so the program is not dominated by scheduling, locking, or trivial inefficiencies. The main limits are microarchitectural: only ~50% of cycles retire useful work, with a large frontend bound component (instruction supply, code size/layout, ITLB pressure) and a secondary backend bound component driven partly by nontrivial LLC miss rates, especially on P-cores. Bad speculation is present but not dominant. The -r N flag matters because your counters are heavily multiplexed (~33%), so repeating runs and reporting mean ± variance is essential to trust ratios like IPC and TMA. Overall, further speedups are more likely to come from reducing instruction footprint and improving code locality (and secondarily data locality) than from tweaking branches or arithmetic.
+
 
 
