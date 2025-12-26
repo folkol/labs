@@ -1,5 +1,166 @@
 # Fooling around with https://github.com/gunnarmorling/1brc
 
+## Linux Performance Tools (Brendan Gregg)
+
+https://www.youtube.com/watch?v=FJW8nGV4jxY
+
+### Methodologies
+
+Objectives
+- Recognize the Streetlight Anti-Method
+- Perform the Workload Characterization Method
+- Perform the USE Method
+- Learn how to start with the questions before using the tools
+- Be aware of other methodologies
+
+"program is slow, what does it do?"
+
+- top / iostat / iotop / netstat / ss / dstat / sar / vmstat / strace
+
+- methodologies should have a starting point, a process, and an ending point (checklist, then done)
+
+#### Anti-Methods
+
+Streetlight Anti-Method
+- "Start where the light is best" (I'm used to top so I start with top)
+
+Drunk Man Anti-Method:
+- "Tune things at random until the problem goes away", doesn't help much / whack-a-mole
+
+Blame Someone Else Anti-Method
+- Find a system or environment that you are not responsible for and ask them
+
+#### Actual Methodologies
+
+Problem Statement Method
+- What makes you think that there is a performance problem?
+- Has this system ever performend well?
+- What has changed recently? (Software? Hardware? Load?)
+- Can the performance degradation be expressed in latency or run time?
+- Does the problem affect other people or applications (or is it just you)?
+- What is the environment? Software, hardware, instance types? Versions? Configuration?
+
+Workload Characterization Method
+- Who is causing the load? PID, UID, IP addr, ...
+- Why is the load called? code pth, stack trace
+- What is the load? IOPS, tput, type, r/w
+- How is the load changing over time?
+
+The USE Method
+- For every resource, check:
+	- Utilization
+	- Saturation
+	- Errors
+- Definitions:
+	- Utilization: busy time
+	- Saturation: queue length or queued time
+	- Errors: easy to interpret (objective)
+- Helps if you have a functional (block) diagram of your system / software / environment, showing all resources
+
+Start with the questions, then find the tools
+
+- Examples (hardware): CPU interconnect / CPU / DRAM / Power / Fan / I/O Bridge / I/O Controller / Network Controller / Ports
+- Every component in your data path can be the problem
+- `Linux USE Method Example` posted online by Brendan Gregg
+
+Off-CPU Analysis
+- "when does my program step off of the CPU, and why?"
+- Thread State Transition Diagram
+- anon. major fault
+
+CPU Profile Method
+- CPU Profile
+- Flamegraph
+
+RTFM Method (How to understand performance tools and metrics?)
+- Man pages
+- Books
+- Web search
+- Co-workers
+- Prior talk slides/video (like this one!)
+- Support services
+- Source code
+- Experimentation
+- Social
+
+#### Tools
+
+Objectives
+- Perform the USE Method for resource utilization
+- Perform the Workload Characterization method for disks, network
+- Perform the CPU Profile Method using flame graphs
+- Have exposure to various observability tools:
+	- Basic: vmstat, iostat, mpstat, ps, top, ...
+	- Intermediate: tcpdump, netstat, nicstat, pidstat, sar, ...
+	- Advanced: ss, slaptop, perf_events, ...
+- Perform Active Benchmarking
+- Understand tuning risks
+- Perform Static Performance Tuning
+
+Command Line Tools
+- Useful to study even if you don't use them directly, vmstat etcc
+
+Tool Types
+- Observability (watch activity, safe)
+	- Basic
+		- uptime, top, ps, vmstat, iostat, mpstat (multi-proc stats), free
+		- Debug latency:
+			- top: high system time, high idle and wait io
+			- vmstat: moderate system time, wait io and idle time
+			- vmstat: plenty free, no swapping
+			- iostat: disks are pretty busy
+			- sar: network seems idle
+	- Intermediate
+		- strace, tcpdump, netstat, nicstat, pidstat, swapon, lsof, sar
+		- Debug "slow" app:
+			- vmstat: lots of use time and system time, no swap
+			- mpstat: same
+			- pidstat: lab003
+			- iostat: not disks
+			- sar: no network
+			- strace: spams read on fd 3, requesting 0 bytes (in a loop)
+- Benchmarking ( 
+	- UnixBench, lmbench, sysbench, perf bench
+	- dd, hdparm, fio
+	- ab, wrk, jmeter, openssl
+	- ping, hping3, iperf, ttcp, traceroute, mtr, pchar
+	- "Active Benchmarking (Method)": run the actual workload, use observability to measure
+- Tuning
+	- sysctl, /sys
+	- app config / nice / renice/ taskset / ulimit / chcpu / tune2gs / ionice / hdparm / blockdev / ethtool / tc / ip / route / stap / kpatch
+	- Tuning Method: Question -> Hypothesis -> Prediction -> Test -> Analysis
+- Static
+	- Static Performance Tuning (no workload): CPU types + flags, CPU Frequency Scaling / storage devices / file system capacity / route table
+	- /proc/cpuinfo, /sys/devices/system/cpu/cpu0/cpufreq/{scaling_availale_frequencies,scaling_governor}
+	- /proc/scsi/scsi, netstat -rn, ip route get xx.yy.zz.ww
+	- dmesg / ifconfig -a / df -h / mdadm --misd -D /dev/md0, smartctl, numactl -s, lspci, lsmod, crontab -l, service --status-all
+
+- Profiling
+	- perf ( record -F 99 -ag -- ... ) (99 for avoiding sampling lock steps, so maybe even better to use a prime?)
+	- perf repot (stack traces)
+	- flamegraph -- merge stack traces ( perf script | ./stackcollapse-perf.pl | ./flamegraph.pl > perf.svg )
+	- high CPU Usage by not attributed to a PID might be because of many short-lived processes
+	- perf_events workflow: perf list, perf stat, perf record, perf report or perf script -> stackcollapse -> flamegraph
+	- perf event mixed mode (see JVM stack trace + java stack traces + kernel stack traces)
+
+- Tracing
+	- tracepoints (kernel trace points)
+	- kprobes etc
+	- choosing a tracer, some companices standardize. Brendan's suggestion is to use what's in the kernel to begin with
+	- ./funccount -i 1 'bio_*'  <-- summarize kernel functions starting with bio_
+	- ./funcgraph -Htp 5363 vfs_read <--- tracing vfs_read and children
+	- perf_events have different event sources, some from hardware and some from software
+	- perf record -e block:block_rq_complete -a sleep 10 ...
+	- eBPF (program that run on perf events in the kernel, JITed)
+
+##### Namedropping other things
+- tiptop, "top" for PMCs (might need some love in the cloud, maybe perfmon2 lib integration? PMCs are not always enabled in the guest.)
+- rdmsr (read model specific registers), usually enabled in guests
+- github.com/brendangregg/msr-cloud-tools
+- 
+
+
+
 ## System
 
 System:
@@ -507,7 +668,7 @@ impl Default for Stats {
 fn main() {
     let file = std::fs::File::open("../java-orig/measurements.txt").unwrap();
     let reader = std::io::BufReader::new(file);
-    let mut stats: BTreeMap<String, Stats> = BTreeMap::new();
+    let mut stats: BTreeMap<String, Stats> = Default::default();
 
     for line in reader.lines() {
         let line = line.unwrap();
@@ -545,3 +706,25 @@ folkol@ubuntu:~/code/labs/1brc/onebrc$ git diff --no-index --word-diff output.tx
 folkol@ubuntu:~/code/labs/1brc/onebrc$ 
 
 Produces the same result at least.
+
+## Where do we spend our time?
+
+Add debug = true to profile.release in Cargo.toml
+
+$ sudo sysctl -w kernel.perf_event_paranoid=1
+kernel.perf_event_paranoid = 1
+$ sudo sysctl -w kernel.kptr_restrict=0
+kernel.kptr_restrict = 0
+
+>> optionally: sudo cpupower frequency-set -g performance
+
+https://www.brendangregg.com/FlameGraphs/cpuflamegraphs.html
+
+$ perf record -F 999 -g --call-graph dwarf ./target/release/onebrc
+$ perf report --stdio
+$ git clone https://github.com/brendangregg/FlameGraph
+$ perf script | FlameGraph/stackcollapse-perf.pl > out.perf-folded
+$ FlameGraph/flamegraph.pl ./out.perf-folded >perf.svg
+$ open perf.svg 
+
+
