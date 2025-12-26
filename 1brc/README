@@ -951,4 +951,20 @@ ChatGPT said:
 Your run shows good parallel scaling (~21 CPUs active) and high core efficiency (high IPC, very low branch and L1D miss rates), so the program is not dominated by scheduling, locking, or trivial inefficiencies. The main limits are microarchitectural: only ~50% of cycles retire useful work, with a large frontend bound component (instruction supply, code size/layout, ITLB pressure) and a secondary backend bound component driven partly by nontrivial LLC miss rates, especially on P-cores. Bad speculation is present but not dominant. The -r N flag matters because your counters are heavily multiplexed (~33%), so repeating runs and reporting mean ± variance is essential to trust ratios like IPC and TMA. Overall, further speedups are more likely to come from reducing instruction footprint and improving code locality (and secondarily data locality) than from tweaking branches or arithmetic.
 
 
+##### Implement things from the top java submission
+
+https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_thomaswue.java
+
+ * Credit:
+ *  Quan Anh Mai for branchless number parsing code
+ *  Alfonso² Peterssen for suggesting memory mapping with unsafe and the subprocess idea
+ *  Artsiom Korzun for showing the benefits of work stealing at 2MB segments instead of equal split between workers
+ *  Jaromir Hamala for showing that avoiding the branch misprediction between <8 and 8-16 cases is a big win even if
+ *  more work is performed
+ *  Van Phu DO for demonstrating the lookup tables based on masks instead of bit shifting
+
+
+ 
+ 
+##### Later: implement things from this discussion https://github.com/gunnarmorling/1brc/discussions/138
 
