@@ -7,11 +7,14 @@ edition = "2024"
 debug = 1
 embed-bitcode = true
 lto = "thin"        # or true / "fat"
-codegen-units = 1
 panic = "abort"
+debug-assertions = false
+overflow-checks = false
+codegen-units = 1
 
 
 [dependencies]
 memmap2 = "0.9.9"
 memmap = "0.7.0"
 libc = "0.2.178"
+memchr = "2.7.6"
