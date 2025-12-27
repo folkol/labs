@@ -3,7 +3,7 @@ use libc::{MADV_SEQUENTIAL, MADV_WILLNEED, madvise};
 use memmap2::Mmap;
 use std::arch::x86_64::*;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader, Write};
+use std::io::{self, BufRead, BufReader, Read, Write};
 use std::process::{Command, Stdio};
 
 #[target_feature(enable = "avx2")]
@@ -81,34 +81,35 @@ fn main() -> io::Result<()> {
 fn run_parent() -> io::Result<()> {
     let exe = std::env::current_exe()?;
 
-    let mut child = Command::new(exe)
+    let child = Command::new(exe)
         .arg("--worker")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
         .spawn()?;
 
-    let stdout_pipe = child.stdout.take().unwrap();
-    let mut reader = BufReader::new(stdout_pipe);
+    let out = child.stdout.unwrap();
+    let mut reader = BufReader::new(out);
 
     let mut line = String::new();
-    reader.read_line(&mut line)?;          // stops after first '\n'
+    reader.read_line(&mut line)?;
+    // reader.read_to_string(&mut line)?;
 
-    // print result and flush
     print!("{line}");
-    io::stdout().flush().ok();
+    // let _ = io::stdout().flush();
 
-    // Do NOT wait for child. Do NOT drop `child` normally.
-    std::mem::forget(child);
-
-    // Exit immediately (no destructors, no waiting)
-    std::process::exit(0);
+    // std::process::exit(0);
+    Ok(())
 }
 
 fn run_worker() -> io::Result<()> {
     // mmap + compute + print result (your existing code)
     // println!("{}", total_lines);
     doit().expect("wc failed");
+        let _ = io::stdout().flush();
+    // unsafe {
+    //     libc::close(libc::STDOUT_FILENO);
+    // }
     Ok(())
 }
 
@@ -160,12 +161,5 @@ fn doit() -> io::Result<()> {
     });
 
     println!("{}", total_lines);
-
-    // Flush and close stdout
-    let stdout = io::stdout();
-    let mut handle = stdout.lock();
-    handle.flush()?;
-    drop(handle);
-
     Ok(())
 }
