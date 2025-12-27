@@ -12,82 +12,52 @@ struct WcLines {
     bytes: i64,
 }
 
-const BUFSIZE: usize = 16320;
+const BUFSIZE: usize = 1024*1024;
 
 #[target_feature(enable = "avx2")]
 unsafe fn wc_lines_avx2(fd: i32) -> WcLines {
     let mut lines: i64 = 0;
     let mut bytes: i64 = 0;
 
-    let zeroes = _mm256_setzero_si256();
     let endlines = _mm256_set1_epi8(b'\n' as i8);
 
-    // Ensure the buffer is aligned for SIMD loads
-    #[repr(align(32))]
-    struct AlignedBuf([u8; BUFSIZE]);
-    let mut avx_buf = AlignedBuf([0u8; BUFSIZE]);
+    let mut buf: Vec<u8> = Vec::with_capacity(BUFSIZE);
+
+    unsafe {
+        buf.set_len(BUFSIZE);
+    }
 
     loop {
-        let mut accumulator = _mm256_setzero_si256();
-        let mut accumulator2 = _mm256_setzero_si256();
-
-        let bytes_read = read(fd, avx_buf.0.as_mut_ptr() as *mut c_void, BUFSIZE);
-        if bytes_read <= 0 {
+        let n = unsafe { read(fd, buf.as_mut_ptr() as *mut c_void, BUFSIZE) };
+        if n <= 0 {
             return WcLines {
-                err: if bytes_read == 0 {
-                    0
-                } else {
-                    *libc::__errno_location()
-                },
+                err: if n == 0 { 0 } else { *libc::__errno_location() },
                 lines,
                 bytes,
             };
         }
 
-        bytes += bytes_read as i64;
-        let mut bytes_rem = bytes_read as usize;
-        let mut datap = avx_buf.0.as_ptr();
+        let bytes = n as usize;
+        let mut datap = buf.as_ptr();
+        let mut rem = bytes;
 
-        while bytes_rem >= 64 {
-            let to_match = _mm256_load_si256(datap as *const __m256i);
-            let to_match2 = _mm256_load_si256(datap.add(32) as *const __m256i);
-            let matches = _mm256_cmpeq_epi8(to_match, endlines);
-            let matches2 = _mm256_cmpeq_epi8(to_match2, endlines);
+        while rem >= 64 {
+            let v0 = _mm256_loadu_si256(datap as *const __m256i);
+            let v1 = _mm256_loadu_si256(datap.add(32) as *const __m256i);
 
-            accumulator = _mm256_sub_epi8(accumulator, matches);
-            accumulator2 = _mm256_sub_epi8(accumulator2, matches2);
+            let m0 = _mm256_cmpeq_epi8(v0, endlines);
+            let m1 = _mm256_cmpeq_epi8(v1, endlines);
+
+            lines += (_mm256_movemask_epi8(m0).count_ones() + _mm256_movemask_epi8(m1).count_ones())
+                as i64;
 
             datap = datap.add(64);
-            bytes_rem -= 64;
+            rem -= 64;
         }
 
-        // accumulator = _mm256_sad_epu8(accumulator, zeroes);
-        // let mut sums: [u64; 4] = [0; 4];
-        // _mm256_storeu_si256(sums.as_mut_ptr() as *mut __m256i, accumulator);
-        // lines += (sums[0] + sums[1] + sums[2] + sums[3]) as i64;
-        accumulator = _mm256_sad_epu8(accumulator, zeroes);
-        let lo = _mm256_castsi256_si128(accumulator);
-        let hi = _mm256_extracti128_si256(accumulator, 1);
-        lines += (_mm_cvtsi128_si64(lo) as i64)
-            + (_mm_extract_epi64(lo, 1) as i64)
-            + (_mm_cvtsi128_si64(hi) as i64)
-            + (_mm_extract_epi64(hi, 1) as i64);
-
-        // accumulator2 = _mm256_sad_epu8(accumulator2, zeroes);
-        // let mut sums2: [u64; 4] = [0; 4];
-        // _mm256_storeu_si256(sums2.as_mut_ptr() as *mut __m256i, accumulator2);
-        // lines += (sums2[0] + sums2[1] + sums2[2] + sums2[3]) as i64;
-        accumulator2 = _mm256_sad_epu8(accumulator2, zeroes);
-        let lo = _mm256_castsi256_si128(accumulator2);
-        let hi = _mm256_extracti128_si256(accumulator2, 1);
-        lines += (_mm_cvtsi128_si64(lo) as i64)
-            + (_mm_extract_epi64(lo, 1) as i64)
-            + (_mm_cvtsi128_si64(hi) as i64)
-            + (_mm_extract_epi64(hi, 1) as i64);
-
-
-        for i in 0..bytes_rem {
-            if *datap.add(i) == b'\n' {
+        // scalar tail
+        for i in 0..rem {
+            if unsafe { *datap.add(i) } == b'\n' {
                 lines += 1;
             }
         }
