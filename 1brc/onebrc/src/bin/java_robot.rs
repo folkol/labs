@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 use std::fs::File;
-use std::io::{Read, Seek, SeekFrom};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
+use memmap2::MmapOptions;
 
 const FILE_PATH: &str = "../java-orig/measurements.txt";
 const MIN_TEMP: i16 = -999;
@@ -51,7 +51,7 @@ impl ResultEntry {
 
     fn calc_name(&self, data: &[u8]) -> String {
         let mut name_length = 0;
-        while self.name_offset + name_length < data.len() && data[self.name_offset + name_length] != b';' {
+        while data[self.name_offset + name_length] != b';' {
             name_length += 1;
         }
         let slice = &data[self.name_offset..self.name_offset + name_length];
@@ -270,65 +270,38 @@ fn record(existing_result: &mut ResultEntry, number: i64) {
 
 fn parse_loop(
     counter: &AtomicUsize,
-    file: &File,
-    file_size: usize,
+    data: &[u8],
     collected_results: &mut Vec<usize>,
     hash_table: &mut [Option<Box<ResultEntry>>],
-    all_data: &mut Vec<u8>,
 ) {
-    let mut buffer = vec![0u8; SEGMENT_SIZE + 1024]; // Extra space for overflow line
     loop {
         let current_offset = counter.fetch_add(SEGMENT_SIZE, Ordering::SeqCst);
-        if current_offset >= file_size {
+        if current_offset >= data.len() {
             return;
         }
 
-        let read_start = current_offset;
-        let mut actual_handle = file.try_clone().unwrap();
-        actual_handle.seek(SeekFrom::Start(read_start as u64)).unwrap();
-        
-        let bytes_to_read = (SEGMENT_SIZE + 1024).min(file_size - read_start);
-        actual_handle.read_exact(&mut buffer[..bytes_to_read]).unwrap_or_default();
-        let data_in_buffer = &buffer[..bytes_to_read];
+        let raw_segment_end = (current_offset + SEGMENT_SIZE).min(data.len().saturating_sub(1));
+        let segment_end = next_new_line(data, raw_segment_end);
 
         let segment_start = if current_offset == 0 {
             0
         } else {
-            let mut p = 0;
-            while p < data_in_buffer.len() && data_in_buffer[p] != b'\n' {
-                p += 1;
-            }
-            p + 1
-        };
-
-        let segment_end = if read_start + SEGMENT_SIZE >= file_size {
-            data_in_buffer.len()
-        } else {
-            let mut p = SEGMENT_SIZE;
-            while p < data_in_buffer.len() && data_in_buffer[p] != b'\n' {
-                p += 1;
-            }
-            p.min(data_in_buffer.len())
+            next_new_line(data, current_offset) + 1
         };
 
         if segment_start >= segment_end {
             continue;
         }
 
-        let segment_data = &data_in_buffer[segment_start..segment_end];
-        let offset_in_all_data = all_data.len();
-        all_data.extend_from_slice(segment_data);
-        
-        // We use the recently extended part of all_data
-        let data = &all_data[offset_in_all_data..];
-        let dist = data.len() / 3;
-        let mid_point1 = next_new_line(data, dist);
-        let mid_point2 = next_new_line(data, dist * 2);
+        let dist = (segment_end - segment_start) / 3;
+        let mid_point1 = next_new_line(data, segment_start + dist);
+        let mid_point2 = next_new_line(data, segment_start + dist * 2);
 
         let mut scanner1 = Scanner::new(&data[..mid_point1]);
+        scanner1.add(segment_start);
         let mut scanner2 = Scanner::new(&data[..mid_point2]);
         scanner2.add(mid_point1 + 1);
-        let mut scanner3 = Scanner::new(data);
+        let mut scanner3 = Scanner::new(&data[..segment_end]);
         scanner3.add(mid_point2 + 1);
 
         while scanner1.has_next() && scanner2.has_next() && scanner3.has_next() {
@@ -364,30 +337,9 @@ fn parse_loop(
                 (input.wrapping_sub(0x0101010101010101u64)) & !input & 0x8080808080808080u64
             };
 
-            let s1_pos_before = scanner1.pos;
             let res_idx1 = find_result(word1, dm1, word1b, dm1b, &mut scanner1, hash_table, collected_results);
-            // Adjust name_offset for new results
-            if let Some(ref mut r) = hash_table[res_idx1] {
-                if r.name_offset == s1_pos_before {
-                    r.name_offset += offset_in_all_data;
-                }
-            }
-            
-            let s2_pos_before = scanner2.pos;
             let res_idx2 = find_result(word2, dm2, word2b, dm2b, &mut scanner2, hash_table, collected_results);
-            if let Some(ref mut r) = hash_table[res_idx2] {
-                if r.name_offset == s2_pos_before {
-                    r.name_offset += offset_in_all_data;
-                }
-            }
-
-            let s3_pos_before = scanner3.pos;
             let res_idx3 = find_result(word3, dm3, word3b, dm3b, &mut scanner3, hash_table, collected_results);
-            if let Some(ref mut r) = hash_table[res_idx3] {
-                if r.name_offset == s3_pos_before {
-                    r.name_offset += offset_in_all_data;
-                }
-            }
 
             let num1 = scan_number(&mut scanner1);
             let num2 = scan_number(&mut scanner2);
@@ -409,13 +361,7 @@ fn parse_loop(
                 let input = word_b ^ 0x3B3B3B3B3B3B3B3Bu64;
                 (input.wrapping_sub(0x0101010101010101u64)) & !input & 0x8080808080808080u64
             };
-            let s_pos_before = scanner1.pos;
             let res_idx = find_result(word, dm, word_b, dm_b, &mut scanner1, hash_table, collected_results);
-            if let Some(ref mut r) = hash_table[res_idx] {
-                if r.name_offset == s_pos_before {
-                    r.name_offset += offset_in_all_data;
-                }
-            }
             let num = scan_number(&mut scanner1);
             record(hash_table[res_idx].as_mut().unwrap(), num);
         }
@@ -430,13 +376,7 @@ fn parse_loop(
                 let input = word_b ^ 0x3B3B3B3B3B3B3B3Bu64;
                 (input.wrapping_sub(0x0101010101010101u64)) & !input & 0x8080808080808080u64
             };
-            let s_pos_before = scanner2.pos;
             let res_idx = find_result(word, dm, word_b, dm_b, &mut scanner2, hash_table, collected_results);
-            if let Some(ref mut r) = hash_table[res_idx] {
-                if r.name_offset == s_pos_before {
-                    r.name_offset += offset_in_all_data;
-                }
-            }
             let num = scan_number(&mut scanner2);
             record(hash_table[res_idx].as_mut().unwrap(), num);
         }
@@ -451,13 +391,7 @@ fn parse_loop(
                 let input = word_b ^ 0x3B3B3B3B3B3B3B3Bu64;
                 (input.wrapping_sub(0x0101010101010101u64)) & !input & 0x8080808080808080u64
             };
-            let s_pos_before = scanner3.pos;
             let res_idx = find_result(word, dm, word_b, dm_b, &mut scanner3, hash_table, collected_results);
-            if let Some(ref mut r) = hash_table[res_idx] {
-                if r.name_offset == s_pos_before {
-                    r.name_offset += offset_in_all_data;
-                }
-            }
             let num = scan_number(&mut scanner3);
             record(hash_table[res_idx].as_mut().unwrap(), num);
         }
@@ -472,7 +406,8 @@ fn main() {
     }
 
     let file = File::open(FILE_PATH).expect("Could not open file");
-    let file_size = file.metadata().unwrap().len() as usize;
+    let mmap = unsafe { MmapOptions::new().map(&file).expect("Could not map file") };
+    let data = &mmap[..];
     let cursor = AtomicUsize::new(0);
 
     let num_workers = thread::available_parallelism().unwrap().get();
@@ -480,30 +415,25 @@ fn main() {
     thread::scope(|s| {
         let mut handles = vec![];
         for _ in 0..num_workers {
-            let file_ref = &file;
-            let cursor_ref = &cursor;
-            handles.push(s.spawn(move || {
+            handles.push(s.spawn(|| {
                 let mut collected_results = Vec::with_capacity(MAX_CITIES);
                 let mut hash_table = (0..HASH_TABLE_SIZE).map(|_| None).collect::<Vec<Option<Box<ResultEntry>>>>();
-                let mut all_data = Vec::new();
                 parse_loop(
-                    cursor_ref,
-                    file_ref,
-                    file_size,
+                    &cursor,
+                    data,
                     &mut collected_results,
                     &mut hash_table,
-                    &mut all_data,
                 );
-                (collected_results, hash_table, all_data)
+                (collected_results, hash_table)
             }));
         }
 
         let mut all_results = BTreeMap::new();
         for handle in handles {
-            let (collected_indices, hash_table, all_data) = handle.join().unwrap();
+            let (collected_indices, hash_table) = handle.join().unwrap();
             for idx in collected_indices {
                 let r = hash_table[idx].as_ref().unwrap();
-                let name = r.calc_name(&all_data);
+                let name = r.calc_name(data);
                 all_results
                     .entry(name)
                     .and_modify(|existing: &mut ResultEntry| {
@@ -517,7 +447,7 @@ fn main() {
                             max: r.max,
                             count: r.count,
                             sum: r.sum,
-                            name_offset: r.name_offset, // Note: This offset is relative to the thread's own all_data
+                            name_offset: r.name_offset,
                         }
                     });
             }
