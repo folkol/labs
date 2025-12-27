@@ -1,6 +1,5 @@
 use memchr::memchr;
 use memmap2::Mmap;
-use rayon::iter::plumbing::UnindexedConsumer;
 use rayon::prelude::*;
 use std::fs::File;
 use std::io::{self, BufRead, Write};
@@ -34,7 +33,6 @@ fn run_parent() -> io::Result<()> {
     let mut reader = io::BufReader::new(out);
     reader.read_line(&mut line)?;
     print!("{line}");
-
     std::process::exit(0);
 }
 
@@ -51,6 +49,15 @@ fn count_lines(data: &[u8]) -> i64 {
     memchr::memchr_iter(b'\n', data).count() as i64
 }
 
+#[inline]
+fn snap_to_newline(data: &[u8], end: usize) -> usize {
+    if end < data.len() {
+        end + memchr(b'\n', &data[end..]).unwrap()
+    } else {
+        end
+    }
+}
+
 fn total_lines(data: &[u8]) -> i64 {
     let mut pos = 0;
     let len = data.len();
@@ -60,11 +67,8 @@ fn total_lines(data: &[u8]) -> i64 {
             return None;
         }
 
-        let start = pos;
-        let mut end = (start + CHUNK_SIZE).min(len);
-        if end < len {
-            end += memchr(b'\n', &data[end..]).unwrap();
-        }
+        let end = usize::min(pos + CHUNK_SIZE, len);
+        let (start, end) = (pos, snap_to_newline(data, end));
         pos = end;
         Some(&data[start..end])
     })
