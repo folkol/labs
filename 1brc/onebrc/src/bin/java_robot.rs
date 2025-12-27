@@ -1,8 +1,8 @@
+use memmap2::MmapOptions;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
-use memmap2::MmapOptions;
 
 const FILE_PATH: &str = "../java-orig/measurements.txt";
 const MIN_TEMP: i16 = -999;
@@ -233,8 +233,7 @@ fn find_result(
         let mut i = 0;
         let mut collision = false;
         while i + 8 <= name_length + 1 {
-            if scanner.get_long_at(existing.name_offset + i)
-                != scanner.get_long_at(name_offset + i)
+            if scanner.get_long_at(existing.name_offset + i) != scanner.get_long_at(name_offset + i)
             {
                 collision = true;
                 break;
@@ -337,9 +336,33 @@ fn parse_loop(
                 (input.wrapping_sub(0x0101010101010101u64)) & !input & 0x8080808080808080u64
             };
 
-            let res_idx1 = find_result(word1, dm1, word1b, dm1b, &mut scanner1, hash_table, collected_results);
-            let res_idx2 = find_result(word2, dm2, word2b, dm2b, &mut scanner2, hash_table, collected_results);
-            let res_idx3 = find_result(word3, dm3, word3b, dm3b, &mut scanner3, hash_table, collected_results);
+            let res_idx1 = find_result(
+                word1,
+                dm1,
+                word1b,
+                dm1b,
+                &mut scanner1,
+                hash_table,
+                collected_results,
+            );
+            let res_idx2 = find_result(
+                word2,
+                dm2,
+                word2b,
+                dm2b,
+                &mut scanner2,
+                hash_table,
+                collected_results,
+            );
+            let res_idx3 = find_result(
+                word3,
+                dm3,
+                word3b,
+                dm3b,
+                &mut scanner3,
+                hash_table,
+                collected_results,
+            );
 
             let num1 = scan_number(&mut scanner1);
             let num2 = scan_number(&mut scanner2);
@@ -361,7 +384,15 @@ fn parse_loop(
                 let input = word_b ^ 0x3B3B3B3B3B3B3B3Bu64;
                 (input.wrapping_sub(0x0101010101010101u64)) & !input & 0x8080808080808080u64
             };
-            let res_idx = find_result(word, dm, word_b, dm_b, &mut scanner1, hash_table, collected_results);
+            let res_idx = find_result(
+                word,
+                dm,
+                word_b,
+                dm_b,
+                &mut scanner1,
+                hash_table,
+                collected_results,
+            );
             let num = scan_number(&mut scanner1);
             record(hash_table[res_idx].as_mut().unwrap(), num);
         }
@@ -376,7 +407,15 @@ fn parse_loop(
                 let input = word_b ^ 0x3B3B3B3B3B3B3B3Bu64;
                 (input.wrapping_sub(0x0101010101010101u64)) & !input & 0x8080808080808080u64
             };
-            let res_idx = find_result(word, dm, word_b, dm_b, &mut scanner2, hash_table, collected_results);
+            let res_idx = find_result(
+                word,
+                dm,
+                word_b,
+                dm_b,
+                &mut scanner2,
+                hash_table,
+                collected_results,
+            );
             let num = scan_number(&mut scanner2);
             record(hash_table[res_idx].as_mut().unwrap(), num);
         }
@@ -391,7 +430,15 @@ fn parse_loop(
                 let input = word_b ^ 0x3B3B3B3B3B3B3B3Bu64;
                 (input.wrapping_sub(0x0101010101010101u64)) & !input & 0x8080808080808080u64
             };
-            let res_idx = find_result(word, dm, word_b, dm_b, &mut scanner3, hash_table, collected_results);
+            let res_idx = find_result(
+                word,
+                dm,
+                word_b,
+                dm_b,
+                &mut scanner3,
+                hash_table,
+                collected_results,
+            );
             let num = scan_number(&mut scanner3);
             record(hash_table[res_idx].as_mut().unwrap(), num);
         }
@@ -417,13 +464,10 @@ fn main() {
         for _ in 0..num_workers {
             handles.push(s.spawn(|| {
                 let mut collected_results = Vec::with_capacity(MAX_CITIES);
-                let mut hash_table = (0..HASH_TABLE_SIZE).map(|_| None).collect::<Vec<Option<Box<ResultEntry>>>>();
-                parse_loop(
-                    &cursor,
-                    data,
-                    &mut collected_results,
-                    &mut hash_table,
-                );
+                let mut hash_table = (0..HASH_TABLE_SIZE)
+                    .map(|_| None)
+                    .collect::<Vec<Option<Box<ResultEntry>>>>();
+                parse_loop(&cursor, data, &mut collected_results, &mut hash_table);
                 (collected_results, hash_table)
             }));
         }
@@ -439,16 +483,14 @@ fn main() {
                     .and_modify(|existing: &mut ResultEntry| {
                         existing.accumulate(r);
                     })
-                    .or_insert_with(|| {
-                        ResultEntry {
-                            first_name_word: r.first_name_word,
-                            second_name_word: r.second_name_word,
-                            min: r.min,
-                            max: r.max,
-                            count: r.count,
-                            sum: r.sum,
-                            name_offset: r.name_offset,
-                        }
+                    .or_insert_with(|| ResultEntry {
+                        first_name_word: r.first_name_word,
+                        second_name_word: r.second_name_word,
+                        min: r.min,
+                        max: r.max,
+                        count: r.count,
+                        sum: r.sum,
+                        name_offset: r.name_offset,
                     });
             }
         }

@@ -115,8 +115,6 @@ impl Hash for &[u8] {
     }
 }
 
-
-
 #[derive(Debug, Clone)]
 struct Result {
     name: String,
@@ -219,11 +217,7 @@ impl Chunk {
         }
         // Convert to decimal (it's faster then using floats)
         result = result * 10 + (data[data.len() - 1] - b'0') as i32;
-        if neg {
-            -result
-        } else {
-            result
-        }
+        if neg { -result } else { result }
     }
 }
 

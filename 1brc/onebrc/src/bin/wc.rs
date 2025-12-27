@@ -1,8 +1,8 @@
 #![allow(unsafe_op_in_unsafe_fn)]
+use libc::{c_void, read};
 use std::arch::x86_64::*;
 use std::io;
 use std::os::unix::io::AsRawFd;
-use libc::{read, c_void};
 
 #[derive(Debug)]
 struct WcLines {
@@ -34,7 +34,11 @@ unsafe fn wc_lines_avx2(fd: i32) -> WcLines {
         let bytes_read = read(fd, avx_buf.0.as_mut_ptr() as *mut c_void, BUFSIZE);
         if bytes_read <= 0 {
             return WcLines {
-                err: if bytes_read == 0 { 0 } else { *libc::__errno_location() },
+                err: if bytes_read == 0 {
+                    0
+                } else {
+                    *libc::__errno_location()
+                },
                 lines,
                 bytes,
             };
@@ -57,26 +61,30 @@ unsafe fn wc_lines_avx2(fd: i32) -> WcLines {
             bytes_rem -= 64;
         }
 
+        // accumulator = _mm256_sad_epu8(accumulator, zeroes);
+        // let mut sums: [u64; 4] = [0; 4];
+        // _mm256_storeu_si256(sums.as_mut_ptr() as *mut __m256i, accumulator);
+        // lines += (sums[0] + sums[1] + sums[2] + sums[3]) as i64;
         accumulator = _mm256_sad_epu8(accumulator, zeroes);
-        // lines += (_mm256_extract_epi16(accumulator, 0) as i64)
-        //     + (_mm256_extract_epi16(accumulator, 4) as i64)
-        //     + (_mm256_extract_epi16(accumulator, 8) as i64)
-        //     + (_mm256_extract_epi16(accumulator, 12) as i64);
+        let lo = _mm256_castsi256_si128(accumulator);
+        let hi = _mm256_extracti128_si256(accumulator, 1);
+        lines += (_mm_cvtsi128_si64(lo) as i64)
+            + (_mm_extract_epi64(lo, 1) as i64)
+            + (_mm_cvtsi128_si64(hi) as i64)
+            + (_mm_extract_epi64(hi, 1) as i64);
 
-        // vpsadbw (sad_epu8) yields 4x u64 sums in the YMM register; sum them as scalars.
-        let mut sums: [u64; 4] = [0; 4];
-        _mm256_storeu_si256(sums.as_mut_ptr() as *mut __m256i, accumulator);
-        lines += (sums[0] + sums[1] + sums[2] + sums[3]) as i64;
-
+        // accumulator2 = _mm256_sad_epu8(accumulator2, zeroes);
+        // let mut sums2: [u64; 4] = [0; 4];
+        // _mm256_storeu_si256(sums2.as_mut_ptr() as *mut __m256i, accumulator2);
+        // lines += (sums2[0] + sums2[1] + sums2[2] + sums2[3]) as i64;
         accumulator2 = _mm256_sad_epu8(accumulator2, zeroes);
-        // lines += (_mm256_extract_epi16(accumulator2, 0) as i64)
-        //     + (_mm256_extract_epi16(accumulator2, 4) as i64)
-        //     + (_mm256_extract_epi16(accumulator2, 8) as i64)
-        //     + (_mm256_extract_epi16(accumulator2, 12) as i64);
+        let lo = _mm256_castsi256_si128(accumulator2);
+        let hi = _mm256_extracti128_si256(accumulator2, 1);
+        lines += (_mm_cvtsi128_si64(lo) as i64)
+            + (_mm_extract_epi64(lo, 1) as i64)
+            + (_mm_cvtsi128_si64(hi) as i64)
+            + (_mm_extract_epi64(hi, 1) as i64);
 
-        let mut sums2: [u64; 4] = [0; 4];
-        _mm256_storeu_si256(sums2.as_mut_ptr() as *mut __m256i, accumulator2);
-        lines += (sums2[0] + sums2[1] + sums2[2] + sums2[3]) as i64;
 
         for i in 0..bytes_rem {
             if *datap.add(i) == b'\n' {

@@ -51,7 +51,9 @@ impl ResultEntry {
 
     fn calc_name(&self, data: &[u8]) -> String {
         let mut name_length = 0;
-        while self.name_offset + name_length < data.len() && data[self.name_offset + name_length] != b';' {
+        while self.name_offset + name_length < data.len()
+            && data[self.name_offset + name_length] != b';'
+        {
             name_length += 1;
         }
         let slice = &data[self.name_offset..self.name_offset + name_length];
@@ -233,8 +235,7 @@ fn find_result(
         let mut i = 0;
         let mut collision = false;
         while i + 8 <= name_length + 1 {
-            if scanner.get_long_at(existing.name_offset + i)
-                != scanner.get_long_at(name_offset + i)
+            if scanner.get_long_at(existing.name_offset + i) != scanner.get_long_at(name_offset + i)
             {
                 collision = true;
                 break;
@@ -285,10 +286,14 @@ fn parse_loop(
 
         let read_start = current_offset;
         let mut actual_handle = file.try_clone().unwrap();
-        actual_handle.seek(SeekFrom::Start(read_start as u64)).unwrap();
-        
+        actual_handle
+            .seek(SeekFrom::Start(read_start as u64))
+            .unwrap();
+
         let bytes_to_read = (SEGMENT_SIZE + 1024).min(file_size - read_start);
-        actual_handle.read_exact(&mut buffer[..bytes_to_read]).unwrap_or_default();
+        actual_handle
+            .read_exact(&mut buffer[..bytes_to_read])
+            .unwrap_or_default();
         let data_in_buffer = &buffer[..bytes_to_read];
 
         let segment_start = if current_offset == 0 {
@@ -318,7 +323,7 @@ fn parse_loop(
         let segment_data = &data_in_buffer[segment_start..segment_end];
         let offset_in_all_data = all_data.len();
         all_data.extend_from_slice(segment_data);
-        
+
         // We use the recently extended part of all_data
         let data = &all_data[offset_in_all_data..];
         let dist = data.len() / 3;
@@ -365,16 +370,32 @@ fn parse_loop(
             };
 
             let s1_pos_before = scanner1.pos;
-            let res_idx1 = find_result(word1, dm1, word1b, dm1b, &mut scanner1, hash_table, collected_results);
+            let res_idx1 = find_result(
+                word1,
+                dm1,
+                word1b,
+                dm1b,
+                &mut scanner1,
+                hash_table,
+                collected_results,
+            );
             // Adjust name_offset for new results
             if let Some(ref mut r) = hash_table[res_idx1] {
                 if r.name_offset == s1_pos_before {
                     r.name_offset += offset_in_all_data;
                 }
             }
-            
+
             let s2_pos_before = scanner2.pos;
-            let res_idx2 = find_result(word2, dm2, word2b, dm2b, &mut scanner2, hash_table, collected_results);
+            let res_idx2 = find_result(
+                word2,
+                dm2,
+                word2b,
+                dm2b,
+                &mut scanner2,
+                hash_table,
+                collected_results,
+            );
             if let Some(ref mut r) = hash_table[res_idx2] {
                 if r.name_offset == s2_pos_before {
                     r.name_offset += offset_in_all_data;
@@ -382,7 +403,15 @@ fn parse_loop(
             }
 
             let s3_pos_before = scanner3.pos;
-            let res_idx3 = find_result(word3, dm3, word3b, dm3b, &mut scanner3, hash_table, collected_results);
+            let res_idx3 = find_result(
+                word3,
+                dm3,
+                word3b,
+                dm3b,
+                &mut scanner3,
+                hash_table,
+                collected_results,
+            );
             if let Some(ref mut r) = hash_table[res_idx3] {
                 if r.name_offset == s3_pos_before {
                     r.name_offset += offset_in_all_data;
@@ -410,7 +439,15 @@ fn parse_loop(
                 (input.wrapping_sub(0x0101010101010101u64)) & !input & 0x8080808080808080u64
             };
             let s_pos_before = scanner1.pos;
-            let res_idx = find_result(word, dm, word_b, dm_b, &mut scanner1, hash_table, collected_results);
+            let res_idx = find_result(
+                word,
+                dm,
+                word_b,
+                dm_b,
+                &mut scanner1,
+                hash_table,
+                collected_results,
+            );
             if let Some(ref mut r) = hash_table[res_idx] {
                 if r.name_offset == s_pos_before {
                     r.name_offset += offset_in_all_data;
@@ -431,7 +468,15 @@ fn parse_loop(
                 (input.wrapping_sub(0x0101010101010101u64)) & !input & 0x8080808080808080u64
             };
             let s_pos_before = scanner2.pos;
-            let res_idx = find_result(word, dm, word_b, dm_b, &mut scanner2, hash_table, collected_results);
+            let res_idx = find_result(
+                word,
+                dm,
+                word_b,
+                dm_b,
+                &mut scanner2,
+                hash_table,
+                collected_results,
+            );
             if let Some(ref mut r) = hash_table[res_idx] {
                 if r.name_offset == s_pos_before {
                     r.name_offset += offset_in_all_data;
@@ -452,7 +497,15 @@ fn parse_loop(
                 (input.wrapping_sub(0x0101010101010101u64)) & !input & 0x8080808080808080u64
             };
             let s_pos_before = scanner3.pos;
-            let res_idx = find_result(word, dm, word_b, dm_b, &mut scanner3, hash_table, collected_results);
+            let res_idx = find_result(
+                word,
+                dm,
+                word_b,
+                dm_b,
+                &mut scanner3,
+                hash_table,
+                collected_results,
+            );
             if let Some(ref mut r) = hash_table[res_idx] {
                 if r.name_offset == s_pos_before {
                     r.name_offset += offset_in_all_data;
@@ -484,7 +537,9 @@ fn main() {
             let cursor_ref = &cursor;
             handles.push(s.spawn(move || {
                 let mut collected_results = Vec::with_capacity(MAX_CITIES);
-                let mut hash_table = (0..HASH_TABLE_SIZE).map(|_| None).collect::<Vec<Option<Box<ResultEntry>>>>();
+                let mut hash_table = (0..HASH_TABLE_SIZE)
+                    .map(|_| None)
+                    .collect::<Vec<Option<Box<ResultEntry>>>>();
                 let mut all_data = Vec::new();
                 parse_loop(
                     cursor_ref,
