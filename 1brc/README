@@ -1769,3 +1769,59 @@ Summary
     1.00 ± 0.02 times faster than target/release/scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing
 
 
+
+#### First actual implemetation (candidate_1)
+
+- take scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing_newline_aligned.rs and add naive implementation
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ cargo run --release --bin candidate_1 >output.txt
+warning: unused manifest key: profile.release.embed-bitcode
+   Compiling onebrc v0.1.0 (/home/folkol/code/labs/1brc/onebrc)
+    Finished `release` profile [optimized + debuginfo] target(s) in 1.93s
+     Running `target/release/candidate_1`
+total threads: 24
+folkol@ubuntu:~/code/labs/1brc/onebrc$ diff output.txt ../expected.txt 
+folkol@ubuntu:~/code/labs/1brc/onebrc$ time target/release/candidate_1 
+total threads: 24
+{Abha=-33.8/18.0/71.1, ...
+
+real	0m1.950s
+user	0m0.000s
+sys	0m0.001s
+
+So, where do we spend our time?
+
+Samples: 15K of event 'cpu_core/cycles/P', Event count (approx.): 81622559943
+  Children      Self  Command      Shared Object      Symbol
+-   79.51%    32.47%  candidate_1  candidate_1        [.] std::sys::backtrace::__rust_begin_short_backtrace                                                                                                                                                         ▒
+     std::sys::backtrace::__rust_begin_short_backtrace                                                                                                                                                                                                              ◆
+   - candidate_1::total_lines::{{closure}}::{{closure}} (inlined)                                                                                                                                                                                                   ▒
+      + 79.44% candidate_1::chunk_statistics (inlined)                                                                                                                                                                                                              ▒
+-   79.51%     0.00%  candidate_1  candidate_1        [.] candidate_1::total_lines::{{closure}}::{{closure}} (inlined)                                                                                                                                              ▒
+   - candidate_1::total_lines::{{closure}}::{{closure}} (inlined)                                                                                                                                                                                                   ▒
+      + 79.44% candidate_1::chunk_statistics (inlined)                                                                                                                                                                                                              ▒
+-   79.44%     0.00%  candidate_1  candidate_1        [.] candidate_1::chunk_statistics (inlined)                                                                                                                                                                   ▒
+   - candidate_1::chunk_statistics (inlined)                                                                                                                                                                                                                        ▒
+      + 28.38% std::collections::hash::map::HashMap<K,V,S>::entry (inlined)                                                                                                                                                                                         ▒
+      + 22.14% core::str::<impl str>::parse (inlined)                                                                                                                                                                                                               ▒
+      + 10.26% memchr::memchr::memrchr (inlined)                                                                                                                                                                                                                    ▒
+      + 6.62% <memchr::memchr::Memchr as core::iter::traits::iterator::Iterator>::next (inlined)                                                                                                                                                                    ▒
+      + 3.99% alloc::slice::<impl [T]>::to_vec (inlined)                                                                                                                                                                                                            ▒
+        1.02% core::str::<impl str>::from_utf8 (inlined)                                                                                                                                                                                                            ▒
+      + 0.62% core::slice::index::<impl core::ops::index::Index<I> for [T]>::index (inlined)                                                                                                                                                                        ▒
+        0.62% core::result::Result<T,E>::unwrap (inlined)                                                                                                                                                                                                           ▒
+        0.54% core::f64::<impl f64>::max (inlined)                                                                                                                                                                                                                  ▒
+-   28.38%     0.00%  candidate_1  candidate_1        [.] std::collections::hash::map::HashMap<K,V,S>::entry (inlined)                                                                                                                                              ▒
+     std::collections::hash::map::HashMap<K,V,S>::entry (inlined)                                                                                                                                                                                                   ▒
+   - hashbrown::rustc_entry::<impl hashbrown::map::HashMap<K,V,S,A>>::rustc_entry (inlined)                                                                                                                                                                         ▒
+      + 14.31% hashbrown::raw::RawTable<T,A>::find (inlined)                                                                                                                                                                                                        ▒
+      + 9.49% hashbrown::map::make_hash (inlined)                                                                                                                                                                                                                   ▒
+      + 4.58% core::ptr::drop_in_place<alloc::string::String> (inlined)   
+
+
+HashMap-stuff and string parsing
+
+
+#### TODO: when we have a final working program, rewrite it with rayon / ahash and see where it takes us
+
+
