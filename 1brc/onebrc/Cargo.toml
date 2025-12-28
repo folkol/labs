@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [profile.release]
+opt-level = 3
 debug = 1
 embed-bitcode = true
-lto = "thin"        # or true / "fat"
+lto = "fat"        # or true / "fat"
 panic = "abort"
 debug-assertions = false
 overflow-checks = false
