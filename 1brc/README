@@ -1753,3 +1753,19 @@ CPU	Busy%	CPU%c1	CPU%c6	CPU%c7
 	This is as clear-cut as performance analysis gets.
 
 
+##### Align work chunks to newlines
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 10 target/release/scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing{,_newline_aligned}
+Benchmark 1: target/release/scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing
+  Time (mean ± σ):     163.2 ms ±   1.6 ms    [User: 0.5 ms, System: 0.4 ms]
+  Range (min … max):   161.1 ms … 167.1 ms    18 runs
+ 
+Benchmark 2: target/release/scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing_newline_aligned
+  Time (mean ± σ):     162.7 ms ±   2.4 ms    [User: 0.4 ms, System: 0.5 ms]
+  Range (min … max):   159.8 ms … 167.9 ms    18 runs
+ 
+Summary
+  target/release/scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing_newline_aligned ran
+    1.00 ± 0.02 times faster than target/release/scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing
+
+
