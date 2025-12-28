@@ -86,10 +86,10 @@ struct Entry {
 }
 
 pub struct NameTable<'a> {
-    data: &'a [u8],     // backing buffer (mmap or Vec<u8>)
-    slots: Vec<u32>,    // 0 = empty, else entry_index + 1
+    data: &'a [u8],  // backing buffer (mmap or Vec<u8>)
+    slots: Vec<u32>, // 0 = empty, else entry_index + 1
     entries: Vec<Entry>,
-    mask: usize,        // slots.len() - 1
+    mask: usize, // slots.len() - 1
 }
 
 impl<'a> NameTable<'a> {
@@ -172,7 +172,9 @@ impl<'a> NameTable<'a> {
 
     /// Optional: iterate all entries after processing
     pub fn iter_entries(&self) -> impl Iterator<Item = (&[u8], StationStats)> + '_ {
-        self.entries.iter().map(|e| (self.key_bytes(e.name_off, e.name_len), e.stats))
+        self.entries
+            .iter()
+            .map(|e| (self.key_bytes(e.name_off, e.name_len), e.stats))
     }
 }
 
@@ -218,7 +220,9 @@ fn parse_temp_tenths(s: &[u8]) -> i16 {
     // range fits i16 easily
     let mut i = 0usize;
     let neg = s.get(0) == Some(&b'-');
-    if neg { i += 1; }
+    if neg {
+        i += 1;
+    }
 
     // read int part (1 or 2 digits for your range)
     let mut val: i16 = (s[i] - b'0') as i16;
@@ -246,7 +250,7 @@ fn parse_temp_tenths_fixed_dot(data: &[u8], end: usize) -> i16 {
     // end-5: tens digit OR '-'/';'/something
     // end-6: '-' if -dd.d
     let tenths = (data[end - 2] - b'0') as i16;
-    let ones   = (data[end - 4] - b'0') as i16;
+    let ones = (data[end - 4] - b'0') as i16;
 
     let b5 = data[end - 5]; // could be digit (tens) or '-'/';'
     let (tens, neg) = if b5.is_ascii_digit() {
@@ -269,7 +273,7 @@ unsafe fn parse_temp_tenths_fixed_dot_ptr(line_end_nl: *const u8) -> i16 {
     debug_assert!(*line_end_nl.sub(2) == b'.'); // '.' is 2 bytes before '\n'
 
     let tenths = (*line_end_nl.sub(1) - b'0') as i16;
-    let ones   = (*line_end_nl.sub(3) - b'0') as i16;
+    let ones = (*line_end_nl.sub(3) - b'0') as i16;
 
     let b5 = *line_end_nl.sub(4); // could be digit (tens) or '-'/';'
     let (tens, neg) = if b5.is_ascii_digit() {
@@ -303,12 +307,13 @@ unsafe fn find_delim(mut p: *const u8, end: *const u8, byte: u8) -> *const u8 {
     }
     // Tail
     while p < end {
-        if *p == byte { return p; }
+        if *p == byte {
+            return p;
+        }
         p = p.add(1);
     }
     end
 }
-
 
 fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, statistics: &mut NameTable) {
     let chunk = &data[chunk_start..chunk_end];

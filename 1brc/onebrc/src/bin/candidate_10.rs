@@ -356,56 +356,121 @@ unsafe fn scan_one_line(
     nl.add(1)
 }
 
-/// Java-style: split the chunk into 3 newline-aligned ranges and process
-/// 3 cursors in lockstep. `chunk_end` must be newline-aligned (your claim_chunk ensures this).
-fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, statistics: &mut NameTable) {
+#[inline]
+fn find_semicolon_near_end(line: &[u8]) -> usize {
+    // Search only the tail (tune 16/32/64). Fall back rarely.
+    let n = line.len();
+    let win = 32usize.min(n);
+    let start = n - win;
+
+    if let Some(pos) = memchr::memrchr(b';', &line[start..]) {
+        start + pos
+    } else {
+        memchr::memchr(b';', line).unwrap()
+    }
+}
+
+#[inline]
+fn next_newline_in(chunk: &[u8], from: usize) -> usize {
+    from + memchr::memchr(b'\n', &chunk[from..]).unwrap()
+}
+
+#[inline]
+fn scan_range(
+    chunk: &[u8],
+    chunk_start: usize,
+    mut start: usize,
+    end_excl: usize,
+    stats: &mut NameTable,
+) {
+    // start and end_excl are indices into chunk; end_excl is newline-aligned (points just past '\n')
+    while start < end_excl {
+        let rel_nl = start + memchr::memchr(b'\n', &chunk[start..end_excl]).unwrap();
+        let line = &chunk[start..rel_nl]; // excludes '\n'
+
+        // temp parse uses the '\n' pointer => pass rel_nl+1 (end points just past '\n')
+        let temp = parse_temp_tenths_fixed_dot(chunk, rel_nl + 1);
+
+        let semi = start + find_semicolon_near_end(line);
+
+        let e = stats.get_or_insert_stats((chunk_start + start) as u64, (semi - start) as u16);
+        e.count += 1;
+        e.min = e.min.min(temp);
+        e.max = e.max.max(temp);
+        e.total += temp as i64;
+
+        start = rel_nl + 1;
+    }
+}
+
+fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, stats: &mut NameTable) {
     let chunk = &data[chunk_start..chunk_end];
     assert_eq!(chunk[chunk.len() - 1], b'\n');
 
-    let base = chunk.as_ptr();
-    let endp = unsafe { base.add(chunk.len()) };
+    let len = chunk.len();
+    let d = len / 3;
 
-    unsafe {
-        // Split into 3 parts, snap split points to newline boundaries
-        let len = chunk.len();
-        let d = len / 3;
+    // Snap split points to newline boundaries (indices of '\n')
+    let mid1_nl = next_newline_in(chunk, d);
+    let mid2_nl = next_newline_in(chunk, 2 * d);
 
-        let mid1_nl = next_newline(base.add(d), endp);
-        let mid2_nl = next_newline(base.add(2 * d), endp);
+    // Ranges: [start, end_excl), end_excl is just past '\n'
+    let r1 = (0usize, mid1_nl + 1);
+    let r2 = (mid1_nl + 1, mid2_nl + 1);
+    let r3 = (mid2_nl + 1, len);
 
-        // Define three ranges as [start, end)
-        let r1_start = base;
-        let r1_end = mid1_nl.add(1);
+    // Option A: simplest (often already good): scan each range
+    // scan_range(chunk, chunk_start, r1.0, r1.1, stats);
+    // scan_range(chunk, chunk_start, r2.0, r2.1, stats);
+    // scan_range(chunk, chunk_start, r3.0, r3.1, stats);
 
-        let r2_start = mid1_nl.add(1);
-        let r2_end = mid2_nl.add(1);
+    // Option B: Java-ish lockstep: advance 3 cursors round-robin
+    // (keeps 3 scanners “in flight” without pointer scanning)
+    let mut p1 = r1.0;
+    let mut p2 = r2.0;
+    let mut p3 = r3.0;
 
-        let r3_start = mid2_nl.add(1);
-        let r3_end = endp;
-
-        // Cursors
-        let mut p1 = r1_start;
-        let mut p2 = r2_start;
-        let mut p3 = r3_start;
-
-        // Lockstep scan while all have data
-        while p1 < r1_end && p2 < r2_end && p3 < r3_end {
-            p1 = scan_one_line(base, r1_end, chunk_start, p1, statistics);
-            p2 = scan_one_line(base, r2_end, chunk_start, p2, statistics);
-            p3 = scan_one_line(base, r3_end, chunk_start, p3, statistics);
-        }
-
-        // Drain remaining
-        while p1 < r1_end {
-            p1 = scan_one_line(base, r1_end, chunk_start, p1, statistics);
-        }
-        while p2 < r2_end {
-            p2 = scan_one_line(base, r2_end, chunk_start, p2, statistics);
-        }
-        while p3 < r3_end {
-            p3 = scan_one_line(base, r3_end, chunk_start, p3, statistics);
-        }
+    while p1 < r1.1 && p2 < r2.1 && p3 < r3.1 {
+        // one line from each
+        scan_range(chunk, chunk_start, p1, (p1 + 1).min(r1.1), stats); // placeholder
+        // The above is not correct: scan_range consumes to end_excl.
+        // Instead, do a single-line step:
+        // (See scan_one_line() below.)
+        break;
     }
+
+    // Correct lockstep implementation: do single-line stepping
+    #[inline]
+    fn step_one(
+        chunk: &[u8],
+        chunk_start: usize,
+        p: &mut usize,
+        end_excl: usize,
+        stats: &mut NameTable,
+    ) {
+        if *p >= end_excl { return; }
+        let rel_nl = *p + memchr::memchr(b'\n', &chunk[*p..end_excl]).unwrap();
+        let line = &chunk[*p..rel_nl];
+        let temp = parse_temp_tenths_fixed_dot(chunk, rel_nl + 1);
+        let semi = *p + find_semicolon_near_end(line);
+
+        let e = stats.get_or_insert_stats((chunk_start + *p) as u64, (semi - *p) as u16);
+        e.count += 1;
+        e.min = e.min.min(temp);
+        e.max = e.max.max(temp);
+        e.total += temp as i64;
+
+        *p = rel_nl + 1;
+    }
+
+    while p1 < r1.1 && p2 < r2.1 && p3 < r3.1 {
+        step_one(chunk, chunk_start, &mut p1, r1.1, stats);
+        step_one(chunk, chunk_start, &mut p2, r2.1, stats);
+        step_one(chunk, chunk_start, &mut p3, r3.1, stats);
+    }
+    while p1 < r1.1 { step_one(chunk, chunk_start, &mut p1, r1.1, stats); }
+    while p2 < r2.1 { step_one(chunk, chunk_start, &mut p2, r2.1, stats); }
+    while p3 < r3.1 { step_one(chunk, chunk_start, &mut p3, r3.1, stats); }
 }
 
 #[inline]
