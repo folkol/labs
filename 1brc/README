@@ -1679,4 +1679,77 @@ folkol@ubuntu:~/code/labs/1brc/onebrc$ time cargo -q run --release --bin scan_li
 
 	What you measured is exactly how a well-designed parallel scan should behave.
 
+folkol@ubuntu:~/code/labs/1brc/onebrc$ sudo turbostat --Summary --interval 0.005 -- target/release/scan_lines_baseline_multi_thread_child_process_threads
+
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ sudo turbostat --interval 0.005 --quiet --show CPU,Busy%,CPU%c1,CPU%c6,CPU%c7 \
+  -- target/release/scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing
+total threads: 24
+1000000000
+0.162173 sec
+CPU	Busy%	CPU%c1	CPU%c6	CPU%c7
+-	96.94	2.04	0.82	0.17
+0	97.98	1.90	0.00	0.11
+1	97.84	1.20	0.12	0.81
+8	97.56	0.00	2.40	0.00
+9	98.08	1.90	0.01	0.00
+10	98.00	1.99	0.00	0.00
+11	97.90	0.37	1.70	0.00
+12	97.63	2.08	0.28	0.00
+13	98.16	1.83	0.00	0.00
+14	98.46	1.14	0.38	0.00
+15	97.96	0.41	1.61	0.00
+2	97.98	1.37	0.00	0.63
+3	97.00	2.38	0.60	0.00
+4	95.82	3.10	0.36	0.66
+5	95.77	2.99	0.22	0.95
+16	95.47	0.00	4.49	0.00
+17	95.98	1.94	2.05	0.00
+18	95.69	1.94	2.32	0.00
+19	95.92	1.96	2.07	0.00
+20	95.93	4.05	0.00	0.00
+21	95.93	4.05	0.00	0.00
+22	99.02	0.98	0.00	0.00
+23	95.76	4.22	0.00	0.00
+6	95.37	2.71	1.00	0.86
+7	95.56	4.25	0.14	0.00
+folkol@ubuntu:~/code/labs/1brc/onebrc$ sudo turbostat --interval 0.005 --quiet --show CPU,Busy%,CPU%c1,CPU%c6,CPU%c7   -- target/release/scan_lines_baseline_multi_thread_child_process_threads
+total threads: 24
+1000000000
+0.161977 sec
+CPU	Busy%	CPU%c1	CPU%c6	CPU%c7
+-	87.50	4.03	8.12	0.26
+0	96.57	0.19	1.20	1.97
+1	95.98	0.69	1.66	1.63
+8	74.67	0.28	24.81	0.00
+9	92.88	1.80	5.23	0.00
+10	71.40	27.33	1.15	0.00
+11	93.28	0.21	6.46	0.00
+12	71.33	0.00	28.53	0.00
+13	93.92	0.06	5.93	0.00
+14	94.13	0.02	5.80	0.00
+15	94.29	0.54	5.11	0.00
+2	96.45	1.07	1.61	0.81
+3	97.58	1.20	0.44	0.73
+4	96.52	2.82	0.00	0.64
+5	95.83	1.39	2.17	0.53
+16	71.35	0.00	28.50	0.00
+17	72.12	17.40	10.36	0.00
+18	93.17	1.74	5.03	0.00
+19	72.53	21.69	5.62	0.00
+20	93.97	0.00	5.98	0.00
+21	74.48	1.00	24.39	0.00
+22	72.81	10.28	16.74	0.00
+23	92.35	0.79	6.80	0.00
+6	96.81	2.57	0.55	0.00
+7	95.54	3.55	0.86	0.00
+
+
+	ChatGPT:
+	One-sentence conclusion
+
+	Dynamic work stealing improved performance entirely by eliminating heterogeneous-core tail latency, keeping all cores in C0 until completion.
+
+	This is as clear-cut as performance analysis gets.
+
 
