@@ -1821,6 +1821,130 @@ Samples: 15K of event 'cpu_core/cycles/P', Event count (approx.): 81622559943
 
 HashMap-stuff and string parsing
 
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 10 ../java-orig/target/CalculateAverage_thomaswue_image target/release/candidate_1
+Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     215.0 ms ±   3.4 ms    [User: 0.6 ms, System: 2.4 ms]
+  Range (min … max):   211.9 ms … 223.7 ms    14 runs
+ 
+Benchmark 2: target/release/candidate_1
+  Time (mean ± σ):      2.077 s ±  0.060 s    [User: 0.000 s, System: 0.001 s]
+  Range (min … max):    1.985 s …  2.177 s    10 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image ran
+    9.66 ± 0.32 times faster than target/release/candidate_1
+
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ perf stat -ddd target/release/candidate_1
+total threads: 24
+{Abha=-33.8/18.0/71.1, ...
+
+ Performance counter stats for 'target/release/candidate_1':
+
+    47,074,248,147      task-clock                       #   23.899 CPUs utilized             
+             1,860      context-switches                 #   39.512 /sec                      
+                13      cpu-migrations                   #    0.276 /sec                      
+           211,224      page-faults                      #    4.487 K/sec                     
+   710,151,072,891      cpu_atom/instructions/           #    3.16  insn per cycle              (35.21%)
+   950,015,173,149      cpu_core/instructions/           #    3.86  insn per cycle              (30.70%)
+   224,950,681,453      cpu_atom/cycles/                 #    4.779 GHz                         (35.21%)
+   246,074,112,889      cpu_core/cycles/                 #    5.227 GHz                         (30.71%)
+   136,544,023,908      cpu_atom/branches/               #    2.901 G/sec                       (35.23%)
+   182,800,980,792      cpu_core/branches/               #    3.883 G/sec                       (30.71%)
+     1,890,890,382      cpu_atom/branch-misses/          #    1.38% of all branches             (35.26%)
+     2,641,223,377      cpu_core/branch-misses/          #    1.44% of all branches             (28.15%)
+ #     21.3 %  tma_backend_bound        (35.29%)
+ #     13.6 %  tma_backend_bound      
+                                                  #     23.9 %  tma_bad_speculation    
+                                                  #     19.5 %  tma_frontend_bound     
+                                                  #     43.0 %  tma_retiring             (30.71%)
+ #      0.0 %  tma_retiring             (35.33%)
+ #     29.4 %  tma_bad_speculation    
+                                                  #      0.0 %  tma_frontend_bound       (35.36%)
+   120,507,204,131      cpu_atom/L1-dcache-loads/        #    2.560 G/sec                       (39.36%)
+   156,674,247,257      cpu_core/L1-dcache-loads/        #    3.328 G/sec                       (30.71%)
+        46,282,173      cpu_core/L1-dcache-load-misses/  #    0.03% of all L1-dcache accesses   (30.71%)
+         1,666,845      cpu_atom/LLC-loads/              #   35.409 K/sec                       (35.44%)
+         3,403,148      cpu_core/LLC-loads/              #   72.293 K/sec                       (30.71%)
+                67      cpu_atom/LLC-load-misses/        #    0.00% of all LL-cache accesses    (35.41%)
+           596,465      cpu_core/LLC-load-misses/        #   17.53% of all LL-cache accesses    (30.71%)
+   274,637,563,570      cpu_atom/L1-icache-loads/        #    5.834 G/sec                       (35.38%)
+        52,397,152      cpu_atom/L1-icache-load-misses/  #    0.02% of all L1-icache accesses   (35.35%)
+        24,683,778      cpu_core/L1-icache-load-misses/                                         (30.72%)
+   120,566,070,314      cpu_atom/dTLB-loads/             #    2.561 G/sec                       (35.31%)
+   156,694,673,826      cpu_core/dTLB-loads/             #    3.329 G/sec                       (30.71%)
+           251,808      cpu_atom/dTLB-load-misses/       #    0.00% of all dTLB cache accesses  (35.28%)
+         1,014,581      cpu_core/dTLB-load-misses/       #    0.00% of all dTLB cache accesses  (30.71%)
+            29,527      cpu_atom/iTLB-load-misses/                                              (31.31%)
+        16,902,219      cpu_core/iTLB-load-misses/                                              (28.13%)
+
+       1.969694769 seconds time elapsed
+
+       0.000000000 seconds user
+       0.001218000 seconds sys
+
+$ perf script | ./FlameGraph/stackcollapse-perf.pl | ./FlameGraph/flamegraph.pl --width 3000 >flame.svg
+Filtering for events of type: cpu_core/cycles/P
+
+[[ flame graph ]]
+
+
+#### Candidate 2, ahash
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/candidate_{1,2}
+Benchmark 1: target/release/candidate_1
+  Time (mean ± σ):      2.011 s ±  0.033 s    [User: 0.001 s, System: 0.000 s]
+  Range (min … max):    1.960 s …  2.057 s    10 runs
+ 
+Benchmark 2: target/release/candidate_2
+  Time (mean ± σ):      1.969 s ±  0.050 s    [User: 0.001 s, System: 0.000 s]
+  Range (min … max):    1.896 s …  2.049 s    10 runs
+ 
+Summary
+  target/release/candidate_2 ran
+    1.02 ± 0.03 times faster than target/release/candidate_1
+
+
+
+#### Candidate 3, xxhash
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 2 target/release/candidate_{1,3}
+Benchmark 1: target/release/candidate_1
+  Time (mean ± σ):      2.161 s ±  0.086 s    [User: 0.001 s, System: 0.001 s]
+  Range (min … max):    2.026 s …  2.328 s    10 runs
+ 
+Benchmark 2: target/release/candidate_3
+  Time (mean ± σ):      2.357 s ±  0.027 s    [User: 0.001 s, System: 0.001 s]
+  Range (min … max):    2.305 s …  2.399 s    10 runs
+ 
+Summary
+  target/release/candidate_1 ran
+    1.09 ± 0.04 times faster than target/release/candidate_3
+
+
+#### Candidate 4, ChatGPT-port java stuff
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 2 target/release/candidate_{1,4}
+Benchmark 1: target/release/candidate_1
+  Time (mean ± σ):      2.061 s ±  0.066 s    [User: 0.001 s, System: 0.001 s]
+  Range (min … max):    1.962 s …  2.210 s    10 runs
+ 
+Benchmark 2: target/release/candidate_4
+  Time (mean ± σ):      1.451 s ±  0.034 s    [User: 0.001 s, System: 0.001 s]
+  Range (min … max):    1.414 s …  1.536 s    10 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+Summary
+  target/release/candidate_4 ran
+    1.42 ± 0.06 times faster than target/release/candidate_1
+
+
+
+
+
+
+
 
 #### TODO: when we have a final working program, rewrite it with rayon / ahash and see where it takes us
 
