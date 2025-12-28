@@ -1053,3 +1053,562 @@ $ cp target/release/onebrc onebrc_standard_parsing
  
 ##### Later: implement things from this discussion https://github.com/gunnarmorling/1brc/discussions/138
 
+
+
+
+
+#### mmap stress test
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ sudo NUM_THREADS=24 perf stat -ddd ./target/release/mmap_baseline_touch_all_pages_multi_thread
+Processing threads: 24
+24
+
+ Performance counter stats for './target/release/mmap_baseline_touch_all_pages_multi_thread':
+
+       569,360,192      task-clock                       #    5.209 CPUs utilized             
+                76      context-switches                 #  133.483 /sec                      
+                 3      cpu-migrations                   #    5.269 /sec                      
+           210,739      page-faults                      #  370.133 K/sec                     
+     3,655,600,766      cpu_atom/instructions/           #    1.35  insn per cycle              (28.54%)
+     6,334,622,694      cpu_core/instructions/           #    2.09  insn per cycle              (26.71%)
+     2,701,062,245      cpu_atom/cycles/                 #    4.744 GHz                         (30.81%)
+     3,037,469,284      cpu_core/cycles/                 #    5.335 GHz                         (26.69%)
+       637,003,302      cpu_atom/branches/               #    1.119 G/sec                       (33.79%)
+     1,118,826,126      cpu_core/branches/               #    1.965 G/sec                       (26.87%)
+           650,909      cpu_atom/branch-misses/          #    0.10% of all branches             (36.79%)
+           666,625      cpu_core/branch-misses/          #    0.06% of all branches             (25.89%)
+ #     75.2 %  tma_backend_bound        (39.77%)
+ #     63.3 %  tma_backend_bound      
+                                                  #      2.0 %  tma_bad_speculation    
+                                                  #      7.9 %  tma_frontend_bound     
+                                                  #     26.7 %  tma_retiring             (28.20%)
+ #      0.0 %  tma_retiring             (42.63%)
+ #      2.6 %  tma_bad_speculation    
+                                                  #      0.0 %  tma_frontend_bound       (44.20%)
+       935,182,637      cpu_atom/L1-dcache-loads/        #    1.643 G/sec                       (47.71%)
+     1,540,326,561      cpu_core/L1-dcache-loads/        #    2.705 G/sec                       (28.25%)
+         6,566,365      cpu_core/L1-dcache-load-misses/  #    0.43% of all L1-dcache accesses   (28.34%)
+         4,040,278      cpu_atom/LLC-loads/              #    7.096 M/sec                       (42.17%)
+         5,009,033      cpu_core/LLC-loads/              #    8.798 M/sec                       (28.28%)
+                30      cpu_atom/LLC-load-misses/        #    0.00% of all LL-cache accesses    (39.18%)
+         3,778,904      cpu_core/LLC-load-misses/        #   75.44% of all LL-cache accesses    (28.25%)
+       837,457,025      cpu_atom/L1-icache-loads/        #    1.471 G/sec                       (36.19%)
+         2,663,760      cpu_atom/L1-icache-load-misses/  #    0.32% of all L1-icache accesses   (33.21%)
+         1,215,144      cpu_core/L1-icache-load-misses/                                         (28.41%)
+       942,071,435      cpu_atom/dTLB-loads/             #    1.655 G/sec                       (30.35%)
+     1,541,090,243      cpu_core/dTLB-loads/             #    2.707 G/sec                       (28.25%)
+         2,925,512      cpu_atom/dTLB-load-misses/       #    0.31% of all dTLB cache accesses  (28.78%)
+        13,659,856      cpu_core/dTLB-load-misses/       #    0.89% of all dTLB cache accesses  (28.25%)
+             6,145      cpu_atom/iTLB-load-misses/                                              (25.26%)
+             2,318      cpu_core/iTLB-load-misses/                                              (24.33%)
+
+       0.109300929 seconds time elapsed
+
+       0.000761000 seconds user
+       0.000000000 seconds sys
+
+
+	ChatGPT:
+
+	Below is a **line-by-line, mechanism-level explanation** of what your `perf stat -ddd` output is actually telling you for this program and why it matches your mental model.
+
+	---
+
+	## First: what your program *really does*
+
+	Each thread executes:
+
+	```rust
+	partial += my_data[n * 4096] as usize;
+	```
+
+	So per page you do:
+
+	* **1 byte load**
+	* That load pulls **one 64-byte cache line**
+	* No writes
+	* No reuse
+	* One virtual address per page
+
+	This is a **page-table + TLB stress test**, *not* a bandwidth test.
+
+	Total work:
+
+	* Pages ≈ **3.67M**
+	* Loads ≈ **3.67M**
+	* Cache lines fetched ≈ **3.67M × 64B ≈ 235 MiB**
+
+	---
+
+	## Time & parallelism
+
+	```
+	0.109300929 seconds time elapsed
+	task-clock: 569,360,192
+	# 5.209 CPUs utilized
+	```
+
+	* 0.569s of total CPU time over 0.109s wall time
+	* ⇒ ~5.2 cores actively executing on average
+	* Not 24 cores because:
+
+	  * short runtime
+	  * limited parallelism in page-table walks
+	  * memory serialization points
+
+	This already explains the **saturation at ~0.11s**.
+
+	---
+
+	## Page faults (this is the key)
+
+	```
+	210,739 page-faults   # 370 K/sec
+	```
+
+	This is exactly what you observed earlier.
+
+	**Interpretation:**
+
+	* These are **minor faults**
+	* No disk I/O
+	* Kernel installs PTEs
+
+	Why not 3.67M faults?
+
+	Because Linux:
+
+	* clusters PTE population
+	* uses shared page-table structures
+	* may use hugepage backing internally
+	* only faults when a *present PTE is missing*, not per page access
+
+	**Critical point:**
+
+	> A minor fault is *not* “bringing data into RAM”.
+	> It is **creating a mapping** to data already in RAM.
+
+	---
+
+	## Instructions & cycles (hybrid CPU)
+
+	You’re on an **Intel hybrid CPU** (P-cores + E-cores), so perf splits stats:
+
+	### Instructions
+
+	```
+	cpu_atom instructions: 3.65B  IPC 1.35
+	cpu_core instructions: 6.33B  IPC 2.09
+	```
+
+	Total instructions ≈ **10B**.
+
+	That seems high for “3.6M loads”, but:
+
+	* Page faults enter the kernel
+	* Page walks execute microcode
+	* Scheduler, TLS, stack setup, etc.
+	* perf includes **everything**, not just your loop
+
+	IPC values are normal:
+
+	* E-cores lower IPC
+	* P-cores higher IPC
+
+	---
+
+	### Cycles
+
+	```
+	cpu_atom cycles: 2.70B  (~4.7 GHz)
+	cpu_core cycles: 3.03B  (~5.3 GHz)
+	```
+
+	These GHz numbers are **derived**, not literal clocks.
+	They come from `cycles / wall_time` and reflect turbo + accounting.
+
+	---
+
+	## Branches (mostly loop overhead)
+
+	```
+	branches: ~1.6B total
+	branch-misses: ~1.3M
+	miss rate: ~0.07%
+	```
+
+	Perfectly expected:
+
+	* tight counted loops
+	* predictable branches
+	* no speculation trouble
+
+	---
+
+	## Top-Down Microarchitecture Analysis (TMA)
+
+	```
+	tma_backend_bound: ~70%
+	tma_retiring: ~25%
+	tma_frontend_bound: ~0–8%
+	```
+
+	This is the *most important performance diagnosis*.
+
+	**Backend-bound** means:
+
+	* CPU is waiting on **memory / page walks / TLB resolution**
+	* Not frontend decode
+	* Not speculation
+	* Not ALU throughput
+
+	This matches your workload *exactly*.
+
+	---
+
+	## L1 data cache
+
+	```
+	L1-dcache-loads:
+	  atom: 935M
+	  core: 1.54B
+	L1-dcache-load-misses:
+	  core: 6.5M (0.43%)
+	```
+
+	Observations:
+
+	* You issued **~2.5B loads**, far more than 3.67M explicit loads.
+	  Why?
+
+	  * Page walks load page tables
+	  * Kernel code loads data
+	  * Speculative accesses
+
+	* Very low L1 miss rate ⇒ page tables are hot
+
+	---
+
+	## LLC (Last Level Cache)
+
+	```
+	LLC-loads: ~9M total
+	LLC-load-misses:
+	  core: 3.78M (75%)
+	```
+
+	This is subtle but expected:
+
+	* Each page touch causes:
+
+	  * one data cache line (often hot)
+	  * **several page-table cache lines**
+	* Page-table entries are spread across memory
+	* Hence many LLC misses
+
+	But total LLC traffic is still tiny:
+
+	* single-digit millions of cache lines
+	* nowhere near DRAM bandwidth limits
+
+	---
+
+	## TLB behavior (this explains the scaling limit)
+
+	```
+	dTLB-loads:
+	  atom: 942M
+	  core: 1.54B
+
+	dTLB-load-misses:
+	  atom: 2.9M (0.31%)
+	  core: 13.7M (0.89%)
+	```
+
+	This is the **heart of your benchmark**.
+
+	What happens per page:
+
+	1. Address not in TLB
+	2. Hardware page walk
+	3. Kernel may install PTE
+	4. TLB filled
+	5. Load retried
+
+	Your workload:
+
+	* **Millions of TLB misses**
+	* **Serialized page walks**
+	* Shared page-walk hardware
+	* Limited parallelism
+
+	This is why:
+
+	* Performance improves with threads
+	* Then saturates hard at ~5–6 cores
+	* Even though you spawn 24 threads
+
+	---
+
+	## iTLB (irrelevant here)
+
+	```
+	iTLB misses: a few thousand
+	```
+
+	Instruction footprint is tiny. Ignore.
+
+	---
+
+	## Why this benchmark is *not* a lower bound for scanning
+
+	Your benchmark:
+
+	* touches **3.67M cache lines**
+	* real scan touches **~229M cache lines** (14 GiB / 64B)
+
+	So even with *zero computation*:
+
+	```
+	best_scan_time ≈ 14 GiB / memory_bandwidth
+	```
+
+	Typical:
+
+	* 40–80 GB/s → **0.18–0.35s**
+	* and that’s after pages are mapped
+
+	Your **0.11s** number measures:
+
+	> “How fast can Linux establish page mappings + TLB state?”
+
+	Not:
+
+	> “How fast can I scan this file?”
+
+	---
+
+	## Final conclusions
+
+	1. Your interpretation is correct:
+
+	   * Minor faults = page table work, not RAM copies
+	   * They reoccur because each run is a new process
+
+	2. The numbers are **entirely sane**
+
+	   * Backend-bound
+	   * TLB-dominated
+	   * Page-walk-limited
+	   * Scales until shared MMU resources saturate
+
+	3. This benchmark **cannot** be used as a lower bound for scanning
+
+	   * It is 50–60× lighter than a real scan
+
+	If you want, next we can:
+
+	* design a **combined fault + scan** benchmark that reflects a real pass
+	* estimate the theoretical minimum scan time on *your exact CPU*
+	* or show how `MAP_POPULATE`, THP, or hugepages change these numbers
+
+##### Try hugepages
+
+$ sudo sh -c 'echo advise > /sys/kernel/mm/transparent_hugepage/shmem_enabled'
+$ sudo sh -c 'echo always > /sys/kernel/mm/transparent_hugepage/shmem_enabled'
+
+Couldn't get it to use huge pages...
+
+folkol@ubuntu:~$ grep -n "measurements.txt" -A60 /proc/$pid/smaps | egrep "KernelPageSize|MMUPageSize|ShmemPmdMapped|FilePmdMapped|Rss|Pss"
+1433-KernelPageSize:        4 kB
+1434-MMUPageSize:           4 kB
+1435-Rss:            13472108 kB
+1436-Pss:            13472108 kB
+1437-Pss_Dirty:      13472108 kB
+1447-ShmemPmdMapped:        0 kB
+1448-FilePmdMapped:         0 kB
+1452-SwapPss:               0 kB
+1459-KernelPageSize:        4 kB
+1460-MMUPageSize:           4 kB
+1461-Rss:                 156 kB
+1462-Pss:                   1 kB
+1463-Pss_Dirty:             0 kB
+1473-ShmemPmdMapped:        0 kB
+1474-FilePmdMapped:         0 kB
+1478-SwapPss:               0 kB
+1485-KernelPageSize:        4 kB
+1486-MMUPageSize:           4 kB
+1487-Rss:                1312 kB
+1488-Pss:                  11 kB
+1489-Pss_Dirty:             0 kB
+
+> Kernel page table docs: https://docs.kernel.org/mm/page_tables.html
+- Page tables map virtual addresses as seen by the CPU into physical addresses as seen on the external memory bus.
+- The physical address corresponding to the virtual address is often referenced by the underlying physical page frame. The page frame number or pfn is the physical address of the page (as seen on the external memory bus) divided by PAGE_SIZE.
+-  
+
+
+
+#### Baseline
+
+The Java winner on single thread:
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ time taskset -c 0 ../java-orig/target/CalculateAverage_thomaswue_image 
+{Abha=-33.8/18.0/71.1, ...
+
+real	0m4.125s
+user	0m0.000s
+sys	0m0.003s
+
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ time taskset -c 0 target/release/scan_lines_baseline
+1000000000
+
+real	0m0.830s
+user	0m0.535s
+sys	0m0.294s
+
+
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ time taskset -c 0-7 ../java-orig/target/CalculateAverage_thomaswue_image 
+{Abha=-33.8/18.0/71.1, ...
+
+real	0m0.581s
+user	0m0.001s
+sys	0m0.004s
+folkol@ubuntu:~/code/labs/1brc/onebrc$ time taskset -c 0-7 target/release/scan_lines_baseline_multi_thread
+1000000000
+
+real	0m0.241s
+user	0m1.067s
+sys	0m0.348s
+
+
+
+
+use memmap2::Mmap;
+use std::fs::File;
+
+/// Establish a baseline for how fast we can find the lines in the mmap'd file
+
+fn main() {
+    let file = File::open("../java-orig/measurements.txt").expect("failed to open file");
+    let data = unsafe { Mmap::map(&file).expect("failed to map") };
+
+    println!("{}", count_lines(&data));
+}
+
+fn count_lines(data: &[u8]) -> i64 {
+    memchr::memchr_iter(b'\n', data).count() as i64
+}
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/scan_lines_baseline{,_child_process}
+Benchmark 1: target/release/scan_lines_baseline
+  Time (mean ± σ):     824.3 ms ±  12.1 ms    [User: 549.8 ms, System: 274.2 ms]
+  Range (min … max):   807.1 ms … 847.5 ms    10 runs
+ 
+Benchmark 2: target/release/scan_lines_baseline_child_process
+  Time (mean ± σ):     752.2 ms ±  10.0 ms    [User: 0.6 ms, System: 0.9 ms]
+  Range (min … max):   732.1 ms … 761.4 ms    10 runs
+ 
+Summary
+  target/release/scan_lines_baseline_child_process ran
+    1.10 ± 0.02 times faster than target/release/scan_lines_baseline
+
+
+Multi thread and child processs:
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/scan_lines_baseline_multi_thread{,_child_process}
+Benchmark 1: target/release/scan_lines_baseline_multi_thread
+  Time (mean ± σ):     231.0 ms ±   1.8 ms    [User: 3262.2 ms, System: 422.7 ms]
+  Range (min … max):   229.8 ms … 236.0 ms    13 runs
+ 
+Benchmark 2: target/release/scan_lines_baseline_multi_thread_child_process
+  Time (mean ± σ):     165.7 ms ±   1.8 ms    [User: 0.6 ms, System: 0.3 ms]
+  Range (min … max):   159.6 ms … 167.4 ms    18 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+Summary
+  target/release/scan_lines_baseline_multi_thread_child_process ran
+    1.39 ± 0.02 times faster than target/release/scan_lines_baseline_multi_thread
+
+
+
+Sanity-check against the Java solution:
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/scan_lines_baseline_multi_thread_child_process ../java-orig/target/CalculateAverage_thomaswue_image 
+Benchmark 1: target/release/scan_lines_baseline_multi_thread_child_process
+  Time (mean ± σ):     165.6 ms ±   1.8 ms    [User: 0.5 ms, System: 0.4 ms]
+  Range (min … max):   158.8 ms … 167.4 ms    18 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+Benchmark 2: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     216.0 ms ±   3.0 ms    [User: 0.5 ms, System: 2.5 ms]
+  Range (min … max):   212.4 ms … 222.0 ms    13 runs
+ 
+Summary
+  target/release/scan_lines_baseline_multi_thread_child_process ran
+    1.30 ± 0.02 times faster than ../java-orig/target/CalculateAverage_thomaswue_image
+
+
+
+
+
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ time taskset -c 0-23 ../java-orig/target/CalculateAverage_thomaswue_image 
+{Abha=-33.8/18.0/71.1, ...
+
+real	0m0.207s
+user	0m0.000s
+sys	0m0.004s
+folkol@ubuntu:~/code/labs/1brc/onebrc$ time taskset -c 0-23 target/release/scan_lines_baseline_multi_thread
+1000000000
+
+real	0m0.227s
+user	0m3.219s
+sys	0m0.431s
+
+
+
+What is going on?
+
+After some digging I found out that wait for munmapof the large file... Which is single threaded :)
+https://en.wikipedia.org/wiki/Amdahl%27s_law
+
+Implement the "Subprocess trick"...
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ time taskset -c 0-23 ../java-orig/target/CalculateAverage_thomaswue_image 
+{Abha=-33.8/18.0/71.1, ...
+
+real	0m0.207s
+user	0m0.001s
+sys	0m0.003s
+folkol@ubuntu:~/code/labs/1brc/onebrc$ time taskset -c 0-23 target/release/scan_lines_baseline_multi_thread_child_process
+1000000000
+
+real	0m0.159s
+user	0m0.000s
+sys	0m0.001s
+
+
+There we go:
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/scan_lines_baseline_multi_thread_child_process ../java-orig/target/CalculateAverage_thomaswue_image 
+Benchmark 1: target/release/scan_lines_baseline_multi_thread_child_process
+  Time (mean ± σ):     165.8 ms ±   1.7 ms    [User: 0.4 ms, System: 0.5 ms]
+  Range (min … max):   159.4 ms … 167.4 ms    18 runs
+ 
+Benchmark 2: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     215.8 ms ±   4.9 ms    [User: 0.8 ms, System: 2.3 ms]
+  Range (min … max):   212.3 ms … 227.5 ms    14 runs
+ 
+Summary
+  target/release/scan_lines_baseline_multi_thread_child_process ran
+    1.30 ± 0.03 times faster than ../java-orig/target/CalculateAverage_thomaswue_image
+
+
+But we don't have too much time doing the actual work before we become slower than the Java solution...
+
+
