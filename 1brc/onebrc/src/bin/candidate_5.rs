@@ -14,7 +14,8 @@ const CHUNK_SIZE: usize = 1 << 20;
 
 /// 1. use scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing_newline_aligned.rs
 /// 2. add naive hash map that collect statistics
-/// 3. robot port of the java hashmap
+/// 3. HashMap + xxhash
+/// 4. get rid of the complicated string comparison
 
 fn main() -> io::Result<()> {
     let is_worker = std::env::args().any(|a| a == "--worker");
@@ -180,35 +181,36 @@ impl<'a> NameTable<'a> {
 /// Safe wrapper; uses `read_unaligned` internally.
 #[inline]
 fn bytes_eq_u64(a: &[u8], b: &[u8]) -> bool {
-    if a.len() != b.len() {
-        return false;
-    }
-    let len = a.len();
-    let mut i = 0usize;
-
-    unsafe {
-        // Compare 8 bytes at a time
-        while i + 8 <= len {
-            let va = ptr::read_unaligned(a.as_ptr().add(i) as *const u64);
-            let vb = ptr::read_unaligned(b.as_ptr().add(i) as *const u64);
-            if va != vb {
-                return false;
-            }
-            i += 8;
-        }
-
-        // Tail compare (0..7 bytes) with a mask
-        let rem = len - i;
-        if rem == 0 {
-            return true;
-        }
-
-        let mut ta = 0u64;
-        let mut tb = 0u64;
-        ptr::copy_nonoverlapping(a.as_ptr().add(i), &mut ta as *mut u64 as *mut u8, rem);
-        ptr::copy_nonoverlapping(b.as_ptr().add(i), &mut tb as *mut u64 as *mut u8, rem);
-        ta == tb
-    }
+    a == b
+    // if a.len() != b.len() {
+    //     return false;
+    // }
+    // let len = a.len();
+    // let mut i = 0usize;
+    //
+    // unsafe {
+    //     // Compare 8 bytes at a time
+    //     while i + 8 <= len {
+    //         let va = ptr::read_unaligned(a.as_ptr().add(i) as *const u64);
+    //         let vb = ptr::read_unaligned(b.as_ptr().add(i) as *const u64);
+    //         if va != vb {
+    //             return false;
+    //         }
+    //         i += 8;
+    //     }
+    //
+    //     // Tail compare (0..7 bytes) with a mask
+    //     let rem = len - i;
+    //     if rem == 0 {
+    //         return true;
+    //     }
+    //
+    //     let mut ta = 0u64;
+    //     let mut tb = 0u64;
+    //     ptr::copy_nonoverlapping(a.as_ptr().add(i), &mut ta as *mut u64 as *mut u8, rem);
+    //     ptr::copy_nonoverlapping(b.as_ptr().add(i), &mut tb as *mut u64 as *mut u8, rem);
+    //     ta == tb
+    // }
 }
 
 

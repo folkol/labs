@@ -13,7 +13,7 @@ const CHUNK_SIZE: usize = 1 << 20;
 
 /// 1. use scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing_newline_aligned.rs
 /// 2. add naive hash map that collect statistics
-/// 3. HashMap + xxhash
+/// 3. robot port of the java hashmap
 
 fn main() -> io::Result<()> {
     let is_worker = std::env::args().any(|a| a == "--worker");
