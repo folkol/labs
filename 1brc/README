@@ -1611,4 +1611,72 @@ Summary
 
 But we don't have too much time doing the actual work before we become slower than the Java solution...
 
+##### Naive split, causes us to wait for straggling E-cores... change to dynamic work stealing
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/scan_lines_baseline_multi_thread_child_process{,_threads_dynamic_work_stealing}
+Benchmark 1: target/release/scan_lines_baseline_multi_thread_child_process
+  Time (mean ± σ):     164.9 ms ±   1.9 ms    [User: 0.4 ms, System: 0.5 ms]
+  Range (min … max):   159.1 ms … 166.6 ms    18 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+Benchmark 2: target/release/scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing
+  Time (mean ± σ):     163.9 ms ±   2.4 ms    [User: 0.5 ms, System: 0.4 ms]
+  Range (min … max):   160.4 ms … 167.5 ms    18 runs
+ 
+Summary
+  target/release/scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing ran
+    1.01 ± 0.02 times faster than target/release/scan_lines_baseline_multi_thread_child_process
+
+
+Some different chunk sizes:
+
+1 << n
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ time cargo -q run --release --bin scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing && time perf stat -ddd target/release/scan_lines_baseline_multi_thread_child_process_threads_dynamic_work_stealing 
+
+...
+4:  31.4
+5:  15.9
+6:  8.3
+7:  4.1
+8:  2.7
+9:  2.2
+10: 2.0
+11: 2.1
+12: 1.9
+13: 1.5
+14: 0.7
+15: 0.3
+16: 0.17
+17: 0.16
+18: 0.16
+19: 0.16
+20: 0.16
+21: 0.16
+22: 0.16
+23: 0.164
+24: 0.17
+25: 0.165
+26: 0.165
+27: 0.166
+28: 0.166
+29: 0.176
+30: 0.171
+31: 0.2
+32: 0.314
+33: 0.5
+34: 0.748
+35: 0.737
+36: 0.750
+37: 0.747
+38: 0.734
+
+	ChatGPT:
+	One-sentence mental model
+
+	Chunk size controls the tradeoff between coordination overhead (too small) and parallel slack (too large); the flat region is where memory bandwidth is the only limit.
+
+	What you measured is exactly how a well-designed parallel scan should behave.
+
 
