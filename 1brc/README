@@ -1998,7 +1998,7 @@ cargo pgo info
 cargo pgo instrument build -- --bin candidate_5
 /target/*/release/candidate_5 <args1>
 # (Alternative: cargo pgo run instruments + runs in one go.) 
-cargo pgo optimize -- --bin candidate_5
+cargo pgo optimize build -- --bin candidate_7
 
 
 ##### results
@@ -2031,6 +2031,53 @@ Benchmark 2: target/release/candidate_6
 Summary
   target/release/candidate_6 ran
     1.46 ± 0.05 times faster than target/release/candidate_5
+
+##### candidate_7, better parsing
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/candidate_{6,7}
+Benchmark 1: target/release/candidate_6
+  Time (mean ± σ):     832.0 ms ±  38.9 ms    [User: 0.4 ms, System: 0.7 ms]
+  Range (min … max):   797.9 ms … 906.8 ms    10 runs
+ 
+Benchmark 2: target/release/candidate_7
+  Time (mean ± σ):     807.2 ms ±  21.8 ms    [User: 0.4 ms, System: 0.7 ms]
+  Range (min … max):   774.6 ms … 840.4 ms    10 runs
+ 
+Summary
+  target/release/candidate_7 ran
+    1.03 ± 0.06 times faster than target/release/candidate_6
+
+
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/candidate_7 target/x86_64-unknown-linux-gnu/release/candidate_7
+Benchmark 1: target/release/candidate_7
+  Time (mean ± σ):     809.1 ms ±  18.4 ms    [User: 0.5 ms, System: 0.5 ms]
+  Range (min … max):   770.5 ms … 835.1 ms    10 runs
+ 
+Benchmark 2: target/x86_64-unknown-linux-gnu/release/candidate_7
+  Time (mean ± σ):     866.0 ms ±  18.9 ms    [User: 0.7 ms, System: 0.4 ms]
+  Range (min … max):   837.2 ms … 888.1 ms    10 runs
+ 
+Summary
+  target/release/candidate_7 ran
+    1.07 ± 0.03 times faster than target/x86_64-unknown-linux-gnu/release/candidate_7
+
+
+
+##### Candidate 8, replace scanner with port of the java one
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/candidate_{7,8}
+Benchmark 1: target/release/candidate_7
+  Time (mean ± σ):     815.1 ms ±  25.5 ms    [User: 0.4 ms, System: 0.7 ms]
+  Range (min … max):   773.5 ms … 864.1 ms    10 runs
+ 
+Benchmark 2: target/release/candidate_8
+  Time (mean ± σ):     777.5 ms ±  13.6 ms    [User: 0.7 ms, System: 0.3 ms]
+  Range (min … max):   756.8 ms … 796.4 ms    10 runs
+ 
+Summary
+  target/release/candidate_8 ran
+    1.05 ± 0.04 times faster than target/release/candidate_7
 
 
 
