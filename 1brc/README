@@ -2311,6 +2311,43 @@ Summary
     1.03 ± 0.07 times faster than target/release/candidate_15
 
 
+#### Candidate 16, better scanning + parsing
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine ./target/release/candidate_1{4,6}
+Benchmark 1: ./target/release/candidate_14
+  Time (mean ± σ):     648.5 ms ±  14.1 ms    [User: 0.5 ms, System: 0.5 ms]
+  Range (min … max):   622.2 ms … 675.2 ms    10 runs
+ 
+Benchmark 2: ./target/release/candidate_16
+  Time (mean ± σ):     558.3 ms ±  18.1 ms    [User: 0.5 ms, System: 0.5 ms]
+  Range (min … max):   536.0 ms … 581.3 ms    10 runs
+ 
+Summary
+  ./target/release/candidate_16 ran
+    1.16 ± 0.05 times faster than ./target/release/candidate_14
+
+
+
+##### Candidate 17, less copying of data in get_or_insert
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine ./target/release/candidate_1{6,7}
+Benchmark 1: ./target/release/candidate_16
+  Time (mean ± σ):     550.8 ms ±  12.7 ms    [User: 0.5 ms, System: 0.4 ms]
+  Range (min … max):   533.6 ms … 582.2 ms    10 runs
+ 
+Benchmark 2: ./target/release/candidate_17
+  Time (mean ± σ):     542.1 ms ±  15.5 ms    [User: 0.6 ms, System: 0.5 ms]
+  Range (min … max):   526.0 ms … 565.8 ms    10 runs
+ 
+Summary
+  ./target/release/candidate_17 ran
+    1.02 ± 0.04 times faster than ./target/release/candidate_16
+
+
+
+
+
+
 
 
 #### TODO: when we have a final working program, rewrite it with rayon / ahash and see where it takes us
