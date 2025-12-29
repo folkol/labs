@@ -2372,6 +2372,85 @@ Summary
 
 Single-pass for both delimiters
 
+slower
+
+
+##### Candidate 20
+
+Updated scanner 
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine ./target/release/candidate_{18,20}
+Benchmark 1: ./target/release/candidate_18
+  Time (mean ± σ):     523.0 ms ±  15.0 ms    [User: 0.4 ms, System: 0.7 ms]
+  Range (min … max):   502.4 ms … 546.9 ms    10 runs
+ 
+Benchmark 2: ./target/release/candidate_20
+  Time (mean ± σ):     514.4 ms ±  10.9 ms    [User: 0.5 ms, System: 0.5 ms]
+  Range (min … max):   500.6 ms … 536.2 ms    10 runs
+ 
+Summary
+  ./target/release/candidate_20 ran
+    1.02 ± 0.04 times faster than ./target/release/candidate_18
+
+
+#### Candidate 21, trying 3 cursors again
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine ./target/release/candidate_{20,21}
+Benchmark 1: ./target/release/candidate_20
+  Time (mean ± σ):     515.0 ms ±  15.8 ms    [User: 0.4 ms, System: 0.5 ms]
+  Range (min … max):   495.6 ms … 540.2 ms    10 runs
+ 
+Benchmark 2: ./target/release/candidate_21
+  Time (mean ± σ):     498.5 ms ±   5.7 ms    [User: 0.5 ms, System: 0.7 ms]
+  Range (min … max):   491.2 ms … 508.8 ms    10 runs
+ 
+Summary
+  ./target/release/candidate_21 ran
+    1.03 ± 0.03 times faster than ./target/release/candidate_20
+
+
+
+#### Candidate 22, better NameTable (Fingerprint in slot to avoid checking entries)
+
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine ../java-orig/target/CalculateAverage_thomaswue_image ./target/release/candidate_{21,22}
+Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     214.2 ms ±   2.6 ms    [User: 0.9 ms, System: 2.0 ms]
+  Range (min … max):   208.0 ms … 217.1 ms    14 runs
+ 
+Benchmark 2: ./target/release/candidate_21
+  Time (mean ± σ):     499.2 ms ±   8.6 ms    [User: 0.4 ms, System: 0.6 ms]
+  Range (min … max):   484.6 ms … 520.1 ms    10 runs
+ 
+  Warning: The first benchmarking run for this command was significantly slower than the rest (520.1 ms). This could be caused by (filesystem) caches that were not filled until after the first run. You should consider using the '--warmup' option to fill those caches before the actual benchmark. Alternatively, use the '--prepare' option to clear the caches before each timing run.
+ 
+Benchmark 3: ./target/release/candidate_22
+  Time (mean ± σ):     519.2 ms ±   8.9 ms    [User: 0.4 ms, System: 0.7 ms]
+  Range (min … max):   504.2 ms … 534.1 ms    10 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image ran
+    2.33 ± 0.05 times faster than ./target/release/candidate_21
+
+
+Slower...
+
+
+
+##### pgo test
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/candidate_21 target/x86_64-unknown-linux-gnu/release/candidate_21
+Benchmark 1: target/release/candidate_21
+  Time (mean ± σ):     493.9 ms ±  13.2 ms    [User: 0.6 ms, System: 0.5 ms]
+  Range (min … max):   478.0 ms … 520.9 ms    10 runs
+ 
+Benchmark 2: target/x86_64-unknown-linux-gnu/release/candidate_21
+  Time (mean ± σ):     524.2 ms ±   9.0 ms    [User: 0.6 ms, System: 0.5 ms]
+  Range (min … max):   515.2 ms … 539.1 ms    10 runs
+ 
+Summary
+  target/release/candidate_21 ran
+    1.06 ± 0.03 times faster than target/x86_64-unknown-linux-gnu/release/candidate_21
 
 
 

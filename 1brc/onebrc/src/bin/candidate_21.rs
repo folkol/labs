@@ -93,18 +93,15 @@ unsafe fn load_u64_unaligned(p: *const u8) -> u64 {
 #[inline(always)]
 unsafe fn load_prefix2(p: *const u8, len: usize) -> (u64, u64) {
     let w1 = load_u64_unaligned(p);
-    let w2 = load_u64_unaligned(p.add(8));
 
     if len >= 16 {
+        let w2 = load_u64_unaligned(p.add(8));
         (w1, w2)
     } else if len <= 8 {
-        // len ∈ [0,8] → safe
-        let m = *MASK1.get_unchecked(len);
-        (w1 & m, 0)
+        (w1 & *MASK1.get_unchecked(len), 0)
     } else {
-        // len ∈ [9,15] → (len - 8) ∈ [1,7] → safe
-        let m = *MASK1.get_unchecked(len - 8);
-        (w1, w2 & m)
+        let w2 = load_u64_unaligned(p.add(8));
+        (w1, w2 & *MASK1.get_unchecked(len - 8))
     }
 }
 
@@ -264,12 +261,19 @@ unsafe fn parse_temp_branchless(semi_plus_1: *const u8) -> i16 {
     ((abs_value ^ signed) - signed) as i16
 }
 
-/// Single-pass record parser:
-/// - scans forward in 8-byte steps
-/// - finds ';' once
-/// - continues scanning (without restarting) until '\n' found
-/// This avoids calling `scan_to_byte` twice per record and handles the
-/// "semicolon and newline in the same 8-byte word" case efficiently.
+#[inline(always)]
+unsafe fn scan_to_byte(mut p: *const u8, byte: u8) -> *const u8 {
+    loop {
+        let w = load_u64(p);
+        let m = find_byte_mask(w, byte);
+        if m != 0 {
+            let off = (m.trailing_zeros() >> 3) as usize;
+            return p.add(off);
+        }
+        p = p.add(8);
+    }
+}
+
 fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, statistics: &mut NameTable) {
     assert_eq!(data[chunk_end - 1], b'\n');
 
@@ -279,67 +283,137 @@ fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, statistic
         let end = base.add(chunk_end);
 
         while p < end {
-            let line_start = p;
-            let mut semi: *const u8 = std::ptr::null();
+            let semi = scan_to_byte(p, b';');
+            let nl = scan_to_byte(semi.add(1), b'\n');
 
-            // Scan forward until we find ';' and then '\n' (continuing the same scan).
-            loop {
-                let w = load_u64(p);
-                let semi_m = if semi.is_null() {
-                    find_byte_mask(w, b';')
-                } else {
-                    0
-                };
-                let nl_m = find_byte_mask(w, b'\n');
+            let name_off = (p as usize - base as usize) as u64;
+            let name_len = (semi as usize - p as usize) as u16;
 
-                if !semi_m.eq(&0) && semi.is_null() {
-                    let si = first_hit_byte_index(semi_m);
-                    semi = p.add(si);
+            let temp = parse_temp_branchless(semi.add(1));
 
-                    // If '\n' is also in this word after ';', finish immediately.
-                    if nl_m != 0 {
-                        let ni = first_hit_byte_index(nl_m);
-                        if ni > si {
-                            let nl = p.add(ni);
+            let entry = statistics.get_or_insert_stats(name_off, name_len);
+            entry.count += 1;
+            entry.min = entry.min.min(temp);
+            entry.max = entry.max.max(temp);
+            entry.total += temp as i64;
 
-                            let name_off = (line_start as usize - base as usize) as u64;
-                            let name_len = (semi as usize - line_start as usize) as u16;
+            p = nl.add(1);
+        }
+    }
+}
 
-                            let temp = parse_temp_branchless(semi.add(1));
+// --- 3-cursor segment processing (Java winner-style) -------------------------
+//
+// Drop-in replacement for chunk_statistics().
+// Requires: load_u64(), find_byte_mask(), parse_temp_branchless(), NameTable::get_or_insert_stats().
+//
+// Key idea: split [chunk_start, chunk_end) into 3 newline-aligned subranges and
+// process 3 independent cursors in lockstep to increase ILP and hide probe latency.
 
-                            let entry = statistics.get_or_insert_stats(name_off, name_len);
-                            entry.count += 1;
-                            entry.min = entry.min.min(temp);
-                            entry.max = entry.max.max(temp);
-                            entry.total += temp as i64;
+#[inline(always)]
+unsafe fn scan_to_byte_bounded(mut p: *const u8, end: *const u8, byte: u8) -> *const u8 {
+    // Fast path: 8-byte scanning while we can read a full u64 without crossing `end`.
+    while p.add(8) <= end {
+        let w = load_u64(p);
+        let m = find_byte_mask(w, byte);
+        if m != 0 {
+            return p.add((m.trailing_zeros() >> 3) as usize);
+        }
+        p = p.add(8);
+    }
+    // Tail (<=7 bytes): scalar scan
+    while p < end {
+        if *p == byte {
+            return p;
+        }
+        p = p.add(1);
+    }
+    end
+}
 
-                            p = nl.add(1);
-                            break;
-                        }
-                    }
-                }
+#[inline(always)]
+unsafe fn snap_to_next_nl(pos: *const u8, end: *const u8) -> *const u8 {
+    // return pointer to '\n' at/after pos (assumes there is a '\n' before end)
+    scan_to_byte_bounded(pos, end, b'\n')
+}
 
-                if !semi.is_null() && nl_m != 0 {
-                    let ni = first_hit_byte_index(nl_m);
-                    let nl = p.add(ni);
+#[inline(always)]
+unsafe fn process_one(
+    base: *const u8,
+    mut p: *const u8,
+    end: *const u8,
+    statistics: &mut NameTable,
+) -> *const u8 {
+    // Parse one record: <name>;<temp>\n
+    // Preconditions: p < end, and there is a '\n' before end.
+    let semi = scan_to_byte_bounded(p, end, b';');
+    let nl = scan_to_byte_bounded(semi.add(1), end, b'\n');
 
-                    let name_off = (line_start as usize - base as usize) as u64;
-                    let name_len = (semi as usize - line_start as usize) as u16;
+    let name_off = (p as usize - base as usize) as u64;
+    let name_len = (semi as usize - p as usize) as u16;
 
-                    let temp = parse_temp_branchless(semi.add(1));
+    let temp = parse_temp_branchless(semi.add(1));
 
-                    let entry = statistics.get_or_insert_stats(name_off, name_len);
-                    entry.count += 1;
-                    entry.min = entry.min.min(temp);
-                    entry.max = entry.max.max(temp);
-                    entry.total += temp as i64;
+    let entry = statistics.get_or_insert_stats(name_off, name_len);
+    entry.count += 1;
+    entry.min = entry.min.min(temp);
+    entry.max = entry.max.max(temp);
+    entry.total += temp as i64;
 
-                    p = nl.add(1);
-                    break;
-                }
+    nl.add(1)
+}
 
-                p = p.add(8);
-            }
+fn chunk_statistics_3cursors(
+    data: &[u8],
+    chunk_start: usize,
+    chunk_end: usize,
+    statistics: &mut NameTable,
+) {
+    assert!(chunk_start < chunk_end);
+    assert_eq!(data[chunk_end - 1], b'\n');
+
+    unsafe {
+        let base = data.as_ptr();
+        let start = base.add(chunk_start);
+        let end = base.add(chunk_end);
+
+        let len = chunk_end - chunk_start;
+        let dist = len / 3;
+
+        // Midpoints snapped to newline boundaries.
+        let m1_nl = snap_to_next_nl(start.add(dist), end);
+        let m2_nl = snap_to_next_nl(start.add(dist + dist), end);
+
+        // Subranges are [s1,e1), [s2,e2), [s3,e3) where each ends at '\n'+1.
+        let s1 = start;
+        let e1 = m1_nl.add(1);
+
+        let s2 = e1;
+        let e2 = m2_nl.add(1);
+
+        let s3 = e2;
+        let e3 = end;
+
+        let mut p1 = s1;
+        let mut p2 = s2;
+        let mut p3 = s3;
+
+        // Lockstep loop (unrolled 3x) while all three have work.
+        while p1 < e1 && p2 < e2 && p3 < e3 {
+            p1 = process_one(base, p1, e1, statistics);
+            p2 = process_one(base, p2, e2, statistics);
+            p3 = process_one(base, p3, e3, statistics);
+        }
+
+        // Drain tails (usually tiny).
+        while p1 < e1 {
+            p1 = process_one(base, p1, e1, statistics);
+        }
+        while p2 < e2 {
+            p2 = process_one(base, p2, e2, statistics);
+        }
+        while p3 < e3 {
+            p3 = process_one(base, p3, e3, statistics);
         }
     }
 }
@@ -391,7 +465,7 @@ fn total_lines(data: &[u8]) -> String {
             handles.push(s.spawn(|| {
                 let mut statistics = NameTable::with_capacity(data, 10000);
                 while let Some((start, end)) = claim_chunk(&data, &next) {
-                    chunk_statistics(&data, start, end, &mut statistics);
+                    chunk_statistics_3cursors(&data, start, end, &mut statistics);
                 }
                 statistics
             }));
