@@ -2234,6 +2234,82 @@ Summary
 
 ##### Candidate 12, new attempt of fast hash
 
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/candidate_{7,12}
+Benchmark 1: target/release/candidate_7
+  Time (mean ± σ):     813.1 ms ±  27.2 ms    [User: 0.5 ms, System: 0.5 ms]
+  Range (min … max):   768.3 ms … 851.5 ms    10 runs
+ 
+Benchmark 2: target/release/candidate_12
+  Time (mean ± σ):     673.7 ms ±  10.7 ms    [User: 0.5 ms, System: 0.5 ms]
+  Range (min … max):   657.9 ms … 689.9 ms    10 runs
+ 
+Summary
+  target/release/candidate_12 ran
+    1.21 ± 0.04 times faster than target/release/candidate_7
+
+New fastest!
+
+
+
+##### Candidate 13, implement resize so that we can start with smaller tables
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/candidate_{12,13}
+Benchmark 1: target/release/candidate_12
+  Time (mean ± σ):     666.2 ms ±  10.0 ms    [User: 0.5 ms, System: 0.5 ms]
+  Range (min … max):   649.5 ms … 682.7 ms    10 runs
+ 
+Benchmark 2: target/release/candidate_13
+  Time (mean ± σ):     775.8 ms ±  25.7 ms    [User: 0.5 ms, System: 0.5 ms]
+  Range (min … max):   756.1 ms … 834.6 ms    10 runs
+ 
+  Warning: The first benchmarking run for this command was significantly slower than the rest (834.6 ms). This could be caused by (filesystem) caches that were not filled until after the first run. You should consider using the '--warmup' option to fill those caches before the actual benchmark. Alternatively, use the '--prepare' option to clear the caches before each timing run.
+ 
+Summary
+  target/release/candidate_12 ran
+    1.16 ± 0.04 times faster than target/release/candidate_13
+
+
+Slower, back to 12
+
+
+
+#### Candidate 14, remove some bounds checks
+
+BArely faster:
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/candidate_{12,14}
+Benchmark 1: target/release/candidate_12
+  Time (mean ± σ):     670.9 ms ±  13.5 ms    [User: 0.4 ms, System: 0.6 ms]
+  Range (min … max):   656.6 ms … 698.3 ms    10 runs
+ 
+Benchmark 2: target/release/candidate_14
+  Time (mean ± σ):     659.9 ms ±   9.3 ms    [User: 0.5 ms, System: 0.5 ms]
+  Range (min … max):   652.0 ms … 680.2 ms    10 runs
+ 
+Summary
+  target/release/candidate_14 ran
+    1.02 ± 0.02 times faster than target/release/candidate_12
+
+
+##### Candidate 15, tried lower load factor
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine target/release/candidate_{14,15}
+Benchmark 1: target/release/candidate_14
+  Time (mean ± σ):     649.6 ms ±  12.6 ms    [User: 0.3 ms, System: 0.7 ms]
+  Range (min … max):   621.3 ms … 670.2 ms    10 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+Benchmark 2: target/release/candidate_15
+  Time (mean ± σ):     670.2 ms ±  43.9 ms    [User: 0.4 ms, System: 0.8 ms]
+  Range (min … max):   643.8 ms … 789.9 ms    10 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+Summary
+  target/release/candidate_14 ran
+    1.03 ± 0.07 times faster than target/release/candidate_15
+
 
 
 
