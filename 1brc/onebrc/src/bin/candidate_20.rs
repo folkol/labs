@@ -9,6 +9,19 @@ use std::{env, thread};
 
 const CHUNK_SIZE: usize = 1 << 20;
 
+// Java-style mask table (avoids variable shifts in mask_low_bytes)
+const MASK1: [u64; 9] = [
+    0x00,
+    0xFF,
+    0xFFFF,
+    0xFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFFFF,
+    0xFFFFFFFFFFFF,
+    0xFFFFFFFFFFFFFF,
+    0xFFFFFFFFFFFFFFFF,
+];
+
 fn main() -> io::Result<()> {
     let is_worker = std::env::args().any(|a| a == "--worker");
     if is_worker {
@@ -78,18 +91,17 @@ unsafe fn load_u64_unaligned(p: *const u8) -> u64 {
 }
 
 #[inline(always)]
-fn mask_low_bytes(n: usize) -> u64 {
-    if n >= 8 { !0u64 } else { (1u64 << (n * 8)) - 1 }
-}
-
-#[inline(always)]
 unsafe fn load_prefix2(p: *const u8, len: usize) -> (u64, u64) {
     let w1 = load_u64_unaligned(p);
-    if len <= 8 {
-        (w1 & mask_low_bytes(len), 0)
+
+    if len >= 16 {
+        let w2 = load_u64_unaligned(p.add(8));
+        (w1, w2)
+    } else if len <= 8 {
+        (w1 & *MASK1.get_unchecked(len), 0)
     } else {
         let w2 = load_u64_unaligned(p.add(8));
-        (w1, w2 & mask_low_bytes(len - 8))
+        (w1, w2 & *MASK1.get_unchecked(len - 8))
     }
 }
 
@@ -122,6 +134,8 @@ impl<'a> NameTable<'a> {
         }
     }
 
+    /// Lookup or insert a key given as (offset, len) into `self.data`.
+    /// Returns a mutable reference to the entry's Stats.
     #[inline(always)]
     pub fn get_or_insert_stats(&mut self, name_off: u64, name_len: u16) -> &mut StationStats {
         let len = name_len as usize;
@@ -161,6 +175,7 @@ impl<'a> NameTable<'a> {
                 if len <= 16 {
                     return unsafe { &mut self.entries.get_unchecked_mut(entry_idx).stats };
                 }
+
                 let cand_ptr = unsafe { base.add(e.name_off as usize) };
                 if unsafe { Self::bytes_eq_u64_ptr(cand_ptr, key_ptr, len) } {
                     return unsafe { &mut self.entries.get_unchecked_mut(entry_idx).stats };
@@ -182,10 +197,9 @@ impl<'a> NameTable<'a> {
             len -= 8;
         }
         if len != 0 {
-            // SAFETY NOTE: this tail read may cross the slice end if the key ends at the end
-            // of the mmap region. Usually mmap has slack, but if you want strict safety,
-            // replace this with a byte loop.
-            let mask = (1u64 << (len * 8)) - 1;
+            // NOTE: may read past slice end if key ends at the very end of mmap.
+            // For strict safety replace with a byte loop for the tail.
+            let mask = MASK1[len];
             let wa = (a as *const u64).read_unaligned() & mask;
             let wb = (b as *const u64).read_unaligned() & mask;
             wa == wb
@@ -202,12 +216,16 @@ impl<'a> NameTable<'a> {
 
     pub fn iter_entries(&self) -> impl Iterator<Item = (&[u8], StationStats)> + '_ {
         self.entries.iter().map(|e| {
-            (
-                &self.data[e.name_off as usize..(e.name_off as usize + e.name_len as usize)],
-                e.stats,
-            )
+            let off = e.name_off as usize;
+            let len = e.name_len as usize;
+            (&self.data[off..off + len], e.stats)
         })
     }
+}
+
+#[inline(always)]
+unsafe fn load_u64(p: *const u8) -> u64 {
+    (p as *const u64).read_unaligned()
 }
 
 #[inline(always)]
@@ -217,8 +235,30 @@ fn find_byte_mask(word: u64, byte: u8) -> u64 {
 }
 
 #[inline(always)]
-unsafe fn load_u64(p: *const u8) -> u64 {
-    (p as *const u64).read_unaligned()
+fn first_hit_byte_index(mask: u64) -> usize {
+    // mask has 0x80 set in the byte lane that matched
+    (mask.trailing_zeros() >> 3) as usize
+}
+
+/// Branchless temp parse (tenths) ported from the Java winner.
+/// Input: pointer at first char after ';' (digit or '-')
+#[inline(always)]
+unsafe fn parse_temp_branchless(semi_plus_1: *const u8) -> i16 {
+    let number_word = (semi_plus_1 as *const u64).read_unaligned();
+
+    // Java: trailingZeros(~numberWord & 0x10101000L)
+    let decimal_sep_pos = ((!number_word) & 0x0000_0000_1010_1000u64).trailing_zeros() as i32;
+
+    let shift = 28 - decimal_sep_pos;
+
+    // signed is -1 if negative, 0 otherwise
+    let signed = (((!number_word) << 59) as i64 >> 63) as i64;
+    let design_mask = !((signed as u64) & 0xFF);
+
+    let digits = ((number_word & design_mask) << shift) & 0x0000_0F00_0F0F_00u64;
+    let abs_value = (((digits.wrapping_mul(0x640a_0001)) >> 32) & 0x3FF) as i64;
+
+    ((abs_value ^ signed) - signed) as i16
 }
 
 #[inline(always)]
@@ -232,34 +272,6 @@ unsafe fn scan_to_byte(mut p: *const u8, byte: u8) -> *const u8 {
         }
         p = p.add(8);
     }
-}
-
-/// Branchless temp parse (tenths) ported from the Java winner.
-/// Input: pointer at first char after ';' (digit or '-')
-#[inline(always)]
-unsafe fn parse_temp_branchless(semi_plus_1: *const u8) -> i16 {
-    // Java does getLongAt(pos + 1) where pos is at ';'
-    let number_word = (semi_plus_1 as *const u64).read_unaligned();
-
-    // Find decimal separator position (in bits) using the same mask/trick
-    // as the Java code: trailingZeros(~word & 0x10101000L)
-    let decimal_sep_pos = ((!number_word) & 0x0000_0000_1010_1000u64).trailing_zeros() as i32;
-
-    // convertIntoNumber(decimalSepPos, numberWord)
-    let shift = 28 - decimal_sep_pos;
-
-    // signed is -1 if negative, 0 otherwise
-    let signed = (((!number_word) << 59) as i64 >> 63) as i64;
-    let design_mask = !((signed as u64) & 0xFF);
-
-    // Align the number and transform ASCII digits to digit value
-    let digits = ((number_word & design_mask) << shift) & 0x0000_0F00_0F0F_00u64;
-
-    // multiply trick
-    let abs_value = (((digits.wrapping_mul(0x640a_0001)) >> 32) & 0x3FF) as i64;
-
-    // apply sign
-    ((abs_value ^ signed) - signed) as i16
 }
 
 fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, statistics: &mut NameTable) {
@@ -277,7 +289,6 @@ fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, statistic
             let name_off = (p as usize - base as usize) as u64;
             let name_len = (semi as usize - p as usize) as u16;
 
-            // REPLACED: branchy parse_temp_from_semi()
             let temp = parse_temp_branchless(semi.add(1));
 
             let entry = statistics.get_or_insert_stats(name_off, name_len);
@@ -310,6 +321,7 @@ fn claim_chunk(data: &[u8], next: &AtomicUsize) -> Option<(usize, usize)> {
 
         let end = usize::min(start + CHUNK_SIZE, len);
         let end = snap_to_newline(data, end);
+
         assert_eq!(data[end - 1], b'\n');
 
         if next
