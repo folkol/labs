@@ -2344,6 +2344,30 @@ Summary
     1.02 ± 0.04 times faster than ./target/release/candidate_16
 
 
+##### Candidate 18, branchless parsing + less copying
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine ../java-orig/target/CalculateAverage_thomaswue_image ./target/release/candidate_{17,18}
+Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     213.1 ms ±   3.0 ms    [User: 0.7 ms, System: 2.1 ms]
+  Range (min … max):   208.4 ms … 219.8 ms    14 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+Benchmark 2: ./target/release/candidate_17
+  Time (mean ± σ):     543.0 ms ±  13.1 ms    [User: 0.5 ms, System: 0.5 ms]
+  Range (min … max):   525.3 ms … 565.6 ms    10 runs
+ 
+Benchmark 3: ./target/release/candidate_18
+  Time (mean ± σ):     518.2 ms ±  13.0 ms    [User: 0.6 ms, System: 0.3 ms]
+  Range (min … max):   503.5 ms … 541.7 ms    10 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image ran
+    2.43 ± 0.07 times faster than ./target/release/candidate_18
+    2.55 ± 0.07 times faster than ./target/release/candidate_17
+
+
+
 
 
 
