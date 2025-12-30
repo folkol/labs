@@ -2828,6 +2828,54 @@ Minor differences -- but faster
 
 ##### Next steps
 
+Compare with one thread:
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ taskset -c 0 hyperfine --warmup 2   '../java-orig/target/CalculateAverage_thomaswue_image'   'target/release/thomaswue_ported'
+Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):      4.226 s ±  0.023 s    [User: 0.001 s, System: 0.001 s]
+  Range (min … max):    4.199 s …  4.275 s    10 runs
+ 
+Benchmark 2: target/release/thomaswue_ported
+  Time (mean ± σ):      8.926 s ±  0.013 s    [User: 8.635 s, System: 0.281 s]
+  Range (min … max):    8.905 s …  8.948 s    10 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image ran
+    2.11 ± 0.01 times faster than target/release/thomaswue_ported
+
+
+After fixing parent spawn bug:
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 3   '../java-orig/target/CalculateAverage_thomaswue_image --worker'   'target/release/thomaswue_ported --worker'
+Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image --worker
+  Time (mean ± σ):     288.5 ms ±   2.2 ms    [User: 4556.4 ms, System: 351.5 ms]
+  Range (min … max):   286.7 ms … 294.3 ms    10 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+Benchmark 2: target/release/thomaswue_ported --worker
+  Time (mean ± σ):     443.8 ms ±   4.6 ms    [User: 8213.0 ms, System: 337.9 ms]
+  Range (min … max):   439.3 ms … 455.6 ms    10 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image --worker ran
+    1.54 ± 0.02 times faster than target/release/thomaswue_ported --worker
+
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 3   '../java-orig/target/CalculateAverage_thomaswue_image'   'target/release/thomaswue_ported'
+Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     214.4 ms ±   2.6 ms    [User: 0.5 ms, System: 2.3 ms]
+  Range (min … max):   211.9 ms … 220.3 ms    14 runs
+ 
+Benchmark 2: target/release/thomaswue_ported
+  Time (mean ± σ):     372.9 ms ±  13.3 ms    [User: 0.5 ms, System: 0.4 ms]
+  Range (min … max):   361.2 ms … 403.6 ms    10 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image ran
+    1.74 ± 0.07 times faster than target/release/thomaswue_ported
+
+
 
 
 
