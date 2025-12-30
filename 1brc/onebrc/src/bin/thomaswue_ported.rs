@@ -163,24 +163,9 @@ fn parse_loop(
             assert_eq!(segment_start, 0);
         }
 
-        // last_segment_end = segment_end;
-        // last_segment_start = segment_start;
-        // rows = 0;
-        // seg_nl = memchr::memchr_iter(b'\n', &data[segment_start..=segment_end]).count() as u64;
-
         let mut scanner_1 = Scanner::new(data, segment_start, segment_end);
-        // verify_after_newline(data, current, _file_start, &scanner_1);
-
-        // if segment_end >= 13795437781 {
-        // eprintln!(
-        //     "current={current} segment_start={segment_start} segment_end={segment_end} _file_end={_file_end} scanner_1.pos={}",
-        //     scanner_1.pos
-        // );
-        // }
 
         while scanner_1.has_next_safe() {
-            // verify_after_newline(data, current, _file_start, &scanner_1);
-
             let word_1 = scanner_1.get_u64_unsafe();
             let delim_1 = find_delimiter(word_1);
 
@@ -196,18 +181,14 @@ fn parse_loop(
                 &mut table,
                 &mut out,
                 _file_end,
-                // &mut probe_counter
             );
 
             let number_1 = scan_number_unsafe(&mut scanner_1);
             r.record(number_1);
-            // rows += 1;
         }
 
         if segment_end < _file_end - 1 {
             while scanner_1.has_next() {
-                // verify_after_newline(data, current, _file_start, &scanner_1);
-
                 let word_1 = scanner_1.get_u64_unsafe();
                 let delim_1 = find_delimiter(word_1);
                 let word_1b = scanner_1.get_u64_at_unsafe(scanner_1.pos + 8);
@@ -222,21 +203,13 @@ fn parse_loop(
                     &mut table,
                     &mut out,
                     _file_end,
-                    // &mut probe_counter
                 );
 
                 let number_1 = scan_number_unsafe(&mut scanner_1);
                 r.record(number_1);
-                // rows += 1;
             }
         } else {
             while scanner_1.has_next_safe() {
-                // eprintln!(
-                //     "last segment A: segment_start={segment_start} segment_end={segment_end} _file_end={_file_end} scanner.pos={}",
-                //     scanner_1.pos
-                // );
-                // verify_after_newline(data, current, _file_start, &scanner_1);
-
                 let word_1 = scanner_1.get_u64_unsafe();
                 let delim_1 = find_delimiter(word_1);
                 let word_1b = scanner_1.get_u64_at_unsafe(scanner_1.pos + 8);
@@ -251,28 +224,17 @@ fn parse_loop(
                     &mut table,
                     &mut out,
                     _file_end,
-                    // &mut probe_counter
                 );
 
                 let number_1 = scan_number_unsafe(&mut scanner_1);
                 r.record(number_1);
-                // rows += 1;
             }
 
             while scanner_1.has_next() {
-                // eprintln!(
-                //     "last segment B: segment_start={segment_start} segment_end={segment_end} _file_end={_file_end} scanner.pos={} context={:?}",
-                //     scanner_1.pos,
-                //     &data[scanner_1.pos - 2..scanner_1.pos + 3]
-                // );
-                //
-                // verify_after_newline(data, current, _file_start, &scanner_1);
                 let word_1 = scanner_1.get_u64();
                 let delim_1 = find_delimiter(word_1);
                 let word_1b = scanner_1.get_u64_at(scanner_1.pos + 8);
                 let delim_1b = find_delimiter(word_1b);
-
-                // let before = scanner_1.pos;
 
                 let r = find_result_idx(
                     word_1,
@@ -287,56 +249,17 @@ fn parse_loop(
 
                 let number_1 = scan_number(&mut scanner_1);
                 r.record(number_1);
-                // rows += 1;
-
-                // let after = scanner_1.pos;
-                //
-                // if before >= _file_end - 2000 {
-                //     let nls = memchr::memchr_iter(b'\n', &data[before..after]).count();
-                //     eprintln!(
-                //         "row: before={before} after={after} crossed_newlines={nls} scanned_row={:?}",
-                //         String::from_utf8_lossy(&data[before..after])
-                //     );
-                //     if nls != 1 {
-                //         let lo = before.saturating_sub(10);
-                //         let hi = (after + 10).min(data.len());
-                //         eprintln!("context:\n{:?}", String::from_utf8_lossy(&data[lo..hi]));
-                //         // std::process::abort();
-                //     }
-                // }
             }
-
-            // eprintln!("giving up this segment at {}", scanner_1.pos);
         }
-        // last_scanner_pos = scanner_1.pos;
-    }
-}
-
-fn verify_after_newline(data: &[u8], current: usize, file_start: usize, scanner: &Scanner) {
-    assert_eq!(file_start, 0);
-    if current > 0 {
-        assert_eq!(data[scanner.pos - 1], b'\n');
     }
 }
 
 #[inline(always)]
 fn scan_number(scanner: &mut Scanner) -> i16 {
-    // Java: scanPtr.getLongAt(scanPtr.pos() + 1)
     let number_word: u64 = scanner.get_u64_at(scanner.pos() + 1);
-
-    // Java: Long.numberOfTrailingZeros(~numberWord & 0x10101000L)
     let decimal_sep_pos: u32 = ((!number_word) & 0x1010_1000u64).trailing_zeros();
-
-    // Java: convertIntoNumber(decimalSepPos, numberWord)
     let number: i16 = convert_into_number_i16(decimal_sep_pos, number_word);
-
-    // Java: scanPtr.add((decimalSepPos >>> 3) + 4)
     let adv: usize = ((decimal_sep_pos >> 3) as usize) + 4;
-    // if scanner.pos > 13795437694 {
-    //     eprintln!(
-    //         "scan_number. number_word={number_word} decimal_sep_pos={decimal_sep_pos} number={number} adv={adv}"
-    //     )
-    // }
     scanner.add(adv);
 
     number
@@ -350,16 +273,9 @@ fn scan_number(scanner: &mut Scanner) -> i16 {
 ///   and you want to advance past the number (matches `+ 4`).
 #[inline(always)]
 fn scan_number_unsafe(scanner: &mut Scanner) -> i16 {
-    // Java: scanPtr.getLongAt(scanPtr.pos() + 1)
     let number_word: u64 = scanner.get_u64_at_unsafe(scanner.pos() + 1);
-
-    // Java: Long.numberOfTrailingZeros(~numberWord & 0x10101000L)
     let decimal_sep_pos: u32 = ((!number_word) & 0x1010_1000u64).trailing_zeros();
-
-    // Java: convertIntoNumber(decimalSepPos, numberWord)
     let number: i16 = convert_into_number_i16(decimal_sep_pos, number_word);
-
-    // Java: scanPtr.add((decimalSepPos >>> 3) + 4)
     let adv: usize = ((decimal_sep_pos >> 3) as usize) + 4;
     scanner.add(adv);
 
@@ -398,16 +314,10 @@ impl<'a> Scanner<'a> {
     }
 
     fn has_next(&self) -> bool {
-        // if self.pos > 13795437780 - 1000 {
-        //     eprintln!("checking scanner.has_next near end pos={}", self.pos);
-        // }
         self.pos < self.end
     }
 
     fn has_next_safe(&self) -> bool {
-        // if self.pos > 13795437780 - 1000 {
-        //     eprintln!("checking scanner.has_next_safe near end pos={}", self.pos);
-        // }
         self.pos < self.end - (MAX_NAME_LENGTH as usize + 7)
     }
 
@@ -500,8 +410,7 @@ pub unsafe fn next_newline_ptr(mut p: *const u8) -> *const u8 {
 pub struct Result {
     pub first_name_word: u64,
     pub second_name_word: u64,
-    pub name_address: usize, // offset into scanner.data
-    // ... other fields
+    pub name_address: usize,
     min: i16,
     max: i16,
     sum: i64,
@@ -513,13 +422,10 @@ impl Result {
         let start = self.name_address.min(data.len());
         let bytes = &data[start..];
 
-        // Prefer ';' as terminator (works even if you don't NUL-terminate).
         let end = bytes
             .iter()
             .position(|&b| b == b';' || b == 0)
             .unwrap_or(bytes.len());
-
-        // Station names are typically ASCII/UTF-8; fall back lossily if needed.
         String::from_utf8_lossy(&bytes[..end]).into_owned()
     }
 
@@ -547,7 +453,6 @@ impl Result {
 
     #[inline(always)]
     fn record(&mut self, number: i16) {
-        // min / max update
         if number < self.min {
             self.min = number;
         }
@@ -555,7 +460,6 @@ impl Result {
             self.max = number;
         }
 
-        // sum / count
         self.sum += number as i64;
         self.count += 1;
     }
@@ -652,37 +556,15 @@ fn find_result_idx<'a, 'b>(
     let delimiter_mask2 = delim_mask_b;
 
     if scanner.pos > file_end - 120 {
-        // Tail-end safe path: DO NOT advance blindly. Scan from current position.
         hash = word ^ word2;
-        //
-        // // Scan 8 bytes at a time as long as it's safe.
-        // while scanner.pos + 8 <= scanner.end {
-        //     word = scanner.get_u64_at(scanner.pos);
-        //     delimiter_mask = find_delimiter(word);
-        //
-        //     if delimiter_mask != 0 {
-        //         let tz = delimiter_mask.trailing_zeros() as usize;
-        //         word <<= 63 - tz;
-        //         scanner.add(tz >> 3);
-        //         hash ^= word;
-        //         break;
-        //     } else {
-        //         scanner.add(8);
-        //         hash ^= word;
-        //     }
-        // }
-
-        // Tail: fewer than 8 bytes left; scan bytewise for ';'
-        // if delimiter_mask == 0 {
         while scanner.pos < scanner.end {
             let b = scanner.data[scanner.pos];
             if b == b';' {
                 break;
             }
-            hash ^= b as u64; // keep if this matches your intended hash semantics
+            hash ^= b as u64;
             scanner.add(1);
         }
-        // }
     } else {
         if (delimiter_mask | delimiter_mask2) != 0 {
             let letter_count1 = (delimiter_mask.trailing_zeros() as usize) >> 3;
@@ -699,7 +581,6 @@ fn find_result_idx<'a, 'b>(
 
             let idx = hash_to_index(hash, table.len());
 
-            // Fast hit: existing entry and both name words match
             let entry = table[idx];
             if entry != 0 {
                 let r = &out[(entry - 1) as usize];
@@ -732,12 +613,11 @@ fn find_result_idx<'a, 'b>(
     let name_length = scanner.pos() - name_address;
 
     let mut table_index = hash_to_index(hash, table.len());
-    let mask = table.len() - 1; // table len is power-of-two
+    let mask = table.len() - 1;
 
     'outer: loop {
         let entry = table[table_index];
         if entry == 0 {
-            // Insert new Result
             let r = new_entry(name_address, name_length, scanner);
             out.push(r);
             table[table_index] = out.len() as u32; // idx+1
@@ -746,7 +626,6 @@ fn find_result_idx<'a, 'b>(
         let idx = (table[table_index] - 1) as usize;
         let existing_addr = out[idx].name_address;
 
-        // Collision check (8-byte chunks)
         let end = name_length + 1;
         let mut i: usize = 0;
         while i + 8 < end {
@@ -849,16 +728,12 @@ fn find_result_unsafe_idx<'a, 'b>(
             let i1 = letter_count1 + ((letter_count2 as u64 & mask) as usize);
             scanner.add(i1);
 
-            // probe_counters.lookups += 1;
             let idx = hash_to_index(hash, table.len());
 
-            // Fast hit: existing entry and both name words match
             let entry = unsafe { table_get(table, idx) };
             if entry != 0 {
                 let r = unsafe { out_get(out, (entry - 1) as usize) };
                 if r.first_name_word == word && r.second_name_word == word2 {
-                    // return &mut out[(entry - 1) as usize];
-                    // probe_counters.fast_hits += 1;
                     return unsafe { out_get_mut(out, (entry - 1) as usize) };
                 }
             }
@@ -890,10 +765,8 @@ fn find_result_unsafe_idx<'a, 'b>(
     let mask = table.len() - 1; // table len is power-of-two
 
     'outer: loop {
-        // probe_counters.probes += 1;
         let entry = unsafe { table_get(table, table_index) };
         if entry == 0 {
-            // Insert new Result
             let r = new_entry_unsafe(name_address, name_length, scanner);
             out.push(r);
             unsafe { table_set(table, table_index, out.len() as u32) };
@@ -902,11 +775,9 @@ fn find_result_unsafe_idx<'a, 'b>(
         let idx = (unsafe { table_get(table, table_index) } - 1) as usize;
         let existing_addr = unsafe { out_get(out, idx) }.name_address;
 
-        // Collision check (8-byte chunks)
         let end = name_length + 1;
         let mut i: usize = 0;
         while i + 8 < end {
-            // probe_counters.full_compares += 1;
             if scanner.get_u64_at_unsafe(existing_addr + i)
                 != scanner.get_u64_at_unsafe(name_address + i)
             {
