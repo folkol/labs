@@ -1,11 +1,10 @@
 use memmap2::Mmap;
-use std::cmp::max_by;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::{env, io, process};
+use std::{env, io};
 use std::{sync::Arc, thread};
 
 const FILE: &str = "./measurements.txt";
@@ -18,7 +17,7 @@ const HASH_TABLE_SIZE: i32 = 1 << 17;
 
 fn main() -> io::Result<()> {
     let is_worker = std::env::args().any(|a| a == "--worker");
-    if is_worker {
+    if !is_worker {
         return spawn_worker();
     }
 
@@ -47,13 +46,13 @@ fn main() -> io::Result<()> {
                 let results = parse_loop(data, &cursor, file_end, file_start);
                 // results
                 // eprintln!("Scanning done {:?}", results);
-                let mut final_results = Vec::with_capacity(MAX_CITIES as usize);
-                for result in results {
-                    if let Some(r) = result {
-                        final_results.push(r);
-                    }
-                }
-                final_results
+                // let mut final_results = Vec::with_capacity(MAX_CITIES as usize);
+                // for result in results {
+                //     if let Some(r) = result {
+                //         final_results.push(r);
+                //     }
+                // }
+                results
             }));
         }
         let mut all_results = Vec::with_capacity(number_of_workers);
@@ -93,22 +92,47 @@ fn spawn_worker() -> io::Result<()> {
     Ok(())
 }
 
+struct ProbeCounters {
+    lookups: u64,
+    probes: u64,
+    fast_hits: u64,
+    full_compares: u64,
+}
+
 fn parse_loop(
     data: &[u8],
     _cursor: &AtomicUsize,
     _file_end: usize,
     _file_start: usize,
-    // collected_results: &mut Vec<Result>,
-) -> Vec<Option<Result>> {
-    let mut results: Vec<Option<Result>> = vec![None; HASH_TABLE_SIZE as usize];
+) -> Vec<Result> {
+    let mut rows: u64 = 0;
+
+    // Hash table: 0 = empty, else (idx + 1) into `out`
+    let mut table: Vec<u32> = vec![0; HASH_TABLE_SIZE as usize];
+    // Collected results (like Java's collectedResults)
+    let mut out: Vec<Result> = Vec::with_capacity(MAX_CITIES as usize);
+
+    let mut probe_counter = ProbeCounters {
+        lookups: 0,
+        probes: 0,
+        fast_hits: 0,
+        full_compares: 0,
+    };
 
     loop {
-        // let last_pos = _cursor.load(Ordering::SeqCst);
-        let current = _cursor.fetch_add(SEGMENT_SIZE as usize, std::sync::atomic::Ordering::SeqCst);
-        // let new_pos = _cursor.load(Ordering::SeqCst);
-        // eprintln!("last_pos = {last_pos:?}, current={current}, new_pos = {new_pos}, SEGMENT_SIZE={SEGMENT_SIZE}, SEGMENT_SIZE as usize={}", SEGMENT_SIZE as usize);
+        let current = _cursor.fetch_add(SEGMENT_SIZE as usize, Ordering::SeqCst);
         if current >= _file_end {
-            return results;
+            eprintln!("rows={rows} unique={}", out.len());
+
+            eprintln!(
+                "lookups={} probes={} probes/lookup={:.3} fast_hits={} full_compares={}",
+                probe_counter.lookups,
+                probe_counter.probes,
+                (probe_counter.probes as f64)/(probe_counter.lookups as f64),
+                probe_counter.fast_hits,
+                probe_counter.full_compares,
+            );
+            return out;
         }
 
         let segment_end = next_newline(
@@ -122,82 +146,104 @@ fn parse_loop(
             next_newline(data, current) + 1
         };
 
-        // let dist = (segment_end - segment_start) / 3;
-        // let midpoint_1 = next_newline(data, segment_start + dist);
-        // let midpoint_2 = next_newline(data, segment_start + dist + dist);
-
         let mut scanner_1 = Scanner::new(data, segment_start, segment_end);
-        // let mut scanner_2 = Scanner::new(data, midpoint_1 + 1, midpoint_2);
-        // let mut scanner_3 = Scanner::new(data, midpoint_2 + 1, segment_end);
 
-        // while scanner_1.has_next() && scanner_2.has_next() && scanner_3.has_next_safe() {
-        let mut foo = 0;
-        while scanner_1.has_next() {
-            foo += 1;
-            if foo % 100_000 == 0 {
-                // eprintln!("scanner_1.pos {} in {current}", scanner_1.pos);
-            }
-            let word_1 = scanner_1.get_long();
-            // let word_2 = scanner_2.get_long();
-            // let word_3 = scanner_3.get_long();
+        while scanner_1.has_next_safe() {
+            let word_1 = scanner_1.get_u64_unsafe();
+            let delim_1 = find_delimiter(word_1);
 
-            let delimiter_mask_1 = find_delimiter(word_1);
-            // let delimiter_mask_2 = find_delimiter(word_2);
-            // let delimiter_mask_3 = find_delimiter(word_3);
+            let word_1b = scanner_1.get_u64_at_unsafe(scanner_1.pos + 8);
+            let delim_1b = find_delimiter(word_1b);
 
-            let word_1b = scanner_1.get_long_at(scanner_1.pos + 8);
-            // let word_2b = scanner_2.get_long_at(scanner_2.pos + 8);
-            // let word_3b = scanner_3.get_long_at(scanner_3.pos + 8);
-
-            let delimiter_mask_1b = find_delimiter(word_1b);
-            // let delimiter_mask_2b = find_delimiter(word_2b);
-            // let delimiter_mask_3b = find_delimiter(word_3b);
-
-            let existing_result_1 = find_result(
+            let r = find_result_unsafe_idx(
                 word_1,
-                delimiter_mask_1,
+                delim_1,
                 word_1b,
-                delimiter_mask_1b,
+                delim_1b,
                 &mut scanner_1,
-                &mut results,
-                // collected_results,
+                &mut table,
+                &mut out,
                 _file_end,
+                &mut probe_counter
             );
 
-            let number_1 = scan_number(&mut scanner_1);
-
-            existing_result_1.record(number_1)
+            let number_1 = scan_number_unsafe(&mut scanner_1);
+            r.record(number_1);
+            rows += 1;
         }
 
-        // eprintln!("main loop done");
+        // Keep your existing EOF handling if you really need it; with work-stealing segments
+        // and `next_newline` boundaries, this usually isn't necessary, but preserve structure:
 
         if segment_end < _file_end {
             while scanner_1.has_next() {
-                let word = scanner_1.get_long();
+                let word_1 = scanner_1.get_u64_unsafe();
+                let delim_1 = find_delimiter(word_1);
+                let word_1b = scanner_1.get_u64_at_unsafe(scanner_1.pos + 8);
+                let delim_1b = find_delimiter(word_1b);
+
+                let r = find_result_unsafe_idx(
+                    word_1,
+                    delim_1,
+                    word_1b,
+                    delim_1b,
+                    &mut scanner_1,
+                    &mut table,
+                    &mut out,
+                    _file_end,
+                    &mut probe_counter
+                );
+
+                let number_1 = scan_number_unsafe(&mut scanner_1);
+                r.record(number_1);
+                rows += 1;
             }
         } else {
             while scanner_1.has_next_safe() {
-                todo!()
-            }
-            // slow path for last lines of the file
-            todo!()
-        }
-        // while scanner_2.has_next() {
-        //     todo!()
-        // }
-        // if segment_end < _file_end {
-        //     while scanner_3.has_next() {
-        //         todo!()
-        //     }
-        // } else {
-        //     while scanner_3.has_next_safe() {
-        //         todo!()
-        //     }
-        //     // slow path for last lines of the file
-        //     todo!()
-        // }
+                let word_1 = scanner_1.get_u64_unsafe();
+                let delim_1 = find_delimiter(word_1);
+                let word_1b = scanner_1.get_u64_at_unsafe(scanner_1.pos + 8);
+                let delim_1b = find_delimiter(word_1b);
 
-        // eprintln!("{current} {segment_start} {segment_end} {dist} {midpoint_1} {midpoint_2}")
+                let r = find_result_unsafe_idx(
+                    word_1,
+                    delim_1,
+                    word_1b,
+                    delim_1b,
+                    &mut scanner_1,
+                    &mut table,
+                    &mut out,
+                    _file_end,
+                    &mut probe_counter
+                );
+
+                let number_1 = scan_number_unsafe(&mut scanner_1);
+                r.record(number_1);
+                rows += 1;
+            }
+
+            while scanner_1.has_next() {
+                let word_1 = scanner_1.get_u64();
+                let delim_1 = find_delimiter(word_1);
+                let word_1b = scanner_1.get_u64_at(scanner_1.pos + 8);
+                let delim_1b = find_delimiter(word_1b);
+
+                let r = find_result_idx(
+                    word_1,
+                    delim_1,
+                    word_1b,
+                    delim_1b,
+                    &mut scanner_1,
+                    &mut table,
+                    &mut out,
+                    _file_end,
+                );
+
+                let number_1 = scan_number_unsafe(&mut scanner_1);
+                r.record(number_1);
+                rows += 1;
+            }
+        }
     }
 }
 
@@ -211,6 +257,30 @@ fn parse_loop(
 fn scan_number(scanner: &mut Scanner) -> i16 {
     // Java: scanPtr.getLongAt(scanPtr.pos() + 1)
     let number_word: u64 = scanner.get_u64_at(scanner.pos() + 1);
+
+    // Java: Long.numberOfTrailingZeros(~numberWord & 0x10101000L)
+    let decimal_sep_pos: u32 = ((!number_word) & 0x1010_1000u64).trailing_zeros();
+
+    // Java: convertIntoNumber(decimalSepPos, numberWord)
+    let number: i16 = convert_into_number_i16(decimal_sep_pos, number_word);
+
+    // Java: scanPtr.add((decimalSepPos >>> 3) + 4)
+    let adv: usize = ((decimal_sep_pos >> 3) as usize) + 4;
+    scanner.add(adv);
+
+    number
+}
+
+/// Port of the Java `scanNumber`, returning `i16`.
+///
+/// Assumptions (same as the Java trick):
+/// - The number starts at `scanner.pos + 1` (i.e. right after ';').
+/// - The textual format is fixed-width like `[-]dd.d`,
+///   and you want to advance past the number (matches `+ 4`).
+#[inline(always)]
+fn scan_number_unsafe(scanner: &mut Scanner) -> i16 {
+    // Java: scanPtr.getLongAt(scanPtr.pos() + 1)
+    let number_word: u64 = scanner.get_u64_at_unsafe(scanner.pos() + 1);
 
     // Java: Long.numberOfTrailingZeros(~numberWord & 0x10101000L)
     let decimal_sep_pos: u32 = ((!number_word) & 0x1010_1000u64).trailing_zeros();
@@ -353,6 +423,11 @@ impl<'a> Scanner<'a> {
     }
 
     #[inline]
+    pub fn get_u64_unsafe(&mut self) -> u64 {
+        self.get_u64_at_unsafe(self.pos)
+    }
+
+    #[inline]
     pub fn get_u64_at(&self, off: usize) -> u64 {
         let mut buf = [0u8; 8];
 
@@ -363,6 +438,30 @@ impl<'a> Scanner<'a> {
         }
 
         u64::from_le_bytes(buf)
+    }
+
+    // #[inline(always)]
+    // fn get_u64_at_unsafe(&self, pos: usize) -> u64 {
+    //     let len = self.data.len();
+    //     if pos + 8 <= len {
+    //         unsafe {
+    //             let p = self.data.as_ptr().add(pos) as *const u64;
+    //             u64::from_le(p.read_unaligned())
+    //         }
+    //     } else {
+    //         // tail: pad with 0
+    //         let mut tmp = [0u8; 8];
+    //         let avail = len.saturating_sub(pos);
+    //         if avail != 0 {
+    //             tmp[..avail].copy_from_slice(&self.data[pos..]);
+    //         }
+    //         u64::from_le_bytes(tmp)
+    //     }
+    // }
+
+    #[inline(always)]
+    fn get_u64_at_unsafe(&self, pos: usize) -> u64 {
+        unsafe { u64::from_le((self.data.as_ptr().add(pos) as *const u64).read_unaligned()) }
     }
 }
 
@@ -425,7 +524,7 @@ pub unsafe fn next_newline_ptr(mut p: *const u8) -> *const u8 {
     }
 }
 
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug)]
 pub struct Result {
     pub first_name_word: u64,
     pub second_name_word: u64,
@@ -474,7 +573,7 @@ impl Result {
         self.count += other.count;
     }
 
-    // #[inline(always)]
+    #[inline(always)]
     fn record(&mut self, number: i16) {
         // min / max update
         if number < self.min {
@@ -500,7 +599,7 @@ fn hash_to_index(hash: u64, table_len: usize) -> usize {
 fn new_entry(
     // table: &'b mut [Option<Result>],
     name_address: usize,
-    _table_index: usize,
+    // _table_index: usize,
     name_length: usize,
     scanner: &mut Scanner,
     // collected: &'b mut Vec<Result>,
@@ -525,6 +624,26 @@ fn new_entry(
     // table[table_index] = Some(result);
     // table[table_index].as_mut().unwrap()
     result
+}
+
+fn new_entry_unsafe(name_address: usize, name_length: usize, scanner: &Scanner) -> Result {
+    let mut r = Result {
+        first_name_word: scanner.get_u64_at_unsafe(name_address),
+        second_name_word: scanner.get_u64_at_unsafe(name_address + 8),
+        name_address,
+        min: i16::MAX,
+        max: i16::MIN,
+        sum: 0,
+        count: 0,
+    };
+    let total_length = name_length + 1;
+    if total_length <= 8 {
+        r.first_name_word &= MASK1[total_length - 1];
+        r.second_name_word = 0;
+    } else if total_length < 16 {
+        r.second_name_word &= MASK1[total_length - 9];
+    }
+    r
 }
 
 const MASK1: [u64; 9] = [
@@ -683,7 +802,7 @@ fn find_result<'a, 'b>(
             let result = new_entry(
                 // results,
                 name_address,
-                table_index,
+                // table_index,
                 name_length,
                 scanner,
                 // collected_results,
@@ -704,6 +823,7 @@ fn find_result<'a, 'b>(
                 != scanner.get_u64_at(name_address + i)
             {
                 // Collision error, try next.
+                table_index = (table_index + 31) & results.len() - 1;
                 continue 'outer;
             }
             i += 8;
@@ -720,6 +840,481 @@ fn find_result<'a, 'b>(
         } else {
             // Collision error, try next.
             table_index = (table_index + 31) & (num_results - 1);
+        }
+    }
+}
+
+fn find_result_unsafe<'a, 'b>(
+    initial_word: u64,
+    initial_delim_mask: u64,
+    word_b: u64,
+    delim_mask_b: u64,
+    scanner: &mut Scanner<'a>,
+    results: &'b mut [Option<Result>],
+    // collected_results: &'b mut Vec<Result>,
+    file_end: usize,
+) -> &'b mut Result {
+    // eprintln!("in find_result");
+    let mut word = initial_word;
+    let mut delimiter_mask = initial_delim_mask;
+    let mut hash: u64;
+    let name_address = scanner.pos;
+    let mut word2 = word_b;
+    let delimiter_mask2 = delim_mask_b;
+
+    if scanner.pos > file_end - 120 {
+        // eprintln!("In super-slow path...");
+        // thread slowly
+        hash = word ^ word2;
+
+        // Advance by up to 16 bytes, but never past scanner.end
+        let remaining = scanner.end.saturating_sub(scanner.pos);
+        let adv = remaining.min(16);
+        scanner.add(adv);
+
+        // Scan 8 bytes at a time as long as it's safe.
+        while scanner.pos + 8 <= scanner.end {
+            word = scanner.get_u64_at_unsafe(scanner.pos);
+            delimiter_mask = find_delimiter(word);
+
+            if delimiter_mask != 0 {
+                let tz = delimiter_mask.trailing_zeros() as usize;
+                word <<= 63 - tz;
+                scanner.add(tz >> 3);
+                hash ^= word;
+                break;
+            } else {
+                scanner.add(8);
+                hash ^= word;
+            }
+        }
+
+        // Tail: fewer than 8 bytes left; scan bytewise for ';'
+        if delimiter_mask == 0 {
+            while scanner.pos < scanner.end {
+                if scanner.data[scanner.pos] == b';' {
+                    break;
+                }
+                hash ^= scanner.data[scanner.pos] as u64; // or omit; depends on your intended hash semantics
+                scanner.add(1);
+            }
+        }
+    } else {
+        // Fast path: ';' found within first 16 bytes.
+        if (delimiter_mask | delimiter_mask2) != 0 {
+            // eprintln!("fast path");
+            let letter_count1 = (delimiter_mask.trailing_zeros() as usize) >> 3;
+            let letter_count2 = (delimiter_mask2.trailing_zeros() as usize) >> 3;
+
+            let mask = MASK2[letter_count1];
+            word &= MASK1[letter_count1];
+            word2 = mask & word2 & MASK1[letter_count2];
+
+            hash = word ^ word2;
+
+            let i1 = letter_count1 + ((letter_count2 as u64 & mask) as usize);
+            // eprintln!(
+            //     "fast path, advancing with {i1} (letter_count1={letter_count1} letter_count2={letter_count2})"
+            // );
+            scanner.add(i1);
+
+            let idx = hash_to_index(hash, results.len());
+
+            // let result = &mut results[idx];
+
+            if let Some(Result {
+                first_name_word,
+                second_name_word,
+                ..
+            }) = results[idx]
+            {
+                if first_name_word == word && second_name_word == word2 {
+                    return results[idx].as_mut().unwrap();
+                }
+            }
+        } else {
+            // eprintln!("slow path");
+
+            // Slow path: ';' not in first 16 bytes.
+            hash = word ^ word2;
+            scanner.add(16);
+
+            loop {
+                // eprintln!("gonna get u64 at {}", scanner.pos);
+                word = scanner.get_u64_unsafe();
+                delimiter_mask = find_delimiter(word);
+
+                if delimiter_mask != 0 {
+                    let tz = delimiter_mask.trailing_zeros() as usize;
+                    word = word << (63 - tz);
+                    scanner.add(tz >> 3);
+                    hash ^= word;
+                    break;
+                } else {
+                    scanner.add(8);
+                    hash ^= word;
+                }
+            }
+        }
+    }
+
+    // eprintln!("in find_result, after initial if");
+
+    let name_length = scanner.pos() - name_address;
+
+    let mut table_index = hash_to_index(hash, results.len());
+
+    // let mut max_iters = 0;
+    let num_results = results.len();
+    'outer: loop {
+        // max_iters += 1;
+        // if max_iters > 10 {
+        //     eprintln!("slow path, max_iters = {max_iters}");
+        // }
+        if results[table_index].is_none() {
+            let result = new_entry_unsafe(
+                // results,
+                name_address,
+                // table_index,
+                name_length,
+                scanner,
+                // collected_results,
+            );
+            results[table_index] = Some(result);
+        }
+
+        // let mut inner_iters = 0;
+        let end = name_length + 1;
+        let mut i: usize = 0;
+        while i + 8 < end {
+            // inner_iters += 1;
+            // if inner_iters > 100 {
+            //     eprintln!("stuck? inner_iters = {inner_iters}");
+            // }
+            // assert!(name_length + 1 - 8 < 100_000_000, "wrap around");
+            if scanner.get_u64_at_unsafe(results[table_index].as_mut().unwrap().name_address + i)
+                != scanner.get_u64_at_unsafe(name_address + i)
+            {
+                // Collision error, try next.
+                table_index = (table_index + 31) & results.len() - 1;
+                continue 'outer;
+            }
+            i += 8;
+        }
+
+        let remaining_shift = 64 - ((name_length + 1 - i) << 3);
+
+        let a = scanner.get_u64_at_unsafe(results[table_index].as_mut().unwrap().name_address + i);
+        let b = scanner.get_u64_at_unsafe(name_address + i);
+
+        if ((a ^ b) << remaining_shift) == 0 {
+            // eprintln!("got it at index {table_index}");
+            return results[table_index].as_mut().unwrap();
+        } else {
+            // Collision error, try next.
+            table_index = (table_index + 31) & (num_results - 1);
+        }
+    }
+}
+
+#[inline(always)]
+fn find_result_idx<'a, 'b>(
+    initial_word: u64,
+    initial_delim_mask: u64,
+    word_b: u64,
+    delim_mask_b: u64,
+    scanner: &mut Scanner<'a>,
+    table: &mut [u32],
+    out: &'b mut Vec<Result>,
+    file_end: usize,
+) -> &'b mut Result {
+    let mut word = initial_word;
+    let mut delimiter_mask = initial_delim_mask;
+    let mut hash: u64;
+    let name_address = scanner.pos;
+    let mut word2 = word_b;
+    let delimiter_mask2 = delim_mask_b;
+
+    if scanner.pos > file_end - 120 {
+        hash = word ^ word2;
+
+        // Advance by up to 16 bytes, but never past scanner.end
+        let remaining = scanner.end.saturating_sub(scanner.pos);
+        let adv = remaining.min(16);
+        scanner.add(adv);
+
+        while scanner.pos + 8 <= scanner.end {
+            word = scanner.get_u64_at(scanner.pos);
+            delimiter_mask = find_delimiter(word);
+
+            if delimiter_mask != 0 {
+                let tz = delimiter_mask.trailing_zeros() as usize;
+                word <<= 63 - tz;
+                scanner.add(tz >> 3);
+                hash ^= word;
+                break;
+            } else {
+                scanner.add(8);
+                hash ^= word;
+            }
+        }
+
+        if delimiter_mask == 0 {
+            while scanner.pos < scanner.end {
+                if scanner.data[scanner.pos] == b';' {
+                    break;
+                }
+                hash ^= scanner.data[scanner.pos] as u64;
+                scanner.add(1);
+            }
+        }
+    } else {
+        if (delimiter_mask | delimiter_mask2) != 0 {
+            let letter_count1 = (delimiter_mask.trailing_zeros() as usize) >> 3;
+            let letter_count2 = (delimiter_mask2.trailing_zeros() as usize) >> 3;
+
+            let mask = MASK2[letter_count1];
+            word &= MASK1[letter_count1];
+            word2 = mask & word2 & MASK1[letter_count2];
+
+            hash = word ^ word2;
+
+            let i1 = letter_count1 + ((letter_count2 as u64 & mask) as usize);
+            scanner.add(i1);
+
+            let idx = hash_to_index(hash, table.len());
+
+            // Fast hit: existing entry and both name words match
+            let entry = table[idx];
+            if entry != 0 {
+                let r = &out[(entry - 1) as usize];
+                if r.first_name_word == word && r.second_name_word == word2 {
+                    return &mut out[(entry - 1) as usize];
+                }
+            }
+        } else {
+            hash = word ^ word2;
+            scanner.add(16);
+
+            loop {
+                word = scanner.get_u64();
+                delimiter_mask = find_delimiter(word);
+
+                if delimiter_mask != 0 {
+                    let tz = delimiter_mask.trailing_zeros() as usize;
+                    word <<= 63 - tz;
+                    scanner.add(tz >> 3);
+                    hash ^= word;
+                    break;
+                } else {
+                    scanner.add(8);
+                    hash ^= word;
+                }
+            }
+        }
+    }
+
+    let name_length = scanner.pos() - name_address;
+
+    let mut table_index = hash_to_index(hash, table.len());
+    let mask = table.len() - 1; // table len is power-of-two
+
+    'outer: loop {
+        let entry = table[table_index];
+        if entry == 0 {
+            // Insert new Result
+            let r = new_entry(name_address, name_length, scanner);
+            out.push(r);
+            table[table_index] = out.len() as u32; // idx+1
+        }
+
+        let idx = (table[table_index] - 1) as usize;
+        let existing_addr = out[idx].name_address;
+
+        // Collision check (8-byte chunks)
+        let end = name_length + 1;
+        let mut i: usize = 0;
+        while i + 8 < end {
+            if scanner.get_u64_at(existing_addr + i) != scanner.get_u64_at(name_address + i) {
+                table_index = (table_index + 31) & mask;
+                continue 'outer;
+            }
+            i += 8;
+        }
+
+        let remaining_shift = 64 - ((end - i) << 3);
+
+        let a = scanner.get_u64_at(existing_addr + i);
+        let b = scanner.get_u64_at(name_address + i);
+
+        if ((a ^ b) << remaining_shift) == 0 {
+            return &mut out[idx];
+        } else {
+            table_index = (table_index + 31) & mask;
+        }
+    }
+}
+
+#[inline(always)]
+unsafe fn table_get(table: &[u32], i: usize) -> u32 {
+    *table.get_unchecked(i)
+}
+#[inline(always)]
+unsafe fn table_set(table: &mut [u32], i: usize, v: u32) {
+    *table.get_unchecked_mut(i) = v;
+}
+#[inline(always)]
+unsafe fn out_get(out: &[Result], i: usize) -> &Result {
+    out.get_unchecked(i)
+}
+#[inline(always)]
+unsafe fn out_get_mut(out: &mut [Result], i: usize) -> &mut Result {
+    out.get_unchecked_mut(i)
+}
+
+#[inline(always)]
+fn find_result_unsafe_idx<'a, 'b>(
+    initial_word: u64,
+    initial_delim_mask: u64,
+    word_b: u64,
+    delim_mask_b: u64,
+    scanner: &mut Scanner<'a>,
+    table: &mut [u32],
+    out: &'b mut Vec<Result>,
+    file_end: usize,
+    probe_counters: &mut ProbeCounters,
+) -> &'b mut Result {
+    let mut word = initial_word;
+    let mut delimiter_mask = initial_delim_mask;
+    let mut hash: u64;
+    let name_address = scanner.pos;
+    let mut word2 = word_b;
+    let delimiter_mask2 = delim_mask_b;
+
+    if scanner.pos > file_end - 120 {
+        hash = word ^ word2;
+
+        // Advance by up to 16 bytes, but never past scanner.end
+        let remaining = scanner.end.saturating_sub(scanner.pos);
+        let adv = remaining.min(16);
+        scanner.add(adv);
+
+        while scanner.pos + 8 <= scanner.end {
+            word = scanner.get_u64_at_unsafe(scanner.pos);
+            delimiter_mask = find_delimiter(word);
+
+            if delimiter_mask != 0 {
+                let tz = delimiter_mask.trailing_zeros() as usize;
+                word <<= 63 - tz;
+                scanner.add(tz >> 3);
+                hash ^= word;
+                break;
+            } else {
+                scanner.add(8);
+                hash ^= word;
+            }
+        }
+
+        if delimiter_mask == 0 {
+            while scanner.pos < scanner.end {
+                if scanner.data[scanner.pos] == b';' {
+                    break;
+                }
+                hash ^= scanner.data[scanner.pos] as u64;
+                scanner.add(1);
+            }
+        }
+    } else {
+        if (delimiter_mask | delimiter_mask2) != 0 {
+            let letter_count1 = (delimiter_mask.trailing_zeros() as usize) >> 3;
+            let letter_count2 = (delimiter_mask2.trailing_zeros() as usize) >> 3;
+
+            let mask = MASK2[letter_count1];
+            word &= MASK1[letter_count1];
+            word2 = mask & word2 & MASK1[letter_count2];
+
+            hash = word ^ word2;
+
+            let i1 = letter_count1 + ((letter_count2 as u64 & mask) as usize);
+            scanner.add(i1);
+
+            probe_counters.lookups += 1;
+            let idx = hash_to_index(hash, table.len());
+
+            // Fast hit: existing entry and both name words match
+            let entry = unsafe { table_get(table, idx) };
+            if entry != 0 {
+                let r = unsafe { out_get(out, (entry - 1) as usize) };
+                if r.first_name_word == word && r.second_name_word == word2 {
+                    // return &mut out[(entry - 1) as usize];
+                    probe_counters.fast_hits += 1;
+                    return unsafe { out_get_mut(out, (entry - 1) as usize) };
+                }
+            }
+        } else {
+            hash = word ^ word2;
+            scanner.add(16);
+
+            loop {
+                word = scanner.get_u64_unsafe();
+                delimiter_mask = find_delimiter(word);
+
+                if delimiter_mask != 0 {
+                    let tz = delimiter_mask.trailing_zeros() as usize;
+                    word <<= 63 - tz;
+                    scanner.add(tz >> 3);
+                    hash ^= word;
+                    break;
+                } else {
+                    scanner.add(8);
+                    hash ^= word;
+                }
+            }
+        }
+    }
+
+    let name_length = scanner.pos() - name_address;
+
+    let mut table_index = hash_to_index(hash, table.len());
+    let mask = table.len() - 1; // table len is power-of-two
+
+    'outer: loop {
+        probe_counters.probes += 1;
+        let entry = unsafe { table_get(table, table_index) };
+        if entry == 0 {
+            // Insert new Result
+            let r = new_entry_unsafe(name_address, name_length, scanner);
+            out.push(r);
+            unsafe { table_set(table, table_index, out.len() as u32) };
+        }
+
+        let idx = (unsafe { table_get(table, table_index) } - 1) as usize;
+        let existing_addr = unsafe { out_get(out, idx) }.name_address;
+
+        // Collision check (8-byte chunks)
+        let end = name_length + 1;
+        let mut i: usize = 0;
+        while i + 8 < end {
+            probe_counters.full_compares += 1;
+            if scanner.get_u64_at_unsafe(existing_addr + i)
+                != scanner.get_u64_at_unsafe(name_address + i)
+            {
+                table_index = (table_index + 31) & mask;
+                continue 'outer;
+            }
+            i += 8;
+        }
+
+        let remaining_shift = 64 - ((end - i) << 3);
+
+        let a = scanner.get_u64_at_unsafe(existing_addr + i);
+        let b = scanner.get_u64_at_unsafe(name_address + i);
+
+        if ((a ^ b) << remaining_shift) == 0 {
+            // return &mut out[idx];
+            return unsafe { out_get_mut(out, idx) };
+        } else {
+            table_index = (table_index + 31) & mask;
         }
     }
 }

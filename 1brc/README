@@ -2635,4 +2635,199 @@ Summary
     2.37 ± 0.04 times faster than target/release/thomaswue_ported
 
 
+###### Robot-guided investiation plan
+
+You need to stop guessing and **measure where the extra 300 ms comes from**. The good news: with your code style, the slowdown is almost always one of:
+
+1. **loads** (safe slice→array copies vs Java Unsafe)
+2. **bounds checks / method call overhead** in the inner loop
+3. **missed inlining / missed vector-ish optimizations**
+4. **hash table layout / Option<Result> costs** (extra branches + pointer chasing)
+
+Here’s a concrete investigation plan + the most likely fix.
+
+---
+
+## 1) First: locate the hotspot in Rust (not Java)
+
+Run:
+
+```bash
+perf record -F 999 -g --call-graph dwarf target/release/thomaswue_ported
+perf report
+```
+
+What you’re looking for in the top frames:
+
+* `Scanner::get_u64_at` / `get_long_at`
+* `find_delimiter`
+* your collision-compare loop
+* any `core::slice` / `copy_nonoverlapping` / `try_into` / `from_le_bytes`
+* any `Option` handling / `unwrap` / bounds-check helpers
+
+If your report shows **`get_u64_at` or slice copy** dominating, you’ve basically found the 2×.
+
+---
+
+## 2) The #1 usual culprit: safe 8-byte loads copy + bounds checks
+
+Java version is effectively:
+
+* `*(long*)(base + pos)` (unsafe, unaligned ok on x86)
+* minimal checks
+
+Your safe Rust commonly ends up doing:
+
+* bounds checks
+* slice creation
+* `try_into()` (copy)
+* `from_le_bytes` (more work than a raw load)
+
+Even if LLVM optimizes *some* of it, it often doesn’t become “one load”.
+
+### Fix: make `get_u64_at` a raw unaligned load (fast path) + padded tail (slow path)
+
+```rust
+#[inline(always)]
+fn get_u64_at(&self, pos: usize) -> u64 {
+    let len = self.data.len();
+
+    // Fast path: enough bytes -> one unaligned load
+    if pos + 8 <= len {
+        unsafe {
+            let p = self.data.as_ptr().add(pos) as *const u64;
+            u64::from_le(p.read_unaligned())
+        }
+    } else {
+        // Tail: pad with 0
+        let mut tmp = [0u8; 8];
+        let avail = len.saturating_sub(pos);
+        if avail != 0 {
+            tmp[..avail].copy_from_slice(&self.data[pos..]);
+        }
+        u64::from_le_bytes(tmp)
+    }
+}
+```
+
+This is the single change that most often takes a Rust port from “2× slower” to “close”.
+
+If you already did something like this earlier in your fastest version, that’s why it matches.
+
+---
+
+## 3) Next likely culprit: extra bounds checks in the inner compare loop
+
+Your collision loop does two loads per iteration:
+
+```rust
+scanner.get_u64_at(existing.name_address + i)
+scanner.get_u64_at(name_address + i)
+```
+
+Each call can redo bounds logic, and LLVM might not hoist checks because:
+
+* `pos` is not obviously in-range
+* method calls obscure relationships
+* tail-padding semantics prevent simple “trust me” assumptions
+
+### Fix: use raw pointers *inside* the known-safe region
+
+You know these reads never go out of bounds if you ensured a sentinel / safe padding strategy (Java relied on it).
+
+Pattern:
+
+```rust
+#[inline(always)]
+unsafe fn read_u64_unchecked(base: *const u8, pos: usize) -> u64 {
+    u64::from_le((base.add(pos) as *const u64).read_unaligned())
+}
+```
+
+Then in the hot loop, pass `base = scanner.data.as_ptr()` once, and do unchecked loads. Keep one bounds-checked path for the last page / file end if you must.
+
+(If you don’t have sentinel bytes at end-of-file, keep your “super-slow path” for the end region and make the fast path unchecked.)
+
+---
+
+## 4) Ensure inlining actually happens
+
+Put `#[inline(always)]` on:
+
+* `Scanner::pos()`, `Scanner::add()`
+* `Scanner::get_u64_at()`
+* `find_delimiter`
+* `scan_number`
+* `convert_into_number_i16`
+* `hash_to_index`
+
+Then rebuild with the “make LLVM’s life easy” flags:
+
+```toml
+# Cargo.toml
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+opt-level = 3
+debug = 1          # keep symbols for perf, doesn’t hurt much
+```
+
+And run with `RUSTFLAGS="-C target-cpu=native"`.
+
+---
+
+## 5) Compare instruction count, not just time
+
+This tells you immediately if Rust is doing more work per byte:
+
+```bash
+perf stat -d target/release/thomaswue_ported
+perf stat -d ../java-orig/target/CalculateAverage_thomaswue_image
+```
+
+Key comparisons:
+
+* `instructions` (Rust usually higher if loads aren’t a single instruction)
+* `branches` and `branch-misses`
+* `L1-dcache-load-misses` (if your hash table layout is worse)
+
+If Rust has ~2× instructions, it’s almost certainly your load/compare machinery, not “Rust overhead”.
+
+---
+
+## 6) One more sneaky difference: your padded-tail semantics can pessimize everything
+
+If your `get_u64_at` supports tail padding **everywhere**, LLVM can’t assume “in-bounds” and may keep checks. Java’s `Unsafe.getLong` simply reads; correctness is achieved by ensuring safe mapped padding / avoiding end-of-file area.
+
+So: keep **two APIs**:
+
+* `get_u64_unchecked(pos)` for fast path (requires padding / safe region)
+* `get_u64_at(pos)` safe for the end region
+
+And make the algorithm choose based on `pos < file_end - 120` like you already do.
+
+---
+
+## What I’d do first (highest ROI)
+
+1. `perf report` on Rust → confirm top symbol(s)
+2. switch `get_u64_at` to `read_unaligned` fast path
+3. re-run hyperfine
+
+If you paste the top ~15 lines of `perf report` for the Rust binary (the table with Self%), I’ll tell you exactly which of the above is biting you and what change will move the needle most.
+
+
+##### speed up my hot loop
+
+- use unsafe to get rid of bounds checks (when we are not near the end of the mmap area)
+- reduce the size of the hash table so we don't miss cache as much when probing
+
+Minor differences -- but faster
+
+
+##### Next steps
+
+
+
 
