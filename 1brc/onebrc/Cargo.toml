@@ -30,3 +30,6 @@ rayon = "1.11.0"
 ahash = "0.8"
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
 criterion = "0.8.1"
+
+[features]
+metrics = []

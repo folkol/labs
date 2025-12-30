@@ -8,8 +8,8 @@ use std::{env, io};
 use std::{sync::Arc, thread};
 
 const FILE: &str = "./measurements.txt";
-const MIN_TEMP: i32 = -999;
-const MAX_TEMP: i32 = 999;
+// const MIN_TEMP: i32 = -999;
+// const MAX_TEMP: i32 = 999;
 const MAX_NAME_LENGTH: i32 = 100;
 const MAX_CITIES: i32 = 10000;
 const SEGMENT_SIZE: i32 = 1 << 21;
@@ -93,6 +93,26 @@ fn spawn_worker() -> io::Result<()> {
     Ok(())
 }
 
+#[derive(Default, Debug, Clone, Copy)]
+struct ProbeCounters {
+    lookups: u64,
+    probe_steps: u64,
+    advances: u64,
+    inserts: u64,
+    fast_word_hits: u64,
+    full_compares: u64,
+}
+
+#[cfg(feature = "metrics")]
+macro_rules! metric {
+    ($e:expr) => { $e };
+}
+
+#[cfg(not(feature = "metrics"))]
+macro_rules! metric {
+    ($e:expr) => {};
+}
+
 fn parse_loop(
     data: &[u8],
     _cursor: &AtomicUsize,
@@ -102,9 +122,22 @@ fn parse_loop(
     let mut table: Vec<u32> = vec![0; HASH_TABLE_SIZE as usize];
     let mut out: Vec<Result> = Vec::with_capacity(MAX_CITIES as usize);
 
+    let mut stats = ProbeCounters::default();
+
     loop {
         let current = _cursor.fetch_add(SEGMENT_SIZE as usize, Ordering::SeqCst);
         if current >= _file_end {
+            // Correct, meaningful stats
+            #[cfg(feature = "metrics")]
+            eprintln!(
+                "lookups={} probes/lookup={:.3} advances/lookup={:.6} inserts={} fast_hits%={:.2} full_compares%={:.2}",
+                stats.lookups,
+                stats.probe_steps as f64 / stats.lookups as f64,
+                stats.advances as f64 / stats.lookups as f64,
+                stats.inserts,
+                100.0 * (stats.fast_word_hits as f64 / stats.lookups as f64),
+                100.0 * (stats.full_compares as f64 / stats.lookups as f64),
+            );
             return out;
         }
 
@@ -141,6 +174,7 @@ fn parse_loop(
                 &mut table,
                 &mut out,
                 _file_end,
+                &mut stats,
             );
 
             let number_1 = scan_number_unsafe(&mut scanner_1);
@@ -163,6 +197,7 @@ fn parse_loop(
                     &mut table,
                     &mut out,
                     _file_end,
+                    &mut stats,
                 );
 
                 let number_1 = scan_number_unsafe(&mut scanner_1);
@@ -184,6 +219,7 @@ fn parse_loop(
                     &mut table,
                     &mut out,
                     _file_end,
+                    &mut stats,
                 );
 
                 let number_1 = scan_number_unsafe(&mut scanner_1);
@@ -258,7 +294,6 @@ fn convert_into_number_i16(decimal_sep_pos: u32, number_word: u64) -> i16 {
 
 struct Scanner<'a> {
     data: &'a [u8],
-    start: usize,
     end: usize,
     pos: usize,
 }
@@ -267,7 +302,6 @@ impl<'a> Scanner<'a> {
     fn new(data: &'a [u8], start: usize, end: usize) -> Scanner<'a> {
         Self {
             data,
-            start,
             end,
             pos: start,
         }
@@ -636,14 +670,29 @@ fn find_result_unsafe_idx<'a, 'b>(
     table: &mut [u32],
     out: &'b mut Vec<Result>,
     file_end: usize,
-    // probe_counters: &mut ProbeCounters,
+    stats: &mut ProbeCounters,
 ) -> &'b mut Result {
+    // stats.lookups += 1;
+    metric!({ stats.lookups += 1; });
+
+    // Preserve the first two 8-byte chunks as read by the caller.
+    // These are the "signature" words used for fast hits.
+    let orig_w1 = initial_word;
+    let orig_w2 = word_b;
+
     let mut word = initial_word;
+    let mut word2 = word_b;
+
     let mut delimiter_mask = initial_delim_mask;
+    let delimiter_mask2 = delim_mask_b;
+
     let mut hash: u64;
     let name_address = scanner.pos;
-    let mut word2 = word_b;
-    let delimiter_mask2 = delim_mask_b;
+
+    // These are the *correct* words to use for fast-hit checks.
+    // In the "fast 16B" case we will mask them; otherwise they remain the original words.
+    let mut cmp_w1 = orig_w1;
+    let mut cmp_w2 = orig_w2;
 
     if scanner.pos > file_end - 120 {
         hash = word ^ word2;
@@ -674,66 +723,87 @@ fn find_result_unsafe_idx<'a, 'b>(
                 scanner.add(1);
             }
         }
+        // NOTE: In this path, `word` has been overwritten during scanning.
+        // We keep cmp_w1/cmp_w2 as orig_w1/orig_w2 (correct).
+    } else if (delimiter_mask | delimiter_mask2) != 0 {
+        // ';' in first 16 bytes: compute the masked signature exactly like Java.
+        let letter_count1 = (delimiter_mask.trailing_zeros() as usize) >> 3;
+        let letter_count2 = (delimiter_mask2.trailing_zeros() as usize) >> 3;
+
+        let mask = MASK2[letter_count1];
+        word &= MASK1[letter_count1];
+        word2 = mask & word2 & MASK1[letter_count2];
+
+        cmp_w1 = word;
+        cmp_w2 = word2;
+
+        hash = word ^ word2;
+
+        let i1 = letter_count1 + ((letter_count2 as u64 & mask) as usize);
+        scanner.add(i1);
     } else {
-        if (delimiter_mask | delimiter_mask2) != 0 {
-            let letter_count1 = (delimiter_mask.trailing_zeros() as usize) >> 3;
-            let letter_count2 = (delimiter_mask2.trailing_zeros() as usize) >> 3;
+        // Slow path: ';' not in first 16 bytes.
+        // WARNING: `word` will be overwritten below, so we must NOT use it for fast-hit checks.
+        hash = word ^ word2;
+        scanner.add(16);
 
-            let mask = MASK2[letter_count1];
-            word &= MASK1[letter_count1];
-            word2 = mask & word2 & MASK1[letter_count2];
+        loop {
+            word = scanner.get_u64_unsafe();
+            delimiter_mask = find_delimiter(word);
 
-            hash = word ^ word2;
-
-            let i1 = letter_count1 + ((letter_count2 as u64 & mask) as usize);
-            scanner.add(i1);
-
-            let idx = hash_to_index(hash, table.len());
-
-            let entry = unsafe { table_get(table, idx) };
-            if entry != 0 {
-                let r = unsafe { out_get(out, (entry - 1) as usize) };
-                if r.first_name_word == word && r.second_name_word == word2 {
-                    return unsafe { out_get_mut(out, (entry - 1) as usize) };
-                }
-            }
-        } else {
-            hash = word ^ word2;
-            scanner.add(16);
-
-            loop {
-                word = scanner.get_u64_unsafe();
-                delimiter_mask = find_delimiter(word);
-
-                if delimiter_mask != 0 {
-                    let tz = delimiter_mask.trailing_zeros() as usize;
-                    word <<= 63 - tz;
-                    scanner.add(tz >> 3);
-                    hash ^= word;
-                    break;
-                } else {
-                    scanner.add(8);
-                    hash ^= word;
-                }
+            if delimiter_mask != 0 {
+                let tz = delimiter_mask.trailing_zeros() as usize;
+                word <<= 63 - tz;
+                scanner.add(tz >> 3);
+                hash ^= word;
+                break;
+            } else {
+                scanner.add(8);
+                hash ^= word;
             }
         }
+        // cmp_w1/cmp_w2 remain orig_w1/orig_w2 (correct).
     }
 
     let name_length = scanner.pos() - name_address;
 
+    // Unified probe loop: metrics are correct and unambiguous
     let mut table_index = hash_to_index(hash, table.len());
-    let mask = table.len() - 1; // table len is power-of-two
+    let mask = table.len() - 1;
 
-    'outer: loop {
-        let entry = unsafe { table_get(table, table_index) };
+    loop {
+        // stats.probe_steps += 1;
+        metric!({ stats.probe_steps += 1; });
+
+        let mut entry = unsafe { table_get(table, table_index) };
         if entry == 0 {
-            let r = new_entry_unsafe(name_address, name_length, scanner);
-            out.push(r);
-            unsafe { table_set(table, table_index, out.len() as u32) };
+            // stats.inserts += 1;
+                    metric!({ stats.inserts += 1; });
+
+            out.push(new_entry_unsafe(name_address, name_length, scanner));
+            entry = out.len() as u32;
+            unsafe { table_set(table, table_index, entry) };
+            return unsafe { out_get_mut(out, (entry - 1) as usize) };
         }
 
-        let idx = (unsafe { table_get(table, table_index) } - 1) as usize;
-        let existing_addr = unsafe { out_get(out, idx) }.name_address;
+        let idx = (entry - 1) as usize;
+
+        // Fast signature hit (this is where your previous bug lived)
+        let r = unsafe { out_get(out, idx) };
+        if r.first_name_word == cmp_w1 && r.second_name_word == cmp_w2 {
+            // stats.fast_word_hits += 1;
+                                metric!({ stats.fast_word_hits += 1; });
+
+            return unsafe { out_get_mut(out, idx) };
+        }
+
+        // Full compare needed (even though probe_steps==1)
+        // unreachable!("we should not get here");
+        // stats.full_compares += 1;
+                                        metric!({ stats.full_compares += 1; });
+
+
+        let existing_addr = r.name_address;
 
         let end = name_length + 1;
         let mut i: usize = 0;
@@ -741,20 +811,25 @@ fn find_result_unsafe_idx<'a, 'b>(
             if scanner.get_u64_at_unsafe(existing_addr + i)
                 != scanner.get_u64_at_unsafe(name_address + i)
             {
+                // stats.advances += 1;
+                                                        metric!({ stats.advances += 1; });
+
                 table_index = (table_index + 31) & mask;
-                continue 'outer;
+                continue;
             }
             i += 8;
         }
 
         let remaining_shift = 64 - ((end - i) << 3);
-
         let a = scanner.get_u64_at_unsafe(existing_addr + i);
         let b = scanner.get_u64_at_unsafe(name_address + i);
 
         if ((a ^ b) << remaining_shift) == 0 {
             return unsafe { out_get_mut(out, idx) };
         } else {
+            // stats.advances += 1;
+                                                                    metric!({ stats.advances += 1; });
+
             table_index = (table_index + 31) & mask;
         }
     }
