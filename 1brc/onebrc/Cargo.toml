@@ -13,6 +13,13 @@ debug-assertions = false
 overflow-checks = false
 codegen-units = 1
 
+[[bench]]
+name = "next_newline"
+harness = false
+
+[[bench]]
+name = "get_long"
+harness = false
 
 [dependencies]
 memmap2 = "0.9.9"
@@ -22,3 +29,4 @@ memchr = "2.7.6"
 rayon = "1.11.0"
 ahash = "0.8"
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
+criterion = "0.8.1"

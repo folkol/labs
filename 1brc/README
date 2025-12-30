@@ -2579,9 +2579,60 @@ Summary
 
 
 
+##### Try direct port of thomaswue java solution
+
+- using slice with offsets instead of pointers... maybe
+- using memchr instead of manual loop for 'next newline', criterion says they are equivalent
+- 
+
+
 
 
 
 #### TODO: when we have a final working program, rewrite it with rayon / ahash and see where it takes us
+
+
+
+
+##### Experiment with artisonkorzun
+
+- 1 scanner instead of 3
+
+folkol@ubuntu:~/code/labs/1brc/java-orig$ hyperfine --warmup 10 target/CalculateAverage_artsiomkorzun_image*
+Benchmark 1: target/CalculateAverage_artsiomkorzun_image
+  Time (mean ± σ):     218.4 ms ±   1.1 ms    [User: 0.4 ms, System: 2.5 ms]
+  Range (min … max):   216.8 ms … 220.2 ms    13 runs
+ 
+Benchmark 2: target/CalculateAverage_artsiomkorzun_image_one_scanner
+  Time (mean ± σ):     217.8 ms ±   1.2 ms    [User: 0.6 ms, System: 2.3 ms]
+  Range (min … max):   216.0 ms … 220.4 ms    13 runs
+ 
+Summary
+  target/CalculateAverage_artsiomkorzun_image_one_scanner ran
+    1.00 ± 0.01 times faster than target/CalculateAverage_artsiomkorzun_image
+
+No difference on my computer. (Maybe because of no hardware threads?)
+
+
+##### Ported thomaswue to rust
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 5 ../java-orig/target/CalculateAverage_{thomaswue,artsiomkorzun}_image target/release/thomaswue_ported
+Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     215.1 ms ±   2.6 ms    [User: 0.3 ms, System: 2.5 ms]
+  Range (min … max):   211.8 ms … 221.7 ms    14 runs
+ 
+Benchmark 2: ../java-orig/target/CalculateAverage_artsiomkorzun_image
+  Time (mean ± σ):     221.6 ms ±   1.5 ms    [User: 0.8 ms, System: 2.0 ms]
+  Range (min … max):   219.5 ms … 225.7 ms    13 runs
+ 
+Benchmark 3: target/release/thomaswue_ported
+  Time (mean ± σ):     509.6 ms ±   5.3 ms    [User: 9616.2 ms, System: 407.8 ms]
+  Range (min … max):   505.9 ms … 524.3 ms    10 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image ran
+    1.03 ± 0.01 times faster than ../java-orig/target/CalculateAverage_artsiomkorzun_image
+    2.37 ± 0.04 times faster than target/release/thomaswue_ported
+
 
 
