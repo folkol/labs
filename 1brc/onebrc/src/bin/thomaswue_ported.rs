@@ -118,12 +118,12 @@ fn parse_loop(
     //     full_compares: 0,
     // };
 
-    let mut seg_nl = 0;
-
-    let mut rows: u64 = 0;
-    let mut last_segment_start = 0;
-    let mut last_segment_end = 0;
-    let mut last_scanner_pos = 0;
+    // let mut seg_nl = 0;
+    //
+    // let mut rows: u64 = 0;
+    // let mut last_segment_start = 0;
+    // let mut last_segment_end = 0;
+    // let mut last_scanner_pos = 0;
     loop {
         let current = _cursor.fetch_add(SEGMENT_SIZE as usize, Ordering::SeqCst);
         if current >= _file_end {
@@ -138,12 +138,12 @@ fn parse_loop(
             //     probe_counter.full_compares,
             // );
 
-            if rows != seg_nl {
-                eprintln!(
-                    "MISMATCH previous segment: current={} rows={rows} seg_nl={seg_nl} last_segment_start={last_segment_start} last_segment_end={last_segment_end} last_scanner_pos={last_scanner_pos}",
-                    current - SEGMENT_SIZE as usize
-                );
-            }
+            // if rows != seg_nl {
+            //     eprintln!(
+            //         "MISMATCH previous segment: current={} rows={rows} seg_nl={seg_nl} last_segment_start={last_segment_start} last_segment_end={last_segment_end} last_scanner_pos={last_scanner_pos}",
+            //         current - SEGMENT_SIZE as usize
+            //     );
+            // }
 
             return out;
         }
@@ -163,23 +163,23 @@ fn parse_loop(
             assert_eq!(segment_start, 0);
         }
 
-        last_segment_end = segment_end;
-        last_segment_start = segment_start;
-        rows = 0;
-        seg_nl = memchr::memchr_iter(b'\n', &data[segment_start..=segment_end]).count() as u64;
+        // last_segment_end = segment_end;
+        // last_segment_start = segment_start;
+        // rows = 0;
+        // seg_nl = memchr::memchr_iter(b'\n', &data[segment_start..=segment_end]).count() as u64;
 
         let mut scanner_1 = Scanner::new(data, segment_start, segment_end);
-        verify_after_newline(data, current, _file_start, &scanner_1);
+        // verify_after_newline(data, current, _file_start, &scanner_1);
 
         // if segment_end >= 13795437781 {
-        eprintln!(
-            "current={current} segment_start={segment_start} segment_end={segment_end} _file_end={_file_end} scanner_1.pos={}",
-            scanner_1.pos
-        );
+        // eprintln!(
+        //     "current={current} segment_start={segment_start} segment_end={segment_end} _file_end={_file_end} scanner_1.pos={}",
+        //     scanner_1.pos
+        // );
         // }
 
         while scanner_1.has_next_safe() {
-            verify_after_newline(data, current, _file_start, &scanner_1);
+            // verify_after_newline(data, current, _file_start, &scanner_1);
 
             let word_1 = scanner_1.get_u64_unsafe();
             let delim_1 = find_delimiter(word_1);
@@ -201,12 +201,12 @@ fn parse_loop(
 
             let number_1 = scan_number_unsafe(&mut scanner_1);
             r.record(number_1);
-            rows += 1;
+            // rows += 1;
         }
 
         if segment_end < _file_end - 1 {
             while scanner_1.has_next() {
-                verify_after_newline(data, current, _file_start, &scanner_1);
+                // verify_after_newline(data, current, _file_start, &scanner_1);
 
                 let word_1 = scanner_1.get_u64_unsafe();
                 let delim_1 = find_delimiter(word_1);
@@ -227,15 +227,15 @@ fn parse_loop(
 
                 let number_1 = scan_number_unsafe(&mut scanner_1);
                 r.record(number_1);
-                rows += 1;
+                // rows += 1;
             }
         } else {
             while scanner_1.has_next_safe() {
-                eprintln!(
-                    "last segment A: segment_start={segment_start} segment_end={segment_end} _file_end={_file_end} scanner.pos={}",
-                    scanner_1.pos
-                );
-                verify_after_newline(data, current, _file_start, &scanner_1);
+                // eprintln!(
+                //     "last segment A: segment_start={segment_start} segment_end={segment_end} _file_end={_file_end} scanner.pos={}",
+                //     scanner_1.pos
+                // );
+                // verify_after_newline(data, current, _file_start, &scanner_1);
 
                 let word_1 = scanner_1.get_u64_unsafe();
                 let delim_1 = find_delimiter(word_1);
@@ -256,23 +256,23 @@ fn parse_loop(
 
                 let number_1 = scan_number_unsafe(&mut scanner_1);
                 r.record(number_1);
-                rows += 1;
+                // rows += 1;
             }
 
             while scanner_1.has_next() {
-                eprintln!(
-                    "last segment B: segment_start={segment_start} segment_end={segment_end} _file_end={_file_end} scanner.pos={} context={:?}",
-                    scanner_1.pos,
-                    &data[scanner_1.pos - 2..scanner_1.pos + 3]
-                );
-
-                verify_after_newline(data, current, _file_start, &scanner_1);
+                // eprintln!(
+                //     "last segment B: segment_start={segment_start} segment_end={segment_end} _file_end={_file_end} scanner.pos={} context={:?}",
+                //     scanner_1.pos,
+                //     &data[scanner_1.pos - 2..scanner_1.pos + 3]
+                // );
+                //
+                // verify_after_newline(data, current, _file_start, &scanner_1);
                 let word_1 = scanner_1.get_u64();
                 let delim_1 = find_delimiter(word_1);
                 let word_1b = scanner_1.get_u64_at(scanner_1.pos + 8);
                 let delim_1b = find_delimiter(word_1b);
 
-                let before = scanner_1.pos;
+                // let before = scanner_1.pos;
 
                 let r = find_result_idx(
                     word_1,
@@ -287,28 +287,28 @@ fn parse_loop(
 
                 let number_1 = scan_number(&mut scanner_1);
                 r.record(number_1);
-                rows += 1;
+                // rows += 1;
 
-                let after = scanner_1.pos;
-
-                if before >= _file_end - 2000 {
-                    let nls = memchr::memchr_iter(b'\n', &data[before..after]).count();
-                    eprintln!(
-                        "row: before={before} after={after} crossed_newlines={nls} scanned_row={:?}",
-                        String::from_utf8_lossy(&data[before..after])
-                    );
-                    if nls != 1 {
-                        let lo = before.saturating_sub(10);
-                        let hi = (after + 10).min(data.len());
-                        eprintln!("context:\n{:?}", String::from_utf8_lossy(&data[lo..hi]));
-                        // std::process::abort();
-                    }
-                }
+                // let after = scanner_1.pos;
+                //
+                // if before >= _file_end - 2000 {
+                //     let nls = memchr::memchr_iter(b'\n', &data[before..after]).count();
+                //     eprintln!(
+                //         "row: before={before} after={after} crossed_newlines={nls} scanned_row={:?}",
+                //         String::from_utf8_lossy(&data[before..after])
+                //     );
+                //     if nls != 1 {
+                //         let lo = before.saturating_sub(10);
+                //         let hi = (after + 10).min(data.len());
+                //         eprintln!("context:\n{:?}", String::from_utf8_lossy(&data[lo..hi]));
+                //         // std::process::abort();
+                //     }
+                // }
             }
 
-            eprintln!("giving up this segment at {}", scanner_1.pos);
+            // eprintln!("giving up this segment at {}", scanner_1.pos);
         }
-        last_scanner_pos = scanner_1.pos;
+        // last_scanner_pos = scanner_1.pos;
     }
 }
 
@@ -332,11 +332,11 @@ fn scan_number(scanner: &mut Scanner) -> i16 {
 
     // Java: scanPtr.add((decimalSepPos >>> 3) + 4)
     let adv: usize = ((decimal_sep_pos >> 3) as usize) + 4;
-    if scanner.pos > 13795437694 {
-        eprintln!(
-            "scan_number. number_word={number_word} decimal_sep_pos={decimal_sep_pos} number={number} adv={adv}"
-        )
-    }
+    // if scanner.pos > 13795437694 {
+    //     eprintln!(
+    //         "scan_number. number_word={number_word} decimal_sep_pos={decimal_sep_pos} number={number} adv={adv}"
+    //     )
+    // }
     scanner.add(adv);
 
     number
@@ -398,16 +398,16 @@ impl<'a> Scanner<'a> {
     }
 
     fn has_next(&self) -> bool {
-        if self.pos > 13795437780 - 1000 {
-            eprintln!("checking scanner.has_next near end pos={}", self.pos);
-        }
+        // if self.pos > 13795437780 - 1000 {
+        //     eprintln!("checking scanner.has_next near end pos={}", self.pos);
+        // }
         self.pos < self.end
     }
 
     fn has_next_safe(&self) -> bool {
-        if self.pos > 13795437780 - 1000 {
-            eprintln!("checking scanner.has_next_safe near end pos={}", self.pos);
-        }
+        // if self.pos > 13795437780 - 1000 {
+        //     eprintln!("checking scanner.has_next_safe near end pos={}", self.pos);
+        // }
         self.pos < self.end - (MAX_NAME_LENGTH as usize + 7)
     }
 
