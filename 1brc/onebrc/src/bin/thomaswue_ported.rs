@@ -93,58 +93,18 @@ fn spawn_worker() -> io::Result<()> {
     Ok(())
 }
 
-struct ProbeCounters {
-    lookups: u64,
-    probes: u64,
-    fast_hits: u64,
-    full_compares: u64,
-}
-
 fn parse_loop(
     data: &[u8],
     _cursor: &AtomicUsize,
     _file_end: usize,
     _file_start: usize,
 ) -> Vec<Result> {
-    // Hash table: 0 = empty, else (idx + 1) into `out`
     let mut table: Vec<u32> = vec![0; HASH_TABLE_SIZE as usize];
-    // Collected results (like Java's collectedResults)
     let mut out: Vec<Result> = Vec::with_capacity(MAX_CITIES as usize);
 
-    // let mut probe_counter = ProbeCounters {
-    //     lookups: 0,
-    //     probes: 0,
-    //     fast_hits: 0,
-    //     full_compares: 0,
-    // };
-
-    // let mut seg_nl = 0;
-    //
-    // let mut rows: u64 = 0;
-    // let mut last_segment_start = 0;
-    // let mut last_segment_end = 0;
-    // let mut last_scanner_pos = 0;
     loop {
         let current = _cursor.fetch_add(SEGMENT_SIZE as usize, Ordering::SeqCst);
         if current >= _file_end {
-            // eprintln!("rows={rows} unique={}", out.len());
-            //
-            // eprintln!(
-            //     "lookups={} probes={} probes/lookup={:.3} fast_hits={} full_compares={}",
-            //     probe_counter.lookups,
-            //     probe_counter.probes,
-            //     (probe_counter.probes as f64)/(probe_counter.lookups as f64),
-            //     probe_counter.fast_hits,
-            //     probe_counter.full_compares,
-            // );
-
-            // if rows != seg_nl {
-            //     eprintln!(
-            //         "MISMATCH previous segment: current={} rows={rows} seg_nl={seg_nl} last_segment_start={last_segment_start} last_segment_end={last_segment_end} last_scanner_pos={last_scanner_pos}",
-            //         current - SEGMENT_SIZE as usize
-            //     );
-            // }
-
             return out;
         }
 
