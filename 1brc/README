@@ -3200,3 +3200,71 @@ folkol@ubuntu:~/code/labs/1brc/onebrc$ perf report --sort overhead --stdio
 - count usize -> u32
 - switched places on count and sum
 
+Minor difference
+
+
+#### Pin threads
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 2 './baseline --worker' 'target/release/thomaswue_ported --worker'
+Benchmark 1: ./baseline --worker
+  Time (mean ± σ):     427.4 ms ±   4.3 ms    [User: 7708.6 ms, System: 345.9 ms]
+  Range (min … max):   424.9 ms … 439.2 ms    10 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+Benchmark 2: target/release/thomaswue_ported --worker
+  Time (mean ± σ):     427.6 ms ±   1.2 ms    [User: 7707.6 ms, System: 352.1 ms]
+  Range (min … max):   426.2 ms … 430.3 ms    10 runs
+ 
+Summary
+  ./baseline --worker ran
+    1.00 ± 0.01 times faster than target/release/thomaswue_ported --worker
+
+
+Did not help with speed, but maybe a bit fewer LLC misses.
+
+
+
+#### Experiment with java single cursor
+
+folkol@ubuntu:~/code/labs/1brc/java-orig$ hyperfine --warmup 2 './single_cursor --worker' 'target/CalculateAverage_thomaswue_image --worker'
+Benchmark 1: ./single_cursor --worker
+  Time (mean ± σ):     468.7 ms ±   9.1 ms    [User: 8735.4 ms, System: 350.1 ms]
+  Range (min … max):   463.3 ms … 493.5 ms    10 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+Benchmark 2: target/CalculateAverage_thomaswue_image --worker
+  Time (mean ± σ):     290.5 ms ±   2.7 ms    [User: 4558.5 ms, System: 354.3 ms]
+  Range (min … max):   289.0 ms … 297.9 ms    10 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+Summary
+  target/CalculateAverage_thomaswue_image --worker ran
+    1.61 ± 0.03 times faster than ./single_cursor --worker
+
+
+Eerily similar to my performance...
+
+
+#### New experiement: multicursors
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 2 './baseline --worker' 'target/release/thomaswue_ported --worker'
+Benchmark 1: ./baseline --worker
+  Time (mean ± σ):     427.8 ms ±   1.8 ms    [User: 7699.2 ms, System: 360.2 ms]
+  Range (min … max):   425.6 ms … 431.6 ms    10 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+Benchmark 2: target/release/thomaswue_ported --worker
+  Time (mean ± σ):     317.3 ms ±   2.2 ms    [User: 5036.1 ms, System: 364.8 ms]
+  Range (min … max):   312.4 ms … 319.7 ms    10 runs
+ 
+Summary
+  target/release/thomaswue_ported --worker ran
+    1.35 ± 0.01 times faster than ./baseline --worker
+
+Now we're talking!
+
+

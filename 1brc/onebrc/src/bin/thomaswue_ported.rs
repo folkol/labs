@@ -21,6 +21,19 @@ unsafe fn madvise(ptr: *const u8, len: usize, advice: i32) {
     }
 }
 
+fn pin_current_thread_to_cpu(cpu: usize) -> io::Result<()> {
+    unsafe {
+        let mut set: libc::cpu_set_t = std::mem::zeroed();
+        libc::CPU_ZERO(&mut set);
+        libc::CPU_SET(cpu, &mut set);
+        let rc = libc::sched_setaffinity(0, std::mem::size_of::<libc::cpu_set_t>(), &set);
+        if rc != 0 {
+            return Err(io::Error::last_os_error());
+        }
+    }
+    Ok(())
+}
+
 fn main() -> io::Result<()> {
     let is_worker = std::env::args().any(|a| a == "--worker");
     if !is_worker {
@@ -49,12 +62,17 @@ fn main() -> io::Result<()> {
 
     thread::scope(|s| {
         let mut handles = Vec::with_capacity(number_of_workers);
-        for _ in 0..number_of_workers {
+        for worker_index in 0..number_of_workers {
             let cursor = Arc::clone(&cursor);
             let file_start = file_start;
             let file_end = file_end;
 
-            handles.push(s.spawn(move || parse_loop(data, &cursor, file_end, file_start)));
+            handles.push(s.spawn(move || {
+                let cpu = worker_index % number_of_workers; // decide mapping
+                pin_current_thread_to_cpu(cpu).unwrap();
+
+                parse_loop(data, &cursor, file_end, file_start)
+            }));
         }
         let mut all_results = Vec::with_capacity(number_of_workers);
         for h in handles {
@@ -713,9 +731,7 @@ fn find_result_idx<'a, 'b>(
 
 #[inline(always)]
 unsafe fn table_get(table: &[u32], i: usize) -> u32 {
-    unsafe {
-        *table.get_unchecked(i)
-    }
+    unsafe { *table.get_unchecked(i) }
 }
 #[inline(always)]
 unsafe fn table_set(table: &mut [u32], i: usize, v: u32) {
@@ -725,21 +741,15 @@ unsafe fn table_set(table: &mut [u32], i: usize, v: u32) {
 }
 #[inline(always)]
 unsafe fn key_get(out: &[StationKey], i: usize) -> &StationKey {
-    unsafe {
-        out.get_unchecked(i)
-    }
+    unsafe { out.get_unchecked(i) }
 }
 #[inline(always)]
 unsafe fn key_get_mut(out: &mut [StationKey], i: usize) -> &mut StationKey {
-    unsafe {
-        out.get_unchecked_mut(i)
-    }
+    unsafe { out.get_unchecked_mut(i) }
 }
 #[inline(always)]
 unsafe fn stat_get_mut(out: &mut [StationStats], i: usize) -> &mut StationStats {
-    unsafe {
-        out.get_unchecked_mut(i)
-    }
+    unsafe { out.get_unchecked_mut(i) }
 }
 
 #[inline(always)]
