@@ -2992,4 +2992,211 @@ folkol@ubuntu:~/code/labs/1brc/onebrc$ cargo uninstall cargo-asm
 folkol@ubuntu:~/code/labs/1brc/onebrc$ cargo install cargo-show-asm
 
 
+#### Try build std from source
+
+rustup toolchain install nightly
+rustup component add rust-src --toolchain nightly
+cargo +nightly build -Z build-std=std,panic_abort --release --bin thomaswue_ported
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 2 './stable --worker' 'target/release/thomaswue_ported --worker'
+Benchmark 1: ./stable --worker
+  Time (mean ± σ):     429.1 ms ±   0.8 ms    [User: 7789.5 ms, System: 348.5 ms]
+  Range (min … max):   427.8 ms … 430.4 ms    10 runs
+ 
+Benchmark 2: target/release/thomaswue_ported --worker
+  Time (mean ± σ):     449.8 ms ±   0.8 ms    [User: 8296.4 ms, System: 341.0 ms]
+  Range (min … max):   448.5 ms … 451.3 ms    10 runs
+ 
+Summary
+  ./stable --worker ran
+    1.05 ± 0.00 times faster than target/release/thomaswue_ported --worker
+
+Slower! :)
+
+
+#### Where do we get LCC misses?
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ perf record -h -F 9999 -g --call-graph dwarf -e LLC-load-misses ./stable --worker >/dev/null
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ perf report --sort overhead --stdio
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 22K of event 'cpu_core/LLC-load-misses/'
+# Event count (approx.): 367317
+#
+#     Self
+# ........
+#
+   100.00%
+            |          
+            |--94.29%--std::sys::backtrace::__rust_begin_short_backtrace
+            |          thomaswue_ported::main::{{closure}}::{{closure}} (inlined)
+            |          thomaswue_ported::parse_loop (inlined)
+            |          |          
+            |          |--80.82%--thomaswue_ported::find_result_unsafe_idx (inlined)
+            |          |          |          
+            |          |          |--13.10%--thomaswue_ported::hash_to_index (inlined)
+            |          |          |          
+            |          |          |--5.72%--thomaswue_ported::key_get_mut (inlined)
+            |          |          |          core::slice::<impl [T]>::get_unchecked_mut (inlined)
+            |          |          |          <usize as core::slice::index::SliceIndex<[T]>>::get_unchecked_mut (inlined)
+            |          |          |          
+            |          |           --0.66%--thomaswue_ported::find_delimiter (inlined)
+            |          |          
+            |          |--5.54%--thomaswue_ported::StationStats::record (inlined)
+            |          |          
+            |          |--2.79%--thomaswue_ported::Scanner::get_u64_at_unsafe (inlined)
+            |          |          core::ptr::const_ptr::<impl *const T>::read_unaligned (inlined)
+            |          |          core::ptr::read_unaligned (inlined)
+            |          |          core::ptr::copy_nonoverlapping (inlined)
+            |          |          |          
+            |          |           --2.74%--asm_exc_page_fault
+            |          |                     |          
+            |          |                      --2.71%--exc_page_fault
+            |          |                                do_user_addr_fault
+            |          |                                |          
+            |          |                                 --2.69%--handle_mm_fault
+            |          |                                           |          
+            |          |                                            --2.68%--__handle_mm_fault
+            |          |                                                      |          
+            |          |                                                       --2.68%--handle_pte_fault
+            |          |                                                                 do_fault
+            |          |                                                                 do_read_fault
+            |          |                                                                 filemap_map_pages
+            |          |                                                                 |          
+            |          |                                                                  --2.49%--next_uptodate_folio
+            |          |          
+            |          |--1.00%--thomaswue_ported::Scanner::get_u64_unsafe (inlined)
+            |          |          thomaswue_ported::Scanner::get_u64_at_unsafe (inlined)
+            |          |          core::ptr::const_ptr::<impl *const T>::read_unaligned (inlined)
+            |          |          core::ptr::read_unaligned (inlined)
+            |          |          core::ptr::copy_nonoverlapping (inlined)
+            |          |          |          
+            |          |           --1.00%--asm_exc_page_fault
+            |          |                     |          
+            |          |                      --0.99%--exc_page_fault
+            |          |                                do_user_addr_fault
+            |          |                                |          
+            |          |                                 --0.98%--handle_mm_fault
+            |          |                                           __handle_mm_fault
+            |          |                                           |          
+            |          |                                            --0.98%--handle_pte_fault
+            |          |                                                      do_fault
+            |          |                                                      do_read_fault
+            |          |                                                      filemap_map_pages
+            |          |                                                      |          
+            |          |                                                       --0.94%--next_uptodate_folio
+            |          |          
+            |          |--0.84%--thomaswue_ported::scan_number_unsafe (inlined)
+            |          |          
+            |           --0.64%--thomaswue_ported::Scanner::has_next_safe (inlined)
+            |          
+            |--2.97%--0x6968570a362e3330
+            |          memchr::arch::x86_64::memchr::memchr_raw::find_avx2
+            |          memchr::arch::x86_64::avx2::memchr::One::find_raw (inlined)
+            |          memchr::arch::x86_64::avx2::memchr::One::find_raw_avx2 (inlined)
+            |          memchr::arch::generic::memchr::One<V>::find_raw (inlined)
+            |          memchr::arch::generic::memchr::One<V>::search_chunk (inlined)
+            |          memchr::vector::x86avx2::<impl memchr::vector::Vector for core::core_arch::x86::__m256i>::movemask (inlined)
+            |          core::core_arch::x86::avx2::_mm256_movemask_epi8 (inlined)
+            |          |          
+            |           --2.97%--asm_exc_page_fault
+            |                     exc_page_fault
+            |                     do_user_addr_fault
+            |                     |          
+            |                      --2.96%--handle_mm_fault
+            |                                __handle_mm_fault
+            |                                handle_pte_fault
+            |                                do_fault
+            |                                do_read_fault
+            |                                |          
+            |                                 --2.66%--filemap_map_pages
+            |                                           |          
+            |                                            --2.53%--next_uptodate_folio
+            |                                                      |          
+            |                                                       --0.53%--xas_find
+            |          
+             --2.54%--std::sys::backtrace::__rust_begin_short_backtrace
+                       core::ops::function::FnOnce::call_once (inlined)
+                       thomaswue_ported::main
+                       |          
+                        --2.43%--core::ptr::drop_in_place<memmap2::Mmap> (inlined)
+                                  core::ptr::drop_in_place<memmap2::os::MmapInner> (inlined)
+                                  __GI_munmap (inlined)
+                                  entry_SYSCALL_64_after_hwframe
+                                  do_syscall_64
+                                  x64_sys_call
+                                  __x64_sys_munmap
+                                  __vm_munmap
+                                  do_vmi_munmap
+                                  do_vmi_align_munmap
+                                  vms_complete_munmap_vmas
+                                  vms_clear_ptes
+                                  unmap_vmas
+                                  unmap_single_vma.isra.0
+                                  unmap_page_range
+                                  zap_pmd_range.isra.0
+                                  zap_pte_range
+                                  |          
+                                   --2.30%--zap_present_ptes.constprop.0
+
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#
+
+Only user space misses:
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ perf record -F 9999 -g --call-graph dwarf -e LLC-load-misses:u target/release/thomaswue_ported --worker >/dev/null
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ perf report --sort overhead --stdio
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 24K of event 'cpu_core/LLC-load-misses/'
+# Event count (approx.): 325562
+#
+#     Self
+# ........
+#
+   100.00%
+            |          
+             --99.96%--std::sys::backtrace::__rust_begin_short_backtrace
+                       thomaswue_ported::main::{{closure}}::{{closure}} (inlined)
+                       thomaswue_ported::parse_loop (inlined)
+                       |          
+                       |--89.74%--thomaswue_ported::find_result_unsafe_idx (inlined)
+                       |          |          
+                       |          |--13.05%--thomaswue_ported::hash_to_index (inlined)
+                       |          |          
+                       |          |--6.14%--thomaswue_ported::key_get_mut (inlined)
+                       |          |          core::slice::<impl [T]>::get_unchecked_mut (inlined)
+                       |          |          <usize as core::slice::index::SliceIndex<[T]>>::get_unchecked_mut (inlined)
+                       |          |          
+                       |           --0.67%--thomaswue_ported::find_delimiter (inlined)
+                       |          
+                       |--6.42%--thomaswue_ported::StationStats::record (inlined)
+                       |          
+                       |--0.51%--thomaswue_ported::scan_number_unsafe (inlined)
+                       |          
+                        --0.50%--thomaswue_ported::Scanner::has_next_safe (inlined)
+
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#
+
+
+#### Reduce size of StationStat (currently 24 = two cache lines)
+
+
+- count usize -> u32
+- switched places on count and sum
 

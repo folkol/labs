@@ -26,7 +26,7 @@ fn main() -> io::Result<()> {
     if !is_worker {
         return spawn_worker();
     }
-    // eprintln!("size_of::<Result>(): {}", size_of::<Result>());
+    eprintln!("size_of::<StationStats>(): {}", size_of::<StationStats>());
 
     let number_of_workers = env::var("NUM_THREADS").map_or(
         thread::available_parallelism().map_or(1, |n| n.get()),
@@ -61,7 +61,7 @@ fn main() -> io::Result<()> {
             all_results.push(h.join().expect("worker panicked"));
         }
         let final_result = accumulate_results(data, all_results);
-        let total_rows: usize = final_result.values().map(|v| v.count).sum();
+        let total_rows: u32 = final_result.values().map(|v| v.count).sum();
         let mut report = String::new();
         report.push('{');
         let mut prefix = "";
@@ -131,7 +131,7 @@ pub struct Result {
     pub first_name_word: u64,
     pub second_name_word: u64,
     pub name_address: usize,
-    pub count: usize,
+    pub count: u32,
     pub sum: i64,
     pub min: i16,
     pub max: i16,
@@ -489,13 +489,14 @@ struct StationKey {
     name_address: usize,
 }
 
-#[repr(C)]
+// #[repr(C)]
+#[repr(align(16))]
 #[derive(Clone, Debug)]
 struct StationStats {
     min: i16,
     max: i16,
+    count: u32,
     sum: i64,
-    count: usize,
 }
 
 impl StationStats {
@@ -878,7 +879,7 @@ fn find_result_unsafe_idx<'a, 'b>(
 
         let idx = (entry - 1) as usize;
 
-        let r = unsafe { key_get_mut(station_keys, idx) };
+        let r = unsafe { key_get(station_keys, idx) };
         if r.first == cmp_w1 && r.second == cmp_w2 {
             metric!({
                 stats.fast_word_hits += 1;
