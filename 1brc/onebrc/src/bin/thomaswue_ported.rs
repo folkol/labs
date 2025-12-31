@@ -96,11 +96,22 @@ fn spawn_worker() -> io::Result<()> {
 
 #[derive(Default, Debug, Clone, Copy)]
 struct ProbeCounters {
+    #[cfg(feature = "metrics")]
     lookups: u64,
+
+    #[cfg(feature = "metrics")]
     probe_steps: u64,
+
+    #[cfg(feature = "metrics")]
     advances: u64,
+
+    #[cfg(feature = "metrics")]
     inserts: u64,
+
+    #[cfg(feature = "metrics")]
     fast_word_hits: u64,
+
+    #[cfg(feature = "metrics")]
     full_compares: u64,
 }
 
@@ -352,7 +363,7 @@ fn scan_number_unsafe(scanner: &mut Scanner) -> i16 {
 #[inline(always)]
 fn convert_into_number_i16(decimal_sep_pos: u32, number_word: u64) -> i16 {
     let shift: i32 = 28 - decimal_sep_pos as i32;
-    let signed: i64 = ((!number_word << 59) as i64) >> 63 ;
+    let signed: i64 = ((!number_word << 59) as i64) >> 63;
     let design_mask: u64 = !((signed as u64) & 0xFF);
     let sh = (shift as u32) & 63;
     let digits: u64 = ((number_word & design_mask) << sh) & 0x0F00_0F0F_00u64;
@@ -451,22 +462,24 @@ pub fn next_newline(data: &[u8], prev: usize) -> usize {
 }
 
 #[inline]
-pub unsafe fn next_newline_ptr(mut p: *const u8) -> *const u8 { unsafe {
-    loop {
-        let word = (p as *const u64).read_unaligned(); // native endian load
-        let word = u64::from_le(word); // match little-endian files / x86 behavior
+pub unsafe fn next_newline_ptr(mut p: *const u8) -> *const u8 {
+    unsafe {
+        loop {
+            let word = (p as *const u64).read_unaligned(); // native endian load
+            let word = u64::from_le(word); // match little-endian files / x86 behavior
 
-        let input = word ^ 0x0A0A0A0A0A0A0A0Au64;
-        let pos = (input.wrapping_sub(0x0101010101010101u64)) & !input & 0x8080808080808080u64;
+            let input = word ^ 0x0A0A0A0A0A0A0A0Au64;
+            let pos = (input.wrapping_sub(0x0101010101010101u64)) & !input & 0x8080808080808080u64;
 
-        if pos != 0 {
-            p = p.add((pos.trailing_zeros() as usize) >> 3);
-            return p;
-        } else {
-            p = p.add(8);
+            if pos != 0 {
+                p = p.add((pos.trailing_zeros() as usize) >> 3);
+                return p;
+            } else {
+                p = p.add(8);
+            }
         }
     }
-}}
+}
 
 #[repr(C)]
 #[derive(Clone, Debug)]
@@ -698,29 +711,35 @@ fn find_result_idx<'a, 'b>(
 }
 
 #[inline(always)]
-unsafe fn table_get(table: &[u32], i: usize) -> u32 { unsafe {
-    *table.get_unchecked(i)
-}}
+unsafe fn table_get(table: &[u32], i: usize) -> u32 {
+    unsafe {
+        *table.get_unchecked(i)
+    }
+}
 #[inline(always)]
-unsafe fn table_set(table: &mut [u32], i: usize, v: u32) { unsafe {
-    *table.get_unchecked_mut(i) = v;
-}}
+unsafe fn table_set(table: &mut [u32], i: usize, v: u32) {
+    unsafe {
+        *table.get_unchecked_mut(i) = v;
+    }
+}
 #[inline(always)]
-unsafe fn key_get(out: &[StationKey], i: usize) -> &StationKey { unsafe {
-    out.get_unchecked(i)
-}}
+unsafe fn key_get(out: &[StationKey], i: usize) -> &StationKey {
+    unsafe {
+        out.get_unchecked(i)
+    }
+}
 #[inline(always)]
-unsafe fn key_get_mut(out: &mut [StationKey], i: usize) -> &mut StationKey { unsafe {
-    out.get_unchecked_mut(i)
-}}
+unsafe fn key_get_mut(out: &mut [StationKey], i: usize) -> &mut StationKey {
+    unsafe {
+        out.get_unchecked_mut(i)
+    }
+}
 #[inline(always)]
-unsafe fn stat_get(out: &[StationStats], i: usize) -> &StationStats { unsafe {
-    out.get_unchecked(i)
-}}
-#[inline(always)]
-unsafe fn stat_get_mut(out: &mut [StationStats], i: usize) -> &mut StationStats { unsafe {
-    out.get_unchecked_mut(i)
-}}
+unsafe fn stat_get_mut(out: &mut [StationStats], i: usize) -> &mut StationStats {
+    unsafe {
+        out.get_unchecked_mut(i)
+    }
+}
 
 #[inline(always)]
 fn find_result_unsafe_idx<'a, 'b>(
