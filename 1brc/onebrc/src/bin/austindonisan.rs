@@ -2,17 +2,14 @@
 use libc::{
     CPU_COUNT, CPU_ISSET, CPU_SET, CPU_ZERO, MADV_HUGEPAGE, MADV_POPULATE_WRITE, MAP_ANONYMOUS,
     MAP_FIXED, MAP_PRIVATE, MAP_SHARED, O_RDONLY, POLLIN, PROT_READ, PROT_WRITE, c_void, close,
-    fork, fputs, fstat, madvise, mmap, open, pipe, poll, pollfd, qsort_r, read, sched_getaffinity,
-    sched_setaffinity, sprintf, stat, wait, write,
+    fork, fstat, madvise, mmap, open, pipe, poll, pollfd, qsort_r, read, sched_getaffinity,
+    sched_setaffinity, stat, wait, write,
 };
 use std::arch::x86_64::*;
 use std::env;
-use std::fs::File;
 use std::io::{self, Write};
-use std::mem::{self, align_of, size_of};
-use std::os::unix::io::AsRawFd;
+use std::mem::{self, size_of};
 use std::ptr;
-use std::slice;
 
 const UNMAP: bool = false;
 const PIN_CPU: bool = true;
@@ -254,7 +251,7 @@ fn main() {
         }
 
         let mut num_workers: i32 = args[2].parse().unwrap_or(0);
-        if num_workers < 1 || num_workers > 256 {
+        if !(1..=256).contains(&num_workers) {
             eprintln!("workers must be between 1 and 256");
             std::process::exit(1);
         }
@@ -269,7 +266,7 @@ fn main() {
             num_workers = (file_stat.st_size as usize / PAGE_SIZE + 1) as i32;
         }
 
-        let mut mem_ptr = mmap(
+        let mem_ptr = mmap(
             ptr::null_mut(),
             RESULTS_MEMORY_SIZE + size_of::<Worker>() * num_workers as usize,
             PROT_READ | PROT_WRITE,
@@ -340,7 +337,7 @@ unsafe fn prep_workers(
 
     let mut cpu = 0;
     let mut start: i64 = 0;
-    let delta = page_trunc(((*file_stat).st_size as usize / num_workers as usize)) as i64;
+    let delta = page_trunc((*file_stat).st_size as usize / num_workers as usize) as i64;
     for i in 0..num_workers {
         while !CPU_ISSET(cpu as usize, &cpuset) {
             cpu += 1;
@@ -874,7 +871,7 @@ unsafe fn process_chunk(base: *const c_void, offsets: *const u32, hash_out: *mut
             masked_city0,
         );
         let v0 =
-            _mm_load_si128(hash.p.hashed_storage.add(4 * h0 as usize + 16 * 0) as *const __m128i);
+            _mm_load_si128(hash.p.hashed_storage.add(4 * h0 as usize) as *const __m128i);
         let h4 = insert_city(
             &mut hash,
             _mm256_extract_epi32(city_hashes, 2) as i64,
@@ -888,7 +885,7 @@ unsafe fn process_chunk(base: *const c_void, offsets: *const u32, hash_out: *mut
             masked_city1,
         );
         let v1 =
-            _mm_load_si128(hash.p.hashed_storage.add(4 * h1 as usize + 16 * 1) as *const __m128i);
+            _mm_load_si128(hash.p.hashed_storage.add(4 * h1 as usize + 16) as *const __m128i);
         let h5 = insert_city(
             &mut hash,
             _mm256_extract_epi32(city_hashes, 6) as i64,
@@ -967,11 +964,11 @@ unsafe fn process_chunk(base: *const c_void, offsets: *const u32, hash_out: *mut
         let n_dh = _mm256_unpackhi_epi64(n_cdgh_low, n_cdgh_high);
 
         _mm_store_si128(
-            hash.p.hashed_storage.add(4 * h0 as usize + 16 * 0) as *mut __m128i,
+            hash.p.hashed_storage.add(4 * h0 as usize) as *mut __m128i,
             _mm256_extracti128_si256(n_ae, 0),
         );
         _mm_store_si128(
-            hash.p.hashed_storage.add(4 * h1 as usize + 16 * 1) as *mut __m128i,
+            hash.p.hashed_storage.add(4 * h1 as usize + 16) as *mut __m128i,
             _mm256_extracti128_si256(n_bf, 0),
         );
         _mm_store_si128(
@@ -1113,7 +1110,7 @@ unsafe fn insert_city(h: *mut Hash, mut hash: i64, masked_city: __m256i) -> i64 
                 0,
             );
             _mm256_store_si256(
-                (*h).p.hashed_storage.add(4 * hash as usize + 0) as *mut __m256i,
+                (*h).p.hashed_storage.add(4 * hash as usize) as *mut __m256i,
                 init_data,
             );
             _mm256_store_si256(
@@ -1337,7 +1334,7 @@ unsafe fn merge(dst: *mut Results, src: *mut Results) {
             ((hash_val as u32 >> (HASH_SHIFT - HASH_RESULT_SHIFT)) & HASH_RESULT_MASK) as i32;
         loop {
             let dst_row = &mut *(*dst).rows.add(hash_val as usize / SHORT_CITY_LENGTH);
-            let xor = _mm256_xor_si256((*dst_row).city.reg, row_city.reg);
+            let xor = _mm256_xor_si256(dst_row.city.reg, row_city.reg);
             if _mm256_testz_si256(xor, xor) != 0 {
                 dst_row.sum += row.sum;
                 dst_row.count += row.count;
@@ -1451,7 +1448,7 @@ unsafe fn convert_hash_to_results(hash: *mut Hash, out: *mut Results) {
 unsafe fn print_results(results: *mut Results) {
     let mut buffer = vec![0u8; MAX_CITIES * 150];
     let mut pos = 0;
-    buffer[pos] = '{' as u8;
+    buffer[pos] = b'{';
     pos += 1;
 
     for i in 0..(*results).num_cities {
@@ -1480,15 +1477,15 @@ unsafe fn print_results(results: *mut Results) {
         pos += s_bytes.len();
 
         if i != (*results).num_cities - 1 {
-            buffer[pos] = ',' as u8;
+            buffer[pos] = b',';
             pos += 1;
-            buffer[pos] = ' ' as u8;
+            buffer[pos] = b' ';
             pos += 1;
         }
     }
-    buffer[pos] = '}' as u8;
+    buffer[pos] = b'}';
     pos += 1;
-    buffer[pos] = '\n' as u8;
+    buffer[pos] = b'\n';
     pos += 1;
     io::stdout().write_all(&buffer[..pos]).unwrap();
 }

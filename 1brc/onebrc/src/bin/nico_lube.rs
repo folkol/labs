@@ -163,7 +163,7 @@ fn find_next(data: &[u8], position: usize, char: u8) -> usize {
             return i;
         }
     }
-    return position;
+    position
 }
 
 struct Chunk {
@@ -203,7 +203,7 @@ impl Chunk {
             |fu: &mut Result| fu.update(value),
             || Result::new(name),
         );
-        return self.position < self.end;
+        self.position < self.end
     }
 
     #[inline(always)]
@@ -262,8 +262,8 @@ fn main() {
             let mut result = result.lock().unwrap();
             for (key, value) in chunk.result.key_set() {
                 result.insert_or_update(
-                    key.clone(),
-                    |fu: &mut Result| fu.merge(&value),
+                    *key,
+                    |fu: &mut Result| fu.merge(value),
                     || value.clone(),
                 );
             }

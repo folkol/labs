@@ -80,9 +80,9 @@ struct Entry {
 }
 
 #[inline]
-unsafe fn load_u64_unaligned(p: *const u8) -> u64 {
+unsafe fn load_u64_unaligned(p: *const u8) -> u64 { unsafe {
     (p as *const u64).read_unaligned()
-}
+}}
 
 #[inline]
 fn mask_low_bytes(n: usize) -> u64 {
@@ -91,7 +91,7 @@ fn mask_low_bytes(n: usize) -> u64 {
 }
 
 #[inline]
-unsafe fn load_prefix2(p: *const u8, len: usize) -> (u64, u64) {
+unsafe fn load_prefix2(p: *const u8, len: usize) -> (u64, u64) { unsafe {
     // Loads first up-to-16 bytes, masking bytes beyond len to 0.
     // Caller guarantees p points into the mmap; len >= 0.
     let w1 = load_u64_unaligned(p);
@@ -101,7 +101,7 @@ unsafe fn load_prefix2(p: *const u8, len: usize) -> (u64, u64) {
         let w2 = load_u64_unaligned(p.add(8));
         (w1, w2 & mask_low_bytes(len - 8))
     }
-}
+}}
 
 #[inline]
 fn hash16(w1: u64, w2: u64, len: u16) -> u64 {
@@ -302,7 +302,7 @@ fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, statistic
         entry.count += 1;
         entry.min = i16::min(entry.min, temperature);
         entry.max = i16::max(entry.max, temperature);
-        entry.total = entry.total + temperature as i64;
+        entry.total += temperature as i64;
 
         start = end + 1;
     }
@@ -354,10 +354,10 @@ fn total_lines(data: &[u8]) -> String {
         for _ in 0..num_threads {
             handles.push(s.spawn(|| {
                 let mut statistics = NameTable::with_capacity(data, 10000);
-                while let Some((start, end)) = claim_chunk(&data, &next) {
+                while let Some((start, end)) = claim_chunk(data, &next) {
                     assert_eq!(data[end - 1], b'\n');
                     // eprintln!("{} - {}", start, end);
-                    chunk_statistics(&data, start, end, &mut statistics);
+                    chunk_statistics(data, start, end, &mut statistics);
                 }
                 statistics
             }));

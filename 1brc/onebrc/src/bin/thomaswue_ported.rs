@@ -61,7 +61,7 @@ fn main() -> io::Result<()> {
             all_results.push(h.join().expect("worker panicked"));
         }
         let final_result = accumulate_results(data, all_results);
-        let total_rows: usize = final_result.iter().map(|(_, v)| v.count).sum();
+        let total_rows: usize = final_result.values().map(|v| v.count).sum();
         let mut report = String::new();
         report.push('{');
         let mut prefix = "";
@@ -352,7 +352,7 @@ fn scan_number_unsafe(scanner: &mut Scanner) -> i16 {
 #[inline(always)]
 fn convert_into_number_i16(decimal_sep_pos: u32, number_word: u64) -> i16 {
     let shift: i32 = 28 - decimal_sep_pos as i32;
-    let signed: i64 = (((!number_word << 59) as i64) >> 63);
+    let signed: i64 = ((!number_word << 59) as i64) >> 63 ;
     let design_mask: u64 = !((signed as u64) & 0xFF);
     let sh = (shift as u32) & 63;
     let digits: u64 = ((number_word & design_mask) << sh) & 0x0F00_0F0F_00u64;
@@ -451,7 +451,7 @@ pub fn next_newline(data: &[u8], prev: usize) -> usize {
 }
 
 #[inline]
-pub unsafe fn next_newline_ptr(mut p: *const u8) -> *const u8 {
+pub unsafe fn next_newline_ptr(mut p: *const u8) -> *const u8 { unsafe {
     loop {
         let word = (p as *const u64).read_unaligned(); // native endian load
         let word = u64::from_le(word); // match little-endian files / x86 behavior
@@ -466,7 +466,7 @@ pub unsafe fn next_newline_ptr(mut p: *const u8) -> *const u8 {
             p = p.add(8);
         }
     }
-}
+}}
 
 #[repr(C)]
 #[derive(Clone, Debug)]
@@ -524,7 +524,7 @@ fn new_entry(
     } else if total_length < 16 {
         key.second &= MASK1[total_length - 9];
     }
-    let mut stat = StationStats {
+    let stat = StationStats {
         min: i16::MAX,
         max: i16::MIN,
         sum: 0,
@@ -550,7 +550,7 @@ fn new_entry_unsafe(
     } else if total_length < 16 {
         key.second &= MASK1[total_length - 9];
     }
-    let mut stat = StationStats {
+    let stat = StationStats {
         min: i16::MAX,
         max: i16::MIN,
         sum: 0,
@@ -612,47 +612,45 @@ fn find_result_idx<'a, 'b>(
             hash ^= b as u64;
             scanner.add(1);
         }
-    } else {
-        if (delimiter_mask | delimiter_mask2) != 0 {
-            let letter_count1 = (delimiter_mask.trailing_zeros() as usize) >> 3;
-            let letter_count2 = (delimiter_mask2.trailing_zeros() as usize) >> 3;
+    } else if (delimiter_mask | delimiter_mask2) != 0 {
+        let letter_count1 = (delimiter_mask.trailing_zeros() as usize) >> 3;
+        let letter_count2 = (delimiter_mask2.trailing_zeros() as usize) >> 3;
 
-            let mask = MASK2[letter_count1];
-            word &= MASK1[letter_count1];
-            word2 = mask & word2 & MASK1[letter_count2];
+        let mask = MASK2[letter_count1];
+        word &= MASK1[letter_count1];
+        word2 = mask & word2 & MASK1[letter_count2];
 
-            hash = word ^ word2;
+        hash = word ^ word2;
 
-            let i1 = letter_count1 + ((letter_count2 as u64 & mask) as usize);
-            scanner.add(i1);
+        let i1 = letter_count1 + ((letter_count2 as u64 & mask) as usize);
+        scanner.add(i1);
 
-            let idx = hash_to_index(hash, table.len());
+        let idx = hash_to_index(hash, table.len());
 
-            let entry = table[idx];
-            if entry != 0 {
-                let r = unsafe { key_get(station_keys, idx) };
-                if r.first == word && r.second == word2 {
-                    return idx;
-                }
+        let entry = table[idx];
+        if entry != 0 {
+            let r = unsafe { key_get(station_keys, idx) };
+            if r.first == word && r.second == word2 {
+                return idx;
             }
-        } else {
-            hash = word ^ word2;
-            scanner.add(16);
+        }
+    } else {
+        hash = word ^ word2;
+        scanner.add(16);
 
-            loop {
-                word = scanner.get_u64();
-                delimiter_mask = find_delimiter(word);
+        loop {
+            word = scanner.get_u64();
+            delimiter_mask = find_delimiter(word);
 
-                if delimiter_mask != 0 {
-                    let tz = delimiter_mask.trailing_zeros() as usize;
-                    word <<= 63 - tz;
-                    scanner.add(tz >> 3);
-                    hash ^= word;
-                    break;
-                } else {
-                    scanner.add(8);
-                    hash ^= word;
-                }
+            if delimiter_mask != 0 {
+                let tz = delimiter_mask.trailing_zeros() as usize;
+                word <<= 63 - tz;
+                scanner.add(tz >> 3);
+                hash ^= word;
+                break;
+            } else {
+                scanner.add(8);
+                hash ^= word;
             }
         }
     }
@@ -700,29 +698,29 @@ fn find_result_idx<'a, 'b>(
 }
 
 #[inline(always)]
-unsafe fn table_get(table: &[u32], i: usize) -> u32 {
+unsafe fn table_get(table: &[u32], i: usize) -> u32 { unsafe {
     *table.get_unchecked(i)
-}
+}}
 #[inline(always)]
-unsafe fn table_set(table: &mut [u32], i: usize, v: u32) {
+unsafe fn table_set(table: &mut [u32], i: usize, v: u32) { unsafe {
     *table.get_unchecked_mut(i) = v;
-}
+}}
 #[inline(always)]
-unsafe fn key_get(out: &[StationKey], i: usize) -> &StationKey {
+unsafe fn key_get(out: &[StationKey], i: usize) -> &StationKey { unsafe {
     out.get_unchecked(i)
-}
+}}
 #[inline(always)]
-unsafe fn key_get_mut(out: &mut [StationKey], i: usize) -> &mut StationKey {
+unsafe fn key_get_mut(out: &mut [StationKey], i: usize) -> &mut StationKey { unsafe {
     out.get_unchecked_mut(i)
-}
+}}
 #[inline(always)]
-unsafe fn stat_get(out: &[StationStats], i: usize) -> &StationStats {
+unsafe fn stat_get(out: &[StationStats], i: usize) -> &StationStats { unsafe {
     out.get_unchecked(i)
-}
+}}
 #[inline(always)]
-unsafe fn stat_get_mut(out: &mut [StationStats], i: usize) -> &mut StationStats {
+unsafe fn stat_get_mut(out: &mut [StationStats], i: usize) -> &mut StationStats { unsafe {
     out.get_unchecked_mut(i)
-}
+}}
 
 #[inline(always)]
 fn find_result_unsafe_idx<'a, 'b>(
@@ -735,7 +733,7 @@ fn find_result_unsafe_idx<'a, 'b>(
     station_keys: &mut Vec<StationKey>,
     station_stats: &mut Vec<StationStats>,
     file_end: usize,
-    stats: &mut ProbeCounters,
+    _stats: &mut ProbeCounters,
 ) -> usize {
     // stats.lookups += 1;
     metric!({

@@ -177,16 +177,15 @@ fn find_result(
         let letter_count1 = (delimiter_mask.trailing_zeros() >> 3) as usize;
         let letter_count2 = (delimiter_mask2.trailing_zeros() >> 3) as usize;
         let mask = MASK2[letter_count1];
-        word = word & MASK1[letter_count1];
+        word &= MASK1[letter_count1];
         word2 = mask & word2 & MASK1[letter_count2];
         hash = word ^ word2;
         let idx = hash_to_index(hash, HASH_TABLE_SIZE);
-        if let Some(ref mut existing) = results[idx] {
-            if existing.first_name_word == word && existing.second_name_word == word2 {
+        if let Some(ref mut existing) = results[idx]
+            && existing.first_name_word == word && existing.second_name_word == word2 {
                 scanner.add(letter_count1 + (letter_count2 & mask as usize));
                 return idx;
             }
-        }
         scanner.add(letter_count1 + (letter_count2 & mask as usize));
     } else {
         hash = word ^ word2;
@@ -199,7 +198,7 @@ fn find_result(
             };
             if delimiter_mask != 0 {
                 let trailing_zeros = delimiter_mask.trailing_zeros();
-                word = word << (63 - trailing_zeros);
+                word <<= (63 - trailing_zeros);
                 scanner.add((trailing_zeros >> 3) as usize);
                 hash ^= word;
                 break;
@@ -380,11 +379,10 @@ fn parse_loop(
                 collected_results,
             );
             // Adjust name_offset for new results
-            if let Some(ref mut r) = hash_table[res_idx1] {
-                if r.name_offset == s1_pos_before {
+            if let Some(ref mut r) = hash_table[res_idx1]
+                && r.name_offset == s1_pos_before {
                     r.name_offset += offset_in_all_data;
                 }
-            }
 
             let s2_pos_before = scanner2.pos;
             let res_idx2 = find_result(
@@ -396,11 +394,10 @@ fn parse_loop(
                 hash_table,
                 collected_results,
             );
-            if let Some(ref mut r) = hash_table[res_idx2] {
-                if r.name_offset == s2_pos_before {
+            if let Some(ref mut r) = hash_table[res_idx2]
+                && r.name_offset == s2_pos_before {
                     r.name_offset += offset_in_all_data;
                 }
-            }
 
             let s3_pos_before = scanner3.pos;
             let res_idx3 = find_result(
@@ -412,11 +409,10 @@ fn parse_loop(
                 hash_table,
                 collected_results,
             );
-            if let Some(ref mut r) = hash_table[res_idx3] {
-                if r.name_offset == s3_pos_before {
+            if let Some(ref mut r) = hash_table[res_idx3]
+                && r.name_offset == s3_pos_before {
                     r.name_offset += offset_in_all_data;
                 }
-            }
 
             let num1 = scan_number(&mut scanner1);
             let num2 = scan_number(&mut scanner2);
@@ -448,11 +444,10 @@ fn parse_loop(
                 hash_table,
                 collected_results,
             );
-            if let Some(ref mut r) = hash_table[res_idx] {
-                if r.name_offset == s_pos_before {
+            if let Some(ref mut r) = hash_table[res_idx]
+                && r.name_offset == s_pos_before {
                     r.name_offset += offset_in_all_data;
                 }
-            }
             let num = scan_number(&mut scanner1);
             record(hash_table[res_idx].as_mut().unwrap(), num);
         }
@@ -477,11 +472,10 @@ fn parse_loop(
                 hash_table,
                 collected_results,
             );
-            if let Some(ref mut r) = hash_table[res_idx] {
-                if r.name_offset == s_pos_before {
+            if let Some(ref mut r) = hash_table[res_idx]
+                && r.name_offset == s_pos_before {
                     r.name_offset += offset_in_all_data;
                 }
-            }
             let num = scan_number(&mut scanner2);
             record(hash_table[res_idx].as_mut().unwrap(), num);
         }
@@ -506,11 +500,10 @@ fn parse_loop(
                 hash_table,
                 collected_results,
             );
-            if let Some(ref mut r) = hash_table[res_idx] {
-                if r.name_offset == s_pos_before {
+            if let Some(ref mut r) = hash_table[res_idx]
+                && r.name_offset == s_pos_before {
                     r.name_offset += offset_in_all_data;
                 }
-            }
             let num = scan_number(&mut scanner3);
             record(hash_table[res_idx].as_mut().unwrap(), num);
         }

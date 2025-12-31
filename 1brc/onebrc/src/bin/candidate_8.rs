@@ -219,7 +219,7 @@ fn parse_temp_tenths(s: &[u8]) -> i16 {
     // formats like: b"-12.3" or b"7.8" or b"0.0"
     // range fits i16 easily
     let mut i = 0usize;
-    let neg = s.get(0) == Some(&b'-');
+    let neg = s.first() == Some(&b'-');
     if neg {
         i += 1;
     }
@@ -267,7 +267,7 @@ fn parse_temp_tenths_fixed_dot(data: &[u8], end: usize) -> i16 {
 }
 
 #[inline]
-unsafe fn parse_temp_tenths_fixed_dot_ptr(line_end_nl: *const u8) -> i16 {
+unsafe fn parse_temp_tenths_fixed_dot_ptr(line_end_nl: *const u8) -> i16 { unsafe {
     // line_end_nl points at '\n'
     debug_assert!(*line_end_nl == b'\n');
     debug_assert!(*line_end_nl.sub(2) == b'.'); // '.' is 2 bytes before '\n'
@@ -286,7 +286,7 @@ unsafe fn parse_temp_tenths_fixed_dot_ptr(line_end_nl: *const u8) -> i16 {
 
     let abs = (tens * 10 + ones) * 10 + tenths;
     if neg { -abs } else { abs }
-}
+}}
 
 #[inline]
 fn find_byte_mask(word: u64, byte: u8) -> u64 {
@@ -295,7 +295,7 @@ fn find_byte_mask(word: u64, byte: u8) -> u64 {
 }
 
 #[inline]
-unsafe fn find_delim(mut p: *const u8, end: *const u8, byte: u8) -> *const u8 {
+unsafe fn find_delim(mut p: *const u8, end: *const u8, byte: u8) -> *const u8 { unsafe {
     // Scan 8 bytes at a time; end is one-past-last valid byte.
     while p.add(8) <= end {
         let w = (p as *const u64).read_unaligned();
@@ -313,7 +313,7 @@ unsafe fn find_delim(mut p: *const u8, end: *const u8, byte: u8) -> *const u8 {
         p = p.add(1);
     }
     end
-}
+}}
 
 fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, statistics: &mut NameTable) {
     let chunk = &data[chunk_start..chunk_end];
@@ -406,10 +406,10 @@ fn total_lines(data: &[u8]) -> String {
         for _ in 0..num_threads {
             handles.push(s.spawn(|| {
                 let mut statistics = NameTable::with_capacity(data, 10000);
-                while let Some((start, end)) = claim_chunk(&data, &next) {
+                while let Some((start, end)) = claim_chunk(data, &next) {
                     assert_eq!(data[end - 1], b'\n');
                     // eprintln!("{} - {}", start, end);
-                    chunk_statistics(&data, start, end, &mut statistics);
+                    chunk_statistics(data, start, end, &mut statistics);
                 }
                 statistics
             }));

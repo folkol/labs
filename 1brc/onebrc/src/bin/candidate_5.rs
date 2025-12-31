@@ -1,13 +1,11 @@
 use memchr::memchr;
 use memmap2::Mmap;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{self, BufRead, Write};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::{env, ptr, thread};
-use std::hash::{BuildHasher, Hasher};
-use ahash::AHashMap;
+use std::{env, thread};
 use xxhash_rust::xxh3::xxh3_64;
 
 const CHUNK_SIZE: usize = 1 << 20;
@@ -229,7 +227,7 @@ fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, statistic
         // eprintln!("semicolon: {}", semicolon);
         let temperature_1 = &data[semicolon + 1..end];
         // eprintln!("temperature_1: {:?}", temperature_1);
-        let temperature_2 = str::from_utf8(&temperature_1).unwrap();
+        let temperature_2 = str::from_utf8(temperature_1).unwrap();
         // eprintln!("temperature_2: {:?}", temperature_2);
         let temperature = match temperature_2.parse::<f64>() {
             Ok(f) => f,
@@ -249,7 +247,7 @@ fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, statistic
         entry.count += 1;
         entry.min = f64::min(entry.min, temperature);
         entry.max = f64::max(entry.max, temperature);
-        entry.total = entry.total + temperature;
+        entry.total += temperature;
 
         start = end + 1;
         // eprintln!("...");
@@ -303,10 +301,10 @@ fn total_lines(data: &[u8]) -> String {
         for _ in 0..num_threads {
             handles.push(s.spawn(|| {
                 let mut statistics = NameTable::with_capacity(data, 10000);
-                while let Some((start, end)) = claim_chunk(&data, &next) {
+                while let Some((start, end)) = claim_chunk(data, &next) {
                     assert_eq!(data[end - 1], b'\n');
                     // eprintln!("{} - {}", start, end);
-                    chunk_statistics(&data, start, end, &mut statistics);
+                    chunk_statistics(data, start, end, &mut statistics);
                 }
                 statistics
             }));

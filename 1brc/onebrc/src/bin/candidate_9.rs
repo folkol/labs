@@ -219,7 +219,7 @@ fn parse_temp_tenths(s: &[u8]) -> i16 {
     // formats like: b"-12.3" or b"7.8" or b"0.0"
     // range fits i16 easily
     let mut i = 0usize;
-    let neg = s.get(0) == Some(&b'-');
+    let neg = s.first() == Some(&b'-');
     if neg {
         i += 1;
     }
@@ -273,7 +273,7 @@ fn find_byte_mask(word: u64, byte: u8) -> u64 {
 }
 
 #[inline]
-unsafe fn find_delim(mut p: *const u8, end: *const u8, byte: u8) -> *const u8 {
+unsafe fn find_delim(mut p: *const u8, end: *const u8, byte: u8) -> *const u8 { unsafe {
     while p.add(8) <= end {
         let w = (p as *const u64).read_unaligned();
         let m = find_byte_mask(w, byte);
@@ -289,10 +289,10 @@ unsafe fn find_delim(mut p: *const u8, end: *const u8, byte: u8) -> *const u8 {
         p = p.add(1);
     }
     end
-}
+}}
 
 #[inline]
-unsafe fn parse_temp_tenths_fixed_dot_ptr(nl: *const u8) -> i16 {
+unsafe fn parse_temp_tenths_fixed_dot_ptr(nl: *const u8) -> i16 { unsafe {
     debug_assert!(*nl == b'\n');
     debug_assert!(*nl.sub(2) == b'.'); // '.' is 2 bytes before '\n'
 
@@ -310,23 +310,23 @@ unsafe fn parse_temp_tenths_fixed_dot_ptr(nl: *const u8) -> i16 {
 
     let abs = (tens * 10 + ones) * 10 + tenths;
     if neg { -abs } else { abs }
-}
+}}
 
 #[inline]
-unsafe fn next_newline(p: *const u8, end: *const u8) -> *const u8 {
+unsafe fn next_newline(p: *const u8, end: *const u8) -> *const u8 { unsafe {
     let nl = find_delim(p, end, b'\n');
     debug_assert!(nl < end && *nl == b'\n');
     nl
-}
+}}
 
 #[inline]
 unsafe fn scan_one_line(
     base: *const u8,
     endp: *const u8,
     chunk_start: usize,
-    mut p: *const u8,
+    p: *const u8,
     stats: &mut NameTable,
-) -> *const u8 {
+) -> *const u8 { unsafe {
     // p points at start of a line
     if p >= endp {
         return endp;
@@ -354,7 +354,7 @@ unsafe fn scan_one_line(
     e.total += temp as i64;
 
     nl.add(1)
-}
+}}
 
 /// Java-style: split the chunk into 3 newline-aligned ranges and process
 /// 3 cursors in lockstep. `chunk_end` must be newline-aligned (your claim_chunk ensures this).
@@ -462,10 +462,10 @@ fn total_lines(data: &[u8]) -> String {
         for _ in 0..num_threads {
             handles.push(s.spawn(|| {
                 let mut statistics = NameTable::with_capacity(data, 10000);
-                while let Some((start, end)) = claim_chunk(&data, &next) {
+                while let Some((start, end)) = claim_chunk(data, &next) {
                     assert_eq!(data[end - 1], b'\n');
                     // eprintln!("{} - {}", start, end);
-                    chunk_statistics(&data, start, end, &mut statistics);
+                    chunk_statistics(data, start, end, &mut statistics);
                 }
                 statistics
             }));

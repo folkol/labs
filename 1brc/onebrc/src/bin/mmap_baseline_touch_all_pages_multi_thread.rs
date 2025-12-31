@@ -60,7 +60,7 @@ fn run_worker() -> io::Result<()> {
             .parse::<usize>()
             .unwrap();
         eprintln!("Processing threads: {num_threads}");
-        let pages_per_thread = (num_pages + num_threads - 1) / num_threads; // ceil div
+        let pages_per_thread = num_pages.div_ceil(num_threads); // ceil div
 
         let mut handles = Vec::with_capacity(num_threads);
 
@@ -79,15 +79,15 @@ fn run_worker() -> io::Result<()> {
             }));
         }
 
-        let vec = handles
+        
+        // std::thread::sleep(std::time::Duration::from_secs(30));
+        handles
             .into_iter()
             .map(|h| h.join().expect("thread panicked"))
-            .collect();
-        // std::thread::sleep(std::time::Duration::from_secs(30));
-        vec
+            .collect()
     });
 
-    println!("{}", results.into_iter().count());
+    println!("{}", results.len());
     // std::process::exit(0);
     Ok(())
 }

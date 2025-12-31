@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::{self, BufRead, Write};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{mpsc, Arc};
+use std::sync::mpsc;
 use std::thread;
 
 const CHUNK_SIZE: usize = 1 << 20;
@@ -96,7 +96,7 @@ fn total_lines(data: &[u8]) -> i64 {
             let tx = tx.clone();
             handles.push(s.spawn(move || {
                 let mut sum: i64 = 0;
-                while let Some((start, end)) = claim_chunk(&data, &next) {
+                while let Some((start, end)) = claim_chunk(data, next) {
                     sum += count_lines(&data[start..end]);
                 }
                 tx.send(sum).unwrap();

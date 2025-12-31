@@ -216,7 +216,7 @@ fn parse_temp_tenths(s: &[u8]) -> i16 {
     // formats like: b"-12.3" or b"7.8" or b"0.0"
     // range fits i16 easily
     let mut i = 0usize;
-    let neg = s.get(0) == Some(&b'-');
+    let neg = s.first() == Some(&b'-');
     if neg { i += 1; }
 
     // read int part (1 or 2 digits for your range)
@@ -297,7 +297,7 @@ fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, statistic
         entry.count += 1;
         entry.min = i16::min(entry.min, temperature);
         entry.max = i16::max(entry.max, temperature);
-        entry.total = entry.total + temperature as i64;
+        entry.total += temperature as i64;
 
         start = end + 1;
         // eprintln!("...");
@@ -358,10 +358,10 @@ fn total_lines(data: &[u8]) -> String {
         for _ in 0..num_threads {
             handles.push(s.spawn(|| {
                 let mut statistics = NameTable::with_capacity(data, 10000);
-                while let Some((start, end)) = claim_chunk(&data, &next) {
+                while let Some((start, end)) = claim_chunk(data, &next) {
                     assert_eq!(data[end - 1], b'\n');
                     // eprintln!("{} - {}", start, end);
-                    chunk_statistics(&data, start, end, &mut statistics);
+                    chunk_statistics(data, start, end, &mut statistics);
                 }
                 statistics
             }));

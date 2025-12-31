@@ -91,7 +91,7 @@ fn total_lines(data: &[u8]) -> i64 {
         for _ in 0..num_threads {
             handles.push(s.spawn(|| {
                 let mut sum: i64 = 0;
-                while let Some((start, end)) = claim_chunk(&data, &next) {
+                while let Some((start, end)) = claim_chunk(data, &next) {
                     sum += count_lines(&data[start..end]);
                 }
                 sum

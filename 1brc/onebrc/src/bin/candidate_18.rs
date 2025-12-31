@@ -73,9 +73,9 @@ struct Entry {
 }
 
 #[inline(always)]
-unsafe fn load_u64_unaligned(p: *const u8) -> u64 {
+unsafe fn load_u64_unaligned(p: *const u8) -> u64 { unsafe {
     (p as *const u64).read_unaligned()
-}
+}}
 
 #[inline(always)]
 fn mask_low_bytes(n: usize) -> u64 {
@@ -83,7 +83,7 @@ fn mask_low_bytes(n: usize) -> u64 {
 }
 
 #[inline(always)]
-unsafe fn load_prefix2(p: *const u8, len: usize) -> (u64, u64) {
+unsafe fn load_prefix2(p: *const u8, len: usize) -> (u64, u64) { unsafe {
     let w1 = load_u64_unaligned(p);
     if len <= 8 {
         (w1 & mask_low_bytes(len), 0)
@@ -91,7 +91,7 @@ unsafe fn load_prefix2(p: *const u8, len: usize) -> (u64, u64) {
         let w2 = load_u64_unaligned(p.add(8));
         (w1, w2 & mask_low_bytes(len - 8))
     }
-}
+}}
 
 #[inline(always)]
 fn hash16(w1: u64, w2: u64, len: u16) -> u64 {
@@ -172,7 +172,7 @@ impl<'a> NameTable<'a> {
     }
 
     #[inline(always)]
-    unsafe fn bytes_eq_u64_ptr(mut a: *const u8, mut b: *const u8, mut len: usize) -> bool {
+    unsafe fn bytes_eq_u64_ptr(mut a: *const u8, mut b: *const u8, mut len: usize) -> bool { unsafe {
         while len >= 8 {
             if (a as *const u64).read_unaligned() != (b as *const u64).read_unaligned() {
                 return false;
@@ -192,7 +192,7 @@ impl<'a> NameTable<'a> {
         } else {
             true
         }
-    }
+    }}
 
     #[inline(always)]
     fn index_for(&self, hash: u64) -> usize {
@@ -213,16 +213,16 @@ impl<'a> NameTable<'a> {
 #[inline(always)]
 fn find_byte_mask(word: u64, byte: u8) -> u64 {
     let x = word ^ u64::from_le_bytes([byte; 8]);
-    (x.wrapping_sub(0x0101_0101_0101_0101) & !x & 0x8080_8080_8080_8080)
+    x.wrapping_sub(0x0101_0101_0101_0101) & !x & 0x8080_8080_8080_8080 
 }
 
 #[inline(always)]
-unsafe fn load_u64(p: *const u8) -> u64 {
+unsafe fn load_u64(p: *const u8) -> u64 { unsafe {
     (p as *const u64).read_unaligned()
-}
+}}
 
 #[inline(always)]
-unsafe fn scan_to_byte(mut p: *const u8, byte: u8) -> *const u8 {
+unsafe fn scan_to_byte(mut p: *const u8, byte: u8) -> *const u8 { unsafe {
     loop {
         let w = load_u64(p);
         let m = find_byte_mask(w, byte);
@@ -232,12 +232,12 @@ unsafe fn scan_to_byte(mut p: *const u8, byte: u8) -> *const u8 {
         }
         p = p.add(8);
     }
-}
+}}
 
 /// Branchless temp parse (tenths) ported from the Java winner.
 /// Input: pointer at first char after ';' (digit or '-')
 #[inline(always)]
-unsafe fn parse_temp_branchless(semi_plus_1: *const u8) -> i16 {
+unsafe fn parse_temp_branchless(semi_plus_1: *const u8) -> i16 { unsafe {
     // Java does getLongAt(pos + 1) where pos is at ';'
     let number_word = (semi_plus_1 as *const u64).read_unaligned();
 
@@ -249,7 +249,7 @@ unsafe fn parse_temp_branchless(semi_plus_1: *const u8) -> i16 {
     let shift = 28 - decimal_sep_pos;
 
     // signed is -1 if negative, 0 otherwise
-    let signed = (((!number_word) << 59) as i64 >> 63) as i64;
+    let signed = (((!number_word) << 59) as i64 >> 63);
     let design_mask = !((signed as u64) & 0xFF);
 
     // Align the number and transform ASCII digits to digit value
@@ -260,7 +260,7 @@ unsafe fn parse_temp_branchless(semi_plus_1: *const u8) -> i16 {
 
     // apply sign
     ((abs_value ^ signed) - signed) as i16
-}
+}}
 
 fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, statistics: &mut NameTable) {
     assert_eq!(data[chunk_end - 1], b'\n');
@@ -336,8 +336,8 @@ fn total_lines(data: &[u8]) -> String {
         for _ in 0..num_threads {
             handles.push(s.spawn(|| {
                 let mut statistics = NameTable::with_capacity(data, 10000);
-                while let Some((start, end)) = claim_chunk(&data, &next) {
-                    chunk_statistics(&data, start, end, &mut statistics);
+                while let Some((start, end)) = claim_chunk(data, &next) {
+                    chunk_statistics(data, start, end, &mut statistics);
                 }
                 statistics
             }));

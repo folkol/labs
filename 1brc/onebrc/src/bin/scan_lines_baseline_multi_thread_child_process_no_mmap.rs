@@ -1,5 +1,3 @@
-use memchr::memchr;
-use memmap2::Mmap;
 use rayon::prelude::*;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Read, Write};

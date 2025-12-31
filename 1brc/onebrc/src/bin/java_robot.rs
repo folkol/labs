@@ -175,16 +175,15 @@ fn find_result(
         let letter_count1 = (delimiter_mask.trailing_zeros() >> 3) as usize;
         let letter_count2 = (delimiter_mask2.trailing_zeros() >> 3) as usize;
         let mask = MASK2[letter_count1];
-        word = word & MASK1[letter_count1];
+        word &= MASK1[letter_count1];
         word2 = mask & word2 & MASK1[letter_count2];
         hash = word ^ word2;
         let idx = hash_to_index(hash, HASH_TABLE_SIZE);
-        if let Some(ref mut existing) = results[idx] {
-            if existing.first_name_word == word && existing.second_name_word == word2 {
+        if let Some(ref mut existing) = results[idx]
+            && existing.first_name_word == word && existing.second_name_word == word2 {
                 scanner.add(letter_count1 + (letter_count2 & mask as usize));
                 return idx;
             }
-        }
         scanner.add(letter_count1 + (letter_count2 & mask as usize));
     } else {
         hash = word ^ word2;
@@ -197,7 +196,7 @@ fn find_result(
             };
             if delimiter_mask != 0 {
                 let trailing_zeros = delimiter_mask.trailing_zeros();
-                word = word << (63 - trailing_zeros);
+                word <<= (63 - trailing_zeros);
                 scanner.add((trailing_zeros >> 3) as usize);
                 hash ^= word;
                 break;

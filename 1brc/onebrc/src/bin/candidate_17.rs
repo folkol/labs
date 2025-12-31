@@ -80,9 +80,9 @@ struct Entry {
 }
 
 #[inline]
-unsafe fn load_u64_unaligned(p: *const u8) -> u64 {
+unsafe fn load_u64_unaligned(p: *const u8) -> u64 { unsafe {
     (p as *const u64).read_unaligned()
-}
+}}
 
 #[inline]
 fn mask_low_bytes(n: usize) -> u64 {
@@ -91,7 +91,7 @@ fn mask_low_bytes(n: usize) -> u64 {
 }
 
 #[inline]
-unsafe fn load_prefix2(p: *const u8, len: usize) -> (u64, u64) {
+unsafe fn load_prefix2(p: *const u8, len: usize) -> (u64, u64) { unsafe {
     // Loads first up-to-16 bytes, masking bytes beyond len to 0.
     // Caller guarantees p points into the mmap; len >= 0.
     let w1 = load_u64_unaligned(p);
@@ -101,7 +101,7 @@ unsafe fn load_prefix2(p: *const u8, len: usize) -> (u64, u64) {
         let w2 = load_u64_unaligned(p.add(8));
         (w1, w2 & mask_low_bytes(len - 8))
     }
-}
+}}
 
 #[inline]
 fn hash16(w1: u64, w2: u64, len: u16) -> u64 {
@@ -207,7 +207,7 @@ impl<'a> NameTable<'a> {
     /// Compare two byte sequences quickly using 8-byte unaligned loads.
     /// Safety: `a` and `b` must be valid for `len` bytes.
     #[inline(always)]
-    unsafe fn bytes_eq_u64_ptr(mut a: *const u8, mut b: *const u8, mut len: usize) -> bool {
+    unsafe fn bytes_eq_u64_ptr(mut a: *const u8, mut b: *const u8, mut len: usize) -> bool { unsafe {
         while len >= 8 {
             if (a as *const u64).read_unaligned() != (b as *const u64).read_unaligned() {
                 return false;
@@ -225,7 +225,7 @@ impl<'a> NameTable<'a> {
         } else {
             true
         }
-    }
+    }}
 
     #[inline]
     fn index_for(&self, hash: u64) -> usize {
@@ -279,7 +279,7 @@ fn parse_temp_tenths_fixed_dot(data: &[u8], end: usize) -> i16 {
 }
 
 #[inline]
-unsafe fn parse_temp_from_semi(semi_plus_1: *const u8) -> i16 {
+unsafe fn parse_temp_from_semi(semi_plus_1: *const u8) -> i16 { unsafe {
     // formats:  "-dd.d" | "-d.d" | "dd.d" | "d.d"
     let mut p = semi_plus_1;
 
@@ -309,22 +309,22 @@ unsafe fn parse_temp_from_semi(semi_plus_1: *const u8) -> i16 {
     let tenths = (*p_after_dot - b'0') as i16;
     let v = int_part * 10 + tenths;
     if neg { -v } else { v }
-}
+}}
 
 #[inline]
-unsafe fn load_u64(p: *const u8) -> u64 {
+unsafe fn load_u64(p: *const u8) -> u64 { unsafe {
     (p as *const u64).read_unaligned()
-}
+}}
 
 #[inline]
 fn find_byte_mask(word: u64, byte: u8) -> u64 {
     // classic "haszero" trick after XOR with repeated byte
     let x = word ^ u64::from_le_bytes([byte; 8]);
-    (x.wrapping_sub(0x0101_0101_0101_0101) & !x & 0x8080_8080_8080_8080)
+    x.wrapping_sub(0x0101_0101_0101_0101) & !x & 0x8080_8080_8080_8080 
 }
 
 #[inline]
-unsafe fn scan_to_byte(mut p: *const u8, byte: u8) -> *const u8 {
+unsafe fn scan_to_byte(mut p: *const u8, byte: u8) -> *const u8 { unsafe {
     loop {
         let w = load_u64(p);
         let m = find_byte_mask(w, byte);
@@ -334,7 +334,7 @@ unsafe fn scan_to_byte(mut p: *const u8, byte: u8) -> *const u8 {
         }
         p = p.add(8);
     }
-}
+}}
 
 fn chunk_statistics(data: &[u8], chunk_start: usize, chunk_end: usize, statistics: &mut NameTable) {
     assert_eq!(data[chunk_end - 1], b'\n');
@@ -418,10 +418,10 @@ fn total_lines(data: &[u8]) -> String {
         for _ in 0..num_threads {
             handles.push(s.spawn(|| {
                 let mut statistics = NameTable::with_capacity(data, 10000);
-                while let Some((start, end)) = claim_chunk(&data, &next) {
+                while let Some((start, end)) = claim_chunk(data, &next) {
                     assert_eq!(data[end - 1], b'\n');
                     // eprintln!("{} - {}", start, end);
-                    chunk_statistics(&data, start, end, &mut statistics);
+                    chunk_statistics(data, start, end, &mut statistics);
                 }
                 statistics
             }));

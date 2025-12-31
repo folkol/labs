@@ -2,7 +2,7 @@ use memchr::memchr;
 use memmap2::Mmap;
 use std::fs::File;
 use std::io::{self, BufRead, Write};
-use std::{env, iter, thread};
+use std::{env, thread};
 use std::process::{Command, Stdio};
 
 const CHUNK_SIZE: usize = 1 << 19;
@@ -68,7 +68,7 @@ fn total_lines(data: &[u8]) -> i64 {
     }
 
     // Split into contiguous newline-aligned ranges.
-    let approx = (len + num_threads - 1) / num_threads; // ceil div
+    let approx = len.div_ceil(num_threads); // ceil div
     let mut ranges = Vec::with_capacity(num_threads);
 
     let mut start = 0usize;
