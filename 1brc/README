@@ -2910,4 +2910,86 @@ Summary
 
 ##### Experiment: split record into name and stats to get better locality
 
+Slight improvement, still ~60 ms off.
+
+
+##### Experiment: register spilling?
+
+cargo asm -r --bin thomaswue_ported thomaswue_ported::find_result_unsafe_idx
+cargo asm -r --bin thomaswue_ported thomaswue_ported::scan_number_unsafe
+cargo asm -r --bin thomaswue_ported thomaswue_ported::Result::record
+
+(or objdump -d --demangle target/release/thomaswue_ported | less)
+
+2) What “spilling” looks like in assembly
+
+You’re looking for stack traffic in the hot loop body:
+
+stores to stack:
+
+mov [rsp+0x..], r..
+
+vmovdqu [rsp+0x..], ymm.. (if SIMD)
+
+loads from stack:
+
+mov r.., [rsp+0x..]
+
+lots of push/pop inside the hot loop
+
+A few stack stores in the function prologue/epilogue (saving callee-saved regs) is normal. Spilling is when you see stack loads/stores repeatedly in the loop body.
+
+Rule of thumb: if the inner loop contains [rsp+...] memory operands that aren’t just once at entry/exit, you have spilling.
+
+RUSTFLAGS="-C opt-level=3 -C debuginfo=1 -C codegen-units=1 -C lto=fat -C llvm-args=-print-after=greedy" \
+  cargo build -r --bin thomaswue_ported 2> /tmp/regalloc.txt
+
+rg -n "spill|spills|reload" /tmp/regalloc.txt | head
+
+
+perf stat -e \
+  mem_inst_retired.all_loads,mem_inst_retired.all_stores, \
+  cpu_core/cycles/,cpu_core/instructions/ \
+  target/release/thomaswue_ported --worker >/dev/null
+
+
+5) If you do find spilling, how to fix it (targeted)
+
+For your codebase, spilling usually comes from:
+
+too many live temporaries inside find_result_unsafe_idx
+
+holding &mut references too long (aliasing)
+
+inlining large helpers + metrics counters
+
+mixed “slow path” code making live ranges long
+
+Fix patterns:
+
+split find_result_unsafe_idx into 2–3 smaller functions (fast path / slow scan / probe loop)
+
+shorten live ranges with scopes:
+
+let idx = { ... }; // let temporaries die here
+
+
+avoid keeping hash, cmp_w1, cmp_w2, name_length, mask, etc. live across the probe loop if you can recompute cheaply or move them into a struct
+
+But don’t do any of that until you’ve confirmed spills in asm.
+
+---
+
+cargo build --release --bin thomaswue_ported
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ cargo asm --version
+cargo-asm 0.1.16
+
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ cargo uninstall cargo-asm
+    Removing /home/folkol/.cargo/bin/cargo-asm
+    Removing /home/folkol/.cargo/bin/cargo-llvm-ir
+folkol@ubuntu:~/code/labs/1brc/onebrc$ cargo install cargo-show-asm
+
+
 
