@@ -26,6 +26,7 @@ fn main() -> io::Result<()> {
     if !is_worker {
         return spawn_worker();
     }
+    eprintln!("size_of::<Result>(): {}", size_of::<Result>());
 
     let number_of_workers = env::var("NUM_THREADS").map_or(
         thread::available_parallelism().map_or(1, |n| n.get()),
@@ -105,7 +106,9 @@ struct ProbeCounters {
 
 #[cfg(feature = "metrics")]
 macro_rules! metric {
-    ($e:expr) => { $e };
+    ($e:expr) => {
+        $e
+    };
 }
 
 #[cfg(not(feature = "metrics"))]
@@ -400,15 +403,14 @@ pub unsafe fn next_newline_ptr(mut p: *const u8) -> *const u8 {
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct Result {
     pub first_name_word: u64,
     pub second_name_word: u64,
     pub name_address: usize,
-    min: i16,
-    max: i16,
-    sum: i64,
-    count: usize,
+    pub count: usize,
+    pub sum: i64,
+    pub min: i16,
+    pub max: i16,
 }
 
 impl Result {
@@ -673,7 +675,9 @@ fn find_result_unsafe_idx<'a, 'b>(
     stats: &mut ProbeCounters,
 ) -> &'b mut Result {
     // stats.lookups += 1;
-    metric!({ stats.lookups += 1; });
+    metric!({
+        stats.lookups += 1;
+    });
 
     // Preserve the first two 8-byte chunks as read by the caller.
     // These are the "signature" words used for fast hits.
@@ -773,12 +777,16 @@ fn find_result_unsafe_idx<'a, 'b>(
 
     loop {
         // stats.probe_steps += 1;
-        metric!({ stats.probe_steps += 1; });
+        metric!({
+            stats.probe_steps += 1;
+        });
 
         let mut entry = unsafe { table_get(table, table_index) };
         if entry == 0 {
             // stats.inserts += 1;
-                    metric!({ stats.inserts += 1; });
+            metric!({
+                stats.inserts += 1;
+            });
 
             out.push(new_entry_unsafe(name_address, name_length, scanner));
             entry = out.len() as u32;
@@ -792,7 +800,9 @@ fn find_result_unsafe_idx<'a, 'b>(
         let r = unsafe { out_get(out, idx) };
         if r.first_name_word == cmp_w1 && r.second_name_word == cmp_w2 {
             // stats.fast_word_hits += 1;
-                                metric!({ stats.fast_word_hits += 1; });
+            metric!({
+                stats.fast_word_hits += 1;
+            });
 
             return unsafe { out_get_mut(out, idx) };
         }
@@ -800,8 +810,9 @@ fn find_result_unsafe_idx<'a, 'b>(
         // Full compare needed (even though probe_steps==1)
         // unreachable!("we should not get here");
         // stats.full_compares += 1;
-                                        metric!({ stats.full_compares += 1; });
-
+        metric!({
+            stats.full_compares += 1;
+        });
 
         let existing_addr = r.name_address;
 
@@ -812,7 +823,9 @@ fn find_result_unsafe_idx<'a, 'b>(
                 != scanner.get_u64_at_unsafe(name_address + i)
             {
                 // stats.advances += 1;
-                                                        metric!({ stats.advances += 1; });
+                metric!({
+                    stats.advances += 1;
+                });
 
                 table_index = (table_index + 31) & mask;
                 continue;
@@ -828,7 +841,9 @@ fn find_result_unsafe_idx<'a, 'b>(
             return unsafe { out_get_mut(out, idx) };
         } else {
             // stats.advances += 1;
-                                                                    metric!({ stats.advances += 1; });
+            metric!({
+                stats.advances += 1;
+            });
 
             table_index = (table_index + 31) & mask;
         }
