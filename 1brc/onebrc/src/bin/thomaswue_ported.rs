@@ -630,7 +630,7 @@ fn find_result_idx<'a, 'b>(
 
             let entry = table[idx];
             if entry != 0 {
-                let r = unsafe { key_get_mut(station_keys, idx) };
+                let r = unsafe { key_get(station_keys, idx) };
                 if r.first == word && r.second == word2 {
                     return idx;
                 }
