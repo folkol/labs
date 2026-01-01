@@ -18,19 +18,6 @@ unsafe fn madvise(ptr: *const u8, len: usize, advice: i32) {
     }
 }
 
-fn pin_current_thread_to_cpu(cpu: usize) -> io::Result<()> {
-    unsafe {
-        let mut set: libc::cpu_set_t = std::mem::zeroed();
-        libc::CPU_ZERO(&mut set);
-        libc::CPU_SET(cpu, &mut set);
-        let rc = libc::sched_setaffinity(0, size_of::<libc::cpu_set_t>(), &set);
-        if rc != 0 {
-            return Err(io::Error::last_os_error());
-        }
-    }
-    Ok(())
-}
-
 fn main() -> io::Result<()> {
     let is_worker = env::args().any(|a| a == "--worker");
     if !is_worker {
@@ -45,9 +32,7 @@ fn main() -> io::Result<()> {
     let file = File::open(FILE)?;
     let mmap = unsafe { Mmap::map(&file)? };
     unsafe {
-        // madvise(mmap.as_ptr(), mmap.len(), libc::MADV_HUGEPAGE);
-        // madvise(mmap.as_ptr(), mmap.len(), libc::MADV_SEQUENTIAL);
-        // madvise(mmap.as_ptr(), mmap.len(), libc::MADV);
+        madvise(mmap.as_ptr(), mmap.len(), libc::MADV_SEQUENTIAL);
     }
     let file_len = mmap.len();
     let page = unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize };
@@ -62,18 +47,12 @@ fn main() -> io::Result<()> {
 
     thread::scope(|s| {
         let mut handles = Vec::with_capacity(number_of_workers);
-        for worker_index in 0..number_of_workers {
+        for _ in 0..number_of_workers {
             let cursor = Arc::clone(&cursor);
             let file_start = file_start;
             let file_end = file_end;
 
-            handles.push(s.spawn(move || {
-                let num_cpus = thread::available_parallelism().unwrap().get();
-                let cpu = worker_index % num_cpus;
-                pin_current_thread_to_cpu(cpu).unwrap();
-
-                parse_loop(data, &cursor, file_end, file_start)
-            }));
+            handles.push(s.spawn(move || parse_loop(data, &cursor, file_end, file_start)));
         }
         let mut all_results = Vec::with_capacity(number_of_workers);
         for h in handles {
@@ -223,9 +202,9 @@ fn parse_loop(
         let mid1_nl = next_newline(data, segment_start + dist);
         let mid2_nl = next_newline(data, segment_start + 2 * dist);
 
-        let mut scanner_1 = Scanner::new(data, segment_start, mid1_nl + 1, file_end);
-        let mut scanner_2 = Scanner::new(data, mid1_nl + 1, mid2_nl + 1, file_end);
-        let mut scanner_3 = Scanner::new(data, mid2_nl + 1, segment_end, file_end);
+        let mut scanner_1 = Scanner::new(data, segment_start, mid1_nl + 1);
+        let mut scanner_2 = Scanner::new(data, mid1_nl + 1, mid2_nl + 1);
+        let mut scanner_3 = Scanner::new(data, mid2_nl + 1, segment_end);
 
         while scanner_1.has_next_safe() && scanner_2.has_next_safe() && scanner_3.has_next_safe() {
             let word_1 = scanner_1.get_u64_unsafe();
@@ -400,16 +379,14 @@ struct Scanner<'a> {
     data: &'a [u8],
     end: usize,
     pos: usize,
-    file_end: usize,
 }
 
 impl<'a> Scanner<'a> {
-    fn new(data: &'a [u8], start: usize, end: usize, file_end: usize) -> Scanner<'a> {
+    fn new(data: &'a [u8], start: usize, end: usize) -> Scanner<'a> {
         Self {
             data,
             end,
             pos: start,
-            file_end,
         }
     }
 
@@ -450,39 +427,6 @@ pub fn next_newline(data: &[u8], prev: usize) -> usize {
     prev + memchr::memchr(b'\n', &data[prev..]).expect("expected newline")
 }
 
-// #[repr(C)]
-// #[derive(Clone, Debug)]
-// struct StationKey {
-//     first: u64,
-//     second: u64,
-//     name_address: usize,
-// }
-//
-// // #[repr(C)]
-// #[repr(align(16))]
-// #[derive(Clone, Debug)]
-// struct StationStats {
-//     min: i16,
-//     max: i16,
-//     count: u32,
-//     sum: i64,
-// }
-//
-// impl StationStats {
-//     #[inline(always)]
-//     fn record(&mut self, number: i16) {
-//         if number < self.min {
-//             self.min = number;
-//         }
-//         if number > self.max {
-//             self.max = number;
-//         }
-//
-//         self.sum += number as i64;
-//         self.count += 1;
-//     }
-// }
-
 #[inline(always)]
 fn hash_to_index(hash: u64, table_len: usize) -> usize {
     debug_assert!(table_len.is_power_of_two());
@@ -490,38 +434,8 @@ fn hash_to_index(hash: u64, table_len: usize) -> usize {
     (hash_as_int as usize) & (table_len - 1)
 }
 
-// fn new_entry_unsafe(
-//     name_address: usize,
-//     name_length: usize,
-//     scanner: &Scanner,
-// ) -> (StationKey, StationStats) {
-//     let mut key = StationKey {
-//         first: scanner.get_u64_at_unsafe(name_address),
-//         second: scanner.get_u64_at_unsafe(name_address + 8),
-//         name_address,
-//     };
-//     let total_length = name_length + 1;
-//     if total_length <= 8 {
-//         key.first &= unsafe { MASK1.get_unchecked(total_length - 1) };
-//         key.second = 0;
-//     } else if total_length < 16 {
-//         key.second &= unsafe { MASK1.get_unchecked(total_length - 9) };
-//     }
-//     let stat = StationStats {
-//         min: i16::MAX,
-//         max: i16::MIN,
-//         sum: 0,
-//         count: 0,
-//     };
-//     (key, stat)
-// }
-
 // TODO: inline?
-fn new_entry_unsafe(
-    name_address: usize,
-    name_length: usize,
-    scanner: &Scanner,
-) -> (Result) {
+fn new_entry_unsafe(name_address: usize, name_length: usize, scanner: &Scanner) -> (Result) {
     let mut result = Result {
         first_name_word: scanner.get_u64_at_unsafe(name_address),
         second_name_word: scanner.get_u64_at_unsafe(name_address + 8),
@@ -592,8 +506,6 @@ fn find_result_unsafe_idx<'a, 'b>(
     delim_mask_b: u64,
     scanner: &mut Scanner<'a>,
     table: &mut [u32],
-    // station_keys: &mut Vec<StationKey>,
-    // station_stats: &mut Vec<StationStats>,
     results: &mut Vec<Result>,
     file_end: usize,
 ) -> usize {
