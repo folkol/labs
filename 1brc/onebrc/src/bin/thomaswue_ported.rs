@@ -578,9 +578,17 @@ fn find_result_unsafe_idx<'a, 'b>(
     }
 
     let name_length = scanner.pos() - name_address;
-
     let mut table_index = hash_to_index(hash, table.len());
     let mask = table.len() - 1;
+
+    let entry0 = unsafe { table_get(table, table_index) };
+    if entry0 != 0 {
+        let idx0 = (entry0 - 1) as usize;
+        let r0 = unsafe { results.get_unchecked(idx0) };
+        if r0.first_name_word == cmp_w1 && r0.second_name_word == cmp_w2 {
+            return idx0;
+        }
+    }
 
     'outer: loop {
         let mut entry = unsafe { table_get(table, table_index) };
@@ -591,19 +599,15 @@ fn find_result_unsafe_idx<'a, 'b>(
             unsafe { table_set(table, table_index, entry) };
             return entry as usize - 1;
         }
-
+        
         let idx = (entry - 1) as usize;
-
         let r = unsafe { results.get_unchecked(idx) };
-        if r.first_name_word == cmp_w1 && r.second_name_word == cmp_w2 {
-            return idx;
-        }
-
         let existing_addr = r.name_address;
 
         let end = name_length + 1;
-        let mut i: usize = 0;
-        while i + 8 < end {
+        let mut i = 0usize;
+
+        while i < end - 8 {
             if scanner.get_u64_at_unsafe(existing_addr + i)
                 != scanner.get_u64_at_unsafe(name_address + i)
             {
@@ -619,9 +623,9 @@ fn find_result_unsafe_idx<'a, 'b>(
 
         if ((a ^ b) << remaining_shift) == 0 {
             return idx;
-        } else {
-            table_index = (table_index + 31) & mask;
         }
+
+        table_index = (table_index + 31) & mask;
     }
 }
 
