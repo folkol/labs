@@ -435,7 +435,7 @@ fn hash_to_index(hash: u64, table_len: usize) -> usize {
 }
 
 // TODO: inline?
-fn new_entry_unsafe(name_address: usize, name_length: usize, scanner: &Scanner) -> (Result) {
+fn new_entry_unsafe(name_address: usize, name_length: usize, scanner: &Scanner) -> Result  {
     let mut result = Result {
         first_name_word: scanner.get_u64_at_unsafe(name_address),
         second_name_word: scanner.get_u64_at_unsafe(name_address + 8),

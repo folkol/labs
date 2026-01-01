@@ -3332,3 +3332,63 @@ Summary
     1.01 ± 0.02 times faster than ./separate_structs --worker
 
 
+#### testing inline new_record
+
+No difference...
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 2 './baseline --worker' 'target/release/thomaswue_ported --worker'
+Benchmark 1: ./baseline --worker
+  Time (mean ± σ):     352.7 ms ±   6.1 ms    [User: 5044.5 ms, System: 417.8 ms]
+  Range (min … max):   341.9 ms … 363.5 ms    10 runs
+ 
+Benchmark 2: target/release/thomaswue_ported --worker
+  Time (mean ± σ):     352.4 ms ±   4.7 ms    [User: 5064.8 ms, System: 425.5 ms]
+  Range (min … max):   342.8 ms … 356.2 ms    10 runs
+ 
+Summary
+  target/release/thomaswue_ported --worker ran
+    1.00 ± 0.02 times faster than ./baseline --worker
+
+
+
+Current diff from java:
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ NUM_THREADS=1 hyperfine --warmup 2 '../java-orig/target/CalculateAverage_thomaswue_image --worker' 'target/release/thomaswue_ported --worker'
+Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image --worker
+  Time (mean ± σ):      4.316 s ±  0.033 s    [User: 3.965 s, System: 0.350 s]
+  Range (min … max):    4.266 s …  4.371 s    10 runs
+ 
+Benchmark 2: target/release/thomaswue_ported --worker
+  Time (mean ± σ):      4.925 s ±  0.055 s    [User: 4.588 s, System: 0.335 s]
+  Range (min … max):    4.843 s …  4.979 s    10 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image --worker ran
+    1.14 ± 0.02 times faster than target/release/thomaswue_ported --worker
+folkol@ubuntu:~/code/labs/1brc/onebrc$ NUM_THREADS=24 hyperfine --warmup 2 '../java-orig/target/CalculateAverage_thomaswue_image --worker' 'target/release/thomaswue_ported --worker'
+Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image --worker
+  Time (mean ± σ):     321.2 ms ±   3.1 ms    [User: 4556.6 ms, System: 431.1 ms]
+  Range (min … max):   317.8 ms … 327.4 ms    10 runs
+ 
+Benchmark 2: target/release/thomaswue_ported --worker
+  Time (mean ± σ):     340.5 ms ±   3.7 ms    [User: 5033.9 ms, System: 427.1 ms]
+  Range (min … max):   333.6 ms … 343.6 ms    10 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image --worker ran
+    1.06 ± 0.02 times faster than target/release/thomaswue_ported --worker
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ NUM_THREADS=24 hyperfine --warmup 2 '../java-orig/target/CalculateAverage_thomaswue_image' 'target/release/thomaswue_ported'
+Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     218.0 ms ±   1.8 ms    [User: 1.2 ms, System: 1.7 ms]
+  Range (min … max):   216.3 ms … 223.0 ms    13 runs
+ 
+Benchmark 2: target/release/thomaswue_ported
+  Time (mean ± σ):     246.2 ms ±   3.8 ms    [User: 0.6 ms, System: 0.5 ms]
+  Range (min … max):   239.6 ms … 250.5 ms    11 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image ran
+    1.13 ± 0.02 times faster than target/release/thomaswue_ported
+
+

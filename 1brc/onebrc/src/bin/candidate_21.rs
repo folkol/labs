@@ -252,7 +252,7 @@ unsafe fn parse_temp_branchless(semi_plus_1: *const u8) -> i16 { unsafe {
     let shift = 28 - decimal_sep_pos;
 
     // signed is -1 if negative, 0 otherwise
-    let signed = (((!number_word) << 59) as i64 >> 63);
+    let signed = ((!number_word) << 59) as i64 >> 63 ;
     let design_mask = !((signed as u64) & 0xFF);
 
     let digits = ((number_word & design_mask) << shift) & 0x0000_0F00_0F0F_00u64;

@@ -198,7 +198,7 @@ fn find_result(
             };
             if delimiter_mask != 0 {
                 let trailing_zeros = delimiter_mask.trailing_zeros();
-                word <<= (63 - trailing_zeros);
+                word <<= 63 - trailing_zeros ;
                 scanner.add((trailing_zeros >> 3) as usize);
                 hash ^= word;
                 break;
