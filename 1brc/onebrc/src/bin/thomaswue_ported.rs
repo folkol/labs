@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::{env, io};
+use std::{env, io, time};
 use std::{sync::Arc, thread};
 
 const FILE: &str = "./measurements.txt";
@@ -45,12 +45,16 @@ fn main() -> io::Result<()> {
     let file = File::open(FILE)?;
     let mmap = unsafe { Mmap::map(&file)? };
     unsafe {
-        madvise(mmap.as_ptr(), mmap.len(), libc::MADV_HUGEPAGE);
-        madvise(mmap.as_ptr(), mmap.len(), libc::MADV_SEQUENTIAL);
-        madvise(mmap.as_ptr(), mmap.len(), libc::MADV_WILLNEED);
+        // madvise(mmap.as_ptr(), mmap.len(), libc::MADV_HUGEPAGE);
+        // madvise(mmap.as_ptr(), mmap.len(), libc::MADV_SEQUENTIAL);
+        // madvise(mmap.as_ptr(), mmap.len(), libc::MADV);
     }
-
-    let data = &mmap;
+    let file_len = mmap.len();
+    let page = unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize };
+    let mapped_len = (file_len + page - 1) & !(page - 1);
+    // SAFETY: the VMA backing the mapping is page-granular, so bytes up to mapped_len
+    // are mapped. We only *interpret* bytes beyond file_len as padding.
+    let data: &[u8] = unsafe { std::slice::from_raw_parts(mmap.as_ptr(), mapped_len) };
 
     let file_start = 0;
     let file_end = file_start + mmap.len();
@@ -75,7 +79,11 @@ fn main() -> io::Result<()> {
         for h in handles {
             all_results.push(h.join().expect("worker panicked"));
         }
+        let begin = time::Instant::now();
         let final_result = accumulate_results(data, all_results);
+        let elapsed = begin.elapsed().as_nanos();
+        eprintln!("accumulate results in {elapsed} ns");
+        let render_begin = time::Instant::now();
         let mut report = String::new();
         report.push('{');
         let mut prefix = "";
@@ -91,6 +99,8 @@ fn main() -> io::Result<()> {
         }
         report.push('}');
 
+        let render_elapsed = render_begin.elapsed().as_nanos();
+        eprintln!("render result in: {render_elapsed} ns");
         println!("{report}");
     });
     Ok(())
@@ -165,6 +175,7 @@ fn parse_loop(
     loop {
         let current = _cursor.fetch_add(SEGMENT_SIZE as usize, Ordering::Relaxed);
         if current >= file_end {
+            let start = time::Instant::now();
             let mut results = Vec::with_capacity(station_keys.len());
             for (key, stat) in station_keys.iter().zip(station_stats) {
                 results.push(Result {
@@ -177,6 +188,8 @@ fn parse_loop(
                     max: stat.max,
                 });
             }
+            let elapsed = start.elapsed().as_nanos();
+            eprintln!("constructed results in {elapsed} ns");
             return results;
         }
 
@@ -196,9 +209,9 @@ fn parse_loop(
         let mid1_nl = next_newline(data, segment_start + dist);
         let mid2_nl = next_newline(data, segment_start + 2 * dist);
 
-        let mut scanner_1 = Scanner::new(data, segment_start, mid1_nl + 1);
-        let mut scanner_2 = Scanner::new(data, mid1_nl + 1, mid2_nl + 1);
-        let mut scanner_3 = Scanner::new(data, mid2_nl + 1, segment_end);
+        let mut scanner_1 = Scanner::new(data, segment_start, mid1_nl + 1, file_end);
+        let mut scanner_2 = Scanner::new(data, mid1_nl + 1, mid2_nl + 1, file_end);
+        let mut scanner_3 = Scanner::new(data, mid2_nl + 1, segment_end, file_end);
 
         while scanner_1.has_next_safe() && scanner_2.has_next_safe() && scanner_3.has_next_safe() {
             let word_1 = scanner_1.get_u64_unsafe();
@@ -361,20 +374,22 @@ struct Scanner<'a> {
     data: &'a [u8],
     end: usize,
     pos: usize,
+    file_end: usize
 }
 
 impl<'a> Scanner<'a> {
-    fn new(data: &'a [u8], start: usize, end: usize) -> Scanner<'a> {
+    fn new(data: &'a [u8], start: usize, end: usize, file_end: usize) -> Scanner<'a> {
         Self {
             data,
             end,
             pos: start,
+            file_end
         }
     }
 
     #[inline(always)]
     fn has_next_safe(&self) -> bool {
-        self.pos < self.end
+        self.pos + 16 < self.end
     }
 
     #[inline(always)]
@@ -461,10 +476,10 @@ fn new_entry_unsafe(
     };
     let total_length = name_length + 1;
     if total_length <= 8 {
-        key.first &= MASK1[total_length - 1];
+        key.first &= unsafe { MASK1.get_unchecked(total_length - 1) };
         key.second = 0;
     } else if total_length < 16 {
-        key.second &= MASK1[total_length - 9];
+        key.second &= unsafe { MASK1.get_unchecked(total_length - 9) };
     }
     let stat = StationStats {
         min: i16::MAX,
