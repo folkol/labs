@@ -8,9 +8,6 @@ use std::{env, io};
 use std::{sync::Arc, thread};
 
 const FILE: &str = "./measurements.txt";
-// const MIN_TEMP: i32 = -999;
-// const MAX_TEMP: i32 = 999;
-const MAX_NAME_LENGTH: i32 = 100;
 const MAX_CITIES: i32 = 10000;
 const SEGMENT_SIZE: i32 = 1 << 21;
 const HASH_TABLE_SIZE: i32 = 1 << 17;
@@ -26,7 +23,7 @@ fn pin_current_thread_to_cpu(cpu: usize) -> io::Result<()> {
         let mut set: libc::cpu_set_t = std::mem::zeroed();
         libc::CPU_ZERO(&mut set);
         libc::CPU_SET(cpu, &mut set);
-        let rc = libc::sched_setaffinity(0, std::mem::size_of::<libc::cpu_set_t>(), &set);
+        let rc = libc::sched_setaffinity(0, size_of::<libc::cpu_set_t>(), &set);
         if rc != 0 {
             return Err(io::Error::last_os_error());
         }
@@ -35,11 +32,10 @@ fn pin_current_thread_to_cpu(cpu: usize) -> io::Result<()> {
 }
 
 fn main() -> io::Result<()> {
-    let is_worker = std::env::args().any(|a| a == "--worker");
+    let is_worker = env::args().any(|a| a == "--worker");
     if !is_worker {
         return spawn_worker();
     }
-    eprintln!("size_of::<StationStats>(): {}", size_of::<StationStats>());
 
     let number_of_workers = env::var("NUM_THREADS").map_or(
         thread::available_parallelism().map_or(1, |n| n.get()),
@@ -68,7 +64,8 @@ fn main() -> io::Result<()> {
             let file_end = file_end;
 
             handles.push(s.spawn(move || {
-                let cpu = worker_index % number_of_workers; // decide mapping
+                let num_cpus = thread::available_parallelism().unwrap().get();
+                let cpu = worker_index % num_cpus;
                 pin_current_thread_to_cpu(cpu).unwrap();
 
                 parse_loop(data, &cursor, file_end, file_start)
@@ -79,7 +76,6 @@ fn main() -> io::Result<()> {
             all_results.push(h.join().expect("worker panicked"));
         }
         let final_result = accumulate_results(data, all_results);
-        let total_rows: u32 = final_result.values().map(|v| v.count).sum();
         let mut report = String::new();
         report.push('{');
         let mut prefix = "";
@@ -96,7 +92,6 @@ fn main() -> io::Result<()> {
         report.push('}');
 
         println!("{report}");
-        eprintln!("({total_rows} rows processed)");
     });
     Ok(())
 }
@@ -110,39 +105,6 @@ fn spawn_worker() -> io::Result<()> {
     BufReader::new(pipe).read_line(&mut result)?;
     println!("{result}");
     Ok(())
-}
-
-#[derive(Default, Debug, Clone, Copy)]
-struct ProbeCounters {
-    #[cfg(feature = "metrics")]
-    lookups: u64,
-
-    #[cfg(feature = "metrics")]
-    probe_steps: u64,
-
-    #[cfg(feature = "metrics")]
-    advances: u64,
-
-    #[cfg(feature = "metrics")]
-    inserts: u64,
-
-    #[cfg(feature = "metrics")]
-    fast_word_hits: u64,
-
-    #[cfg(feature = "metrics")]
-    full_compares: u64,
-}
-
-#[cfg(feature = "metrics")]
-macro_rules! metric {
-    ($e:expr) => {
-        $e
-    };
-}
-
-#[cfg(not(feature = "metrics"))]
-macro_rules! metric {
-    ($e:expr) => {};
 }
 
 pub struct Result {
@@ -167,7 +129,6 @@ impl Result {
         String::from_utf8_lossy(&bytes[..end]).into_owned()
     }
 
-    /// Merge another `Result` into `self` (min/max/sum/count).
     #[inline(always)]
     fn accumulate(&mut self, other: &Self) {
         if other.count == 0 {
@@ -201,22 +162,9 @@ fn parse_loop(
     let mut station_keys: Vec<StationKey> = Vec::with_capacity(MAX_CITIES as usize);
     let mut station_stats: Vec<StationStats> = Vec::with_capacity(MAX_CITIES as usize);
 
-    let mut stats = ProbeCounters::default();
-
     loop {
-        let current = _cursor.fetch_add(SEGMENT_SIZE as usize, Ordering::SeqCst);
+        let current = _cursor.fetch_add(SEGMENT_SIZE as usize, Ordering::Relaxed);
         if current >= _file_end {
-            // Correct, meaningful stats
-            #[cfg(feature = "metrics")]
-            eprintln!(
-                "lookups={} probes/lookup={:.3} advances/lookup={:.6} inserts={} fast_hits%={:.2} full_compares%={:.2}",
-                stats.lookups,
-                stats.probe_steps as f64 / stats.lookups as f64,
-                stats.advances as f64 / stats.lookups as f64,
-                stats.inserts,
-                100.0 * (stats.fast_word_hits as f64 / stats.lookups as f64),
-                100.0 * (stats.full_compares as f64 / stats.lookups as f64),
-            );
             let mut results = Vec::with_capacity(station_keys.len());
             for (key, stat) in station_keys.iter().zip(station_stats) {
                 results.push(Result {
@@ -247,16 +195,32 @@ fn parse_loop(
             assert_eq!(segment_start, 0);
         }
 
-        let mut scanner_1 = Scanner::new(data, segment_start, segment_end);
+        let dist = (segment_end - segment_start) / 3;
+        let midpoint_1 = next_newline(data, segment_start + dist);
+        let midpoint_2 = next_newline(data, segment_start + dist + dist);
 
-        while scanner_1.has_next_safe() {
+        let mut scanner_1 = Scanner::new(data, segment_start, midpoint_1, _file_end);
+        let mut scanner_2 = Scanner::new(data, midpoint_1 + 1, midpoint_2, _file_end);
+        let mut scanner_3 = Scanner::new(data, midpoint_2 + 1, segment_end, _file_end);
+
+        while scanner_1.has_next_safe() && scanner_2.has_next_safe() && scanner_3.has_next_safe() {
             let word_1 = scanner_1.get_u64_unsafe();
+            let word_2 = scanner_2.get_u64_unsafe();
+            let word_3 = scanner_3.get_u64_unsafe();
+
             let delim_1 = find_delimiter(word_1);
+            let delim_2 = find_delimiter(word_2);
+            let delim_3 = find_delimiter(word_3);
 
             let word_1b = scanner_1.get_u64_at_unsafe(scanner_1.pos + 8);
-            let delim_1b = find_delimiter(word_1b);
+            let word_2b = scanner_2.get_u64_at_unsafe(scanner_2.pos + 8);
+            let word_3b = scanner_3.get_u64_at_unsafe(scanner_3.pos + 8);
 
-            let index = find_result_unsafe_idx(
+            let delim_1b = find_delimiter(word_1b);
+            let delim_2b = find_delimiter(word_2b);
+            let delim_3b = find_delimiter(word_3b);
+
+            let index1 = find_result_unsafe_idx(
                 word_1,
                 delim_1,
                 word_1b,
@@ -266,83 +230,101 @@ fn parse_loop(
                 &mut station_keys,
                 &mut station_stats,
                 _file_end,
-                &mut stats,
+            );
+            let index2 = find_result_unsafe_idx(
+                word_2,
+                delim_2,
+                word_2b,
+                delim_2b,
+                &mut scanner_2,
+                &mut table,
+                &mut station_keys,
+                &mut station_stats,
+                _file_end,
+            );
+            let index3 = find_result_unsafe_idx(
+                word_3,
+                delim_3,
+                word_3b,
+                delim_3b,
+                &mut scanner_3,
+                &mut table,
+                &mut station_keys,
+                &mut station_stats,
+                _file_end,
             );
 
             let number_1 = scan_number_unsafe(&mut scanner_1);
+            let number_2 = scan_number_unsafe(&mut scanner_2);
+            let number_3 = scan_number_unsafe(&mut scanner_3);
 
-            unsafe { stat_get_mut(&mut station_stats, index).record(number_1) };
-            // r.record(number_1);
+            unsafe { stat_get_mut(&mut station_stats, index1).record(number_1) };
+            unsafe { stat_get_mut(&mut station_stats, index2).record(number_2) };
+            unsafe { stat_get_mut(&mut station_stats, index3).record(number_3) };
         }
 
-        if segment_end < _file_end - 1 {
-            while scanner_1.has_next() {
-                let word_1 = scanner_1.get_u64_unsafe();
-                let delim_1 = find_delimiter(word_1);
-                let word_1b = scanner_1.get_u64_at_unsafe(scanner_1.pos + 8);
-                let delim_1b = find_delimiter(word_1b);
+        while scanner_1.has_next() {
+            let word_1 = scanner_1.get_u64();
+            let delim_1 = find_delimiter(word_1);
+            let word_1b = scanner_1.get_u64_at(scanner_1.pos + 8);
+            let delim_1b = find_delimiter(word_1b);
 
-                let index = find_result_unsafe_idx(
-                    word_1,
-                    delim_1,
-                    word_1b,
-                    delim_1b,
-                    &mut scanner_1,
-                    &mut table,
-                    &mut station_keys,
-                    &mut station_stats,
-                    _file_end,
-                    &mut stats,
-                );
+            let index = find_result_idx(
+                word_1,
+                delim_1,
+                word_1b,
+                delim_1b,
+                &mut scanner_1,
+                &mut table,
+                &mut station_keys,
+                &mut station_stats,
+                _file_end,
+            );
 
-                let number_1 = scan_number_unsafe(&mut scanner_1);
-                unsafe { stat_get_mut(&mut station_stats, index).record(number_1) };
-            }
-        } else {
-            while scanner_1.has_next_safe() {
-                let word_1 = scanner_1.get_u64_unsafe();
-                let delim_1 = find_delimiter(word_1);
-                let word_1b = scanner_1.get_u64_at_unsafe(scanner_1.pos + 8);
-                let delim_1b = find_delimiter(word_1b);
+            let number_1 = scan_number(&mut scanner_1); // <-- THIS ONE PANICS
+            unsafe { stat_get_mut(&mut station_stats, index).record(number_1) };
+        }
+        while scanner_2.has_next() {
+            let word_2 = scanner_2.get_u64();
+            let delim_2 = find_delimiter(word_2);
+            let word_2b = scanner_2.get_u64_at(scanner_2.pos + 8);
+            let delim_2b = find_delimiter(word_2b);
 
-                let index = find_result_unsafe_idx(
-                    word_1,
-                    delim_1,
-                    word_1b,
-                    delim_1b,
-                    &mut scanner_1,
-                    &mut table,
-                    &mut station_keys,
-                    &mut station_stats,
-                    _file_end,
-                    &mut stats,
-                );
+            let index = find_result_idx(
+                word_2,
+                delim_2,
+                word_2b,
+                delim_2b,
+                &mut scanner_2,
+                &mut table,
+                &mut station_keys,
+                &mut station_stats,
+                _file_end,
+            );
 
-                let number_1 = scan_number_unsafe(&mut scanner_1);
-                unsafe { stat_get_mut(&mut station_stats, index).record(number_1) };
-            }
+            let number_2 = scan_number(&mut scanner_2);
+            unsafe { stat_get_mut(&mut station_stats, index).record(number_2) };
+        }
+        while scanner_3.has_next() {
+            let word_3 = scanner_3.get_u64();
+            let delim_3 = find_delimiter(word_3);
+            let word_1b = scanner_3.get_u64_at(scanner_3.pos + 8);
+            let delim_1b = find_delimiter(word_1b);
 
-            while scanner_1.has_next() {
-                let word_1 = scanner_1.get_u64();
-                let delim_1 = find_delimiter(word_1);
-                let word_1b = scanner_1.get_u64_at(scanner_1.pos + 8);
-                let delim_1b = find_delimiter(word_1b);
+            let index = find_result_idx(
+                word_3,
+                delim_3,
+                word_1b,
+                delim_1b,
+                &mut scanner_3,
+                &mut table,
+                &mut station_keys,
+                &mut station_stats,
+                _file_end,
+            );
 
-                let index = find_result_idx(
-                    word_1,
-                    delim_1,
-                    word_1b,
-                    delim_1b,
-                    &mut scanner_1,
-                    &mut table,
-                    &mut station_keys,
-                    &mut station_stats,
-                    _file_end,
-                );
-
-                let number_1 = scan_number(&mut scanner_1);
-                unsafe { stat_get_mut(&mut station_stats, index).record(number_1) };
-            }
+            let number_3 = scan_number(&mut scanner_3);
+            unsafe { stat_get_mut(&mut station_stats, index).record(number_3) };
         }
     }
 }
@@ -396,7 +378,7 @@ struct Scanner<'a> {
 }
 
 impl<'a> Scanner<'a> {
-    fn new(data: &'a [u8], start: usize, end: usize) -> Scanner<'a> {
+    fn new(data: &'a [u8], start: usize, end: usize, _file_end: usize) -> Scanner<'a> {
         Self {
             data,
             end,
@@ -409,7 +391,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn has_next_safe(&self) -> bool {
-        self.pos < self.end - (MAX_NAME_LENGTH as usize + 7)
+        self.pos + 16 < self.end
     }
 
     #[inline]
@@ -661,9 +643,9 @@ fn find_result_idx<'a, 'b>(
 
         let entry = table[idx];
         if entry != 0 {
-            let r = unsafe { key_get(station_keys, idx) };
+            let r = &station_keys[entry as usize - 1];
             if r.first == word && r.second == word2 {
-                return idx;
+                return (entry - 1) as usize;
             }
         }
     } else {
@@ -744,15 +726,11 @@ unsafe fn key_get(out: &[StationKey], i: usize) -> &StationKey {
     unsafe { out.get_unchecked(i) }
 }
 #[inline(always)]
-unsafe fn key_get_mut(out: &mut [StationKey], i: usize) -> &mut StationKey {
-    unsafe { out.get_unchecked_mut(i) }
-}
-#[inline(always)]
 unsafe fn stat_get_mut(out: &mut [StationStats], i: usize) -> &mut StationStats {
     unsafe { out.get_unchecked_mut(i) }
 }
 
-#[inline(always)]
+#[inline(never)]
 fn find_result_unsafe_idx<'a, 'b>(
     initial_word: u64,
     initial_delim_mask: u64,
@@ -763,15 +741,7 @@ fn find_result_unsafe_idx<'a, 'b>(
     station_keys: &mut Vec<StationKey>,
     station_stats: &mut Vec<StationStats>,
     file_end: usize,
-    _stats: &mut ProbeCounters,
 ) -> usize {
-    // stats.lookups += 1;
-    metric!({
-        stats.lookups += 1;
-    });
-
-    // Preserve the first two 8-byte chunks as read by the caller.
-    // These are the "signature" words used for fast hits.
     let orig_w1 = initial_word;
     let orig_w2 = word_b;
 
@@ -784,8 +754,6 @@ fn find_result_unsafe_idx<'a, 'b>(
     let mut hash: u64;
     let name_address = scanner.pos;
 
-    // These are the *correct* words to use for fast-hit checks.
-    // In the "fast 16B" case we will mask them; otherwise they remain the original words.
     let mut cmp_w1 = orig_w1;
     let mut cmp_w2 = orig_w2;
 
@@ -810,16 +778,14 @@ fn find_result_unsafe_idx<'a, 'b>(
 
         if delimiter_mask == 0 {
             while scanner.pos < scanner.end {
-                let b = scanner.data[scanner.pos];
-                if b == b';' {
+                let b = unsafe { scanner.data.get_unchecked(scanner.pos) };
+                if b == &b';' {
                     break;
                 }
-                hash ^= b as u64;
+                hash ^= *b as u64;
                 scanner.add(1);
             }
         }
-        // NOTE: In this path, `word` has been overwritten during scanning.
-        // We keep cmp_w1/cmp_w2 as orig_w1/orig_w2 (correct).
     } else if (delimiter_mask | delimiter_mask2) != 0 {
         // ';' in first 16 bytes: compute the masked signature exactly like Java.
         let letter_count1 = (delimiter_mask.trailing_zeros() as usize) >> 3;
@@ -838,7 +804,6 @@ fn find_result_unsafe_idx<'a, 'b>(
         scanner.add(i1);
     } else {
         // Slow path: ';' not in first 16 bytes.
-        // WARNING: `word` will be overwritten below, so we must NOT use it for fast-hit checks.
         hash = word ^ word2;
         scanner.add(16);
 
@@ -857,28 +822,16 @@ fn find_result_unsafe_idx<'a, 'b>(
                 hash ^= word;
             }
         }
-        // cmp_w1/cmp_w2 remain orig_w1/orig_w2 (correct).
     }
 
     let name_length = scanner.pos() - name_address;
 
-    // Unified probe loop: metrics are correct and unambiguous
     let mut table_index = hash_to_index(hash, table.len());
     let mask = table.len() - 1;
 
     loop {
-        // stats.probe_steps += 1;
-        metric!({
-            stats.probe_steps += 1;
-        });
-
         let mut entry = unsafe { table_get(table, table_index) };
         if entry == 0 {
-            // stats.inserts += 1;
-            metric!({
-                stats.inserts += 1;
-            });
-
             let (key, stat) = new_entry_unsafe(name_address, name_length, scanner);
             station_keys.push(key);
             station_stats.push(stat);
@@ -891,19 +844,8 @@ fn find_result_unsafe_idx<'a, 'b>(
 
         let r = unsafe { key_get(station_keys, idx) };
         if r.first == cmp_w1 && r.second == cmp_w2 {
-            metric!({
-                stats.fast_word_hits += 1;
-            });
-
             return idx;
         }
-
-        // Full compare needed (even though probe_steps==1)
-        // unreachable!("we should not get here");
-        // stats.full_compares += 1;
-        metric!({
-            stats.full_compares += 1;
-        });
 
         let existing_addr = r.name_address;
 
@@ -913,11 +855,6 @@ fn find_result_unsafe_idx<'a, 'b>(
             if scanner.get_u64_at_unsafe(existing_addr + i)
                 != scanner.get_u64_at_unsafe(name_address + i)
             {
-                // stats.advances += 1;
-                metric!({
-                    stats.advances += 1;
-                });
-
                 table_index = (table_index + 31) & mask;
                 continue;
             }
@@ -931,11 +868,6 @@ fn find_result_unsafe_idx<'a, 'b>(
         if ((a ^ b) << remaining_shift) == 0 {
             return idx;
         } else {
-            // stats.advances += 1;
-            metric!({
-                stats.advances += 1;
-            });
-
             table_index = (table_index + 31) & mask;
         }
     }
