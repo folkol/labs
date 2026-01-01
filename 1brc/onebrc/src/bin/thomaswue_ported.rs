@@ -19,10 +19,6 @@ unsafe fn madvise(ptr: *const u8, len: usize, advice: i32) {
 }
 
 fn main() -> io::Result<()> {
-    eprintln!(
-        "std::mem::size_of::<Result>() = {}",
-        std::mem::size_of::<Result>()
-    );
     let is_worker = env::args().any(|a| a == "--worker");
     if !is_worker {
         return spawn_worker();
@@ -257,13 +253,10 @@ fn parse_loop(
                 delim_1b,
                 &mut scanner_1,
                 &mut table,
-                // &mut station_keys,
-                // &mut station_stats,
                 &mut results,
             );
 
             let number_1 = scan_number_unsafe(&mut scanner_1);
-            // unsafe { stat_get_mut(&mut station_stats, index).record(number_1) };
             unsafe { results.get_unchecked_mut(index).record(number_1) };
         }
         while scanner_2.has_next_safe() {
@@ -279,13 +272,10 @@ fn parse_loop(
                 delim_2b,
                 &mut scanner_2,
                 &mut table,
-                // &mut station_keys,
-                // &mut station_stats,
                 &mut results,
             );
 
             let number_2 = scan_number_unsafe(&mut scanner_2);
-            // unsafe { stat_get_mut(&mut station_stats, index).record(number_2) };
             unsafe { results.get_unchecked_mut(index).record(number_2) };
         }
         while scanner_3.has_next_safe() {
@@ -301,13 +291,10 @@ fn parse_loop(
                 delim_1b,
                 &mut scanner_3,
                 &mut table,
-                // &mut station_keys,
-                // &mut station_stats,
                 &mut results,
             );
 
             let number_3 = scan_number_unsafe(&mut scanner_3);
-            // unsafe { stat_get_mut(&mut station_stats, index).record(number_3) };
             unsafe { results.get_unchecked_mut(index).record(number_3) };
         }
     }
