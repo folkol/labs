@@ -1,7 +1,7 @@
 use memmap2::Mmap;
 use std::collections::BTreeMap;
 use std::fs::File;
-use std::io::{stdout, BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Write, stdout};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{env, io, process};
@@ -395,25 +395,45 @@ fn find_delimiter(word: u64) -> u64 {
 
 #[inline]
 pub fn next_newline(data: &[u8], prev: usize) -> usize {
-    // prev + memchr::memchr(b'\n', &data[prev..]).expect("expected newline")
-    next_newline_swar(data, prev)
+    prev + memchr::memchr(b'\n', &data[prev..]).expect("expected newline")
+    // next_newline_swar(data, prev)
 }
 
-#[inline]
-fn next_newline_swar(data: , mut prev: usize) -> usize {
-    loop {
-        let current_word = scanner.get_u64_at_unsafe(prev);
-        let input = current_word ^ 0x0A0A0A0A0A0A0A0A;
-        let pos = (input - 0x0101010101010101 & !input & 0x8080808080808080) as usize;
-        if pos != 0 {
-            prev += pos.trailing_zeros() as usize >> 2;
-            break
-        } else {
-            prev += 8;
+/// Find the offset (in bytes) from `prev` to the next `\n` byte, scanning 8 bytes at a time.
+/// `data` must contain a `\n` at/after `prev` before the end of the slice, otherwise this loops forever
+/// (same as the Java version).
+#[inline(always)]
+pub fn next_newline_swar(data: &[u8], mut prev: usize) -> usize {
+    const NL: u64 = 0x0A0A0A0A0A0A0A0A;
+    const ONES: u64 = 0x0101010101010101;
+    const HIGHS: u64 = 0x8080808080808080;
+
+    // You *can* keep this as a debug assert, or turn it into a checked loop below.
+    debug_assert!(prev <= data.len());
+
+    unsafe {
+        loop {
+            // Equivalent to Unsafe.getLong(prev) in Java: unaligned 8-byte load.
+            let p = data.as_ptr().add(prev) as *const u64;
+            let current_word = p.read_unaligned();
+
+            // SWAR "has zero byte" after XOR with '\n'
+            let input = current_word ^ NL;
+            let pos = (input.wrapping_sub(ONES)) & !input & HIGHS;
+
+            if pos != 0 {
+                // tz / 8 gives the byte index of the first matching byte in the word
+                prev += (pos.trailing_zeros() as usize) >> 3;
+                return prev;
+            } else {
+                prev += 8;
+                // If you want safety instead of "Java semantics", add:
+                // if prev + 8 > data.len() { return data.len(); }
+            }
         }
     }
-    prev
 }
+
 //     private static long nextNewLine(long prev) {
 //         while (true) {
 //             long currentWord = Scanner.UNSAFE.getLong(prev);
