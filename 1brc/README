@@ -3316,3 +3316,19 @@ Summary
 
 
 
+##### experiment: merge the two structs again
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 2 './separate_structs --worker' 'target/release/thomaswue_ported --worker'
+Benchmark 1: ./separate_structs --worker
+ ⠋ Current estimate: 350.0 ms     ████████████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ETA 00:00:02   Time (mean ± σ):     350.6 ms ±   3.5 ms    [User: 5088.6 ms, System: 436.2 ms]
+  Range (min … max):   342.4 ms … 355.0 ms    10 runs
+ 
+Benchmark 2: target/release/thomaswue_ported --worker
+  Time (mean ± σ):     347.3 ms ±   4.6 ms    [User: 5038.4 ms, System: 446.2 ms]
+  Range (min … max):   337.6 ms … 352.7 ms    10 runs
+ 
+Summary
+  target/release/thomaswue_ported --worker ran
+    1.01 ± 0.02 times faster than ./separate_structs --worker
+
+

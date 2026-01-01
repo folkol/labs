@@ -128,6 +128,19 @@ pub struct Result {
 }
 
 impl Result {
+    #[inline(always)]
+    fn record(&mut self, number: i16) {
+        if number < self.min {
+            self.min = number;
+        }
+        if number > self.max {
+            self.max = number;
+        }
+
+        self.sum += number as i64;
+        self.count += 1;
+    }
+
     pub(crate) fn calc_name(&self, data: &[u8]) -> String {
         let start = self.name_address.min(data.len());
         let bytes = &data[start..];
@@ -169,27 +182,28 @@ fn parse_loop(
 ) -> Vec<Result> {
     let mut table: Vec<u32> = vec![0; HASH_TABLE_SIZE as usize];
 
-    let mut station_keys: Vec<StationKey> = Vec::with_capacity(MAX_CITIES as usize);
-    let mut station_stats: Vec<StationStats> = Vec::with_capacity(MAX_CITIES as usize);
+    let mut results: Vec<Result> = Vec::with_capacity(MAX_CITIES as usize);
+    // let mut station_keys: Vec<StationKey> = Vec::with_capacity(MAX_CITIES as usize);
+    // let mut station_stats: Vec<StationStats> = Vec::with_capacity(MAX_CITIES as usize);
 
     loop {
         let current = _cursor.fetch_add(SEGMENT_SIZE as usize, Ordering::Relaxed);
         if current >= file_end {
-            let start = time::Instant::now();
-            let mut results = Vec::with_capacity(station_keys.len());
-            for (key, stat) in station_keys.iter().zip(station_stats) {
-                results.push(Result {
-                    first_name_word: key.first,
-                    second_name_word: key.second,
-                    name_address: key.name_address,
-                    count: stat.count,
-                    sum: stat.sum,
-                    min: stat.min,
-                    max: stat.max,
-                });
-            }
-            let elapsed = start.elapsed().as_nanos();
-            eprintln!("constructed results in {elapsed} ns");
+            // let start = time::Instant::now();
+            // let mut results = Vec::with_capacity(station_keys.len());
+            // for (key, stat) in station_keys.iter().zip(station_stats) {
+            //     results.push(Result {
+            //         first_name_word: key.first,
+            //         second_name_word: key.second,
+            //         name_address: key.name_address,
+            //         count: stat.count,
+            //         sum: stat.sum,
+            //         min: stat.min,
+            //         max: stat.max,
+            //     });
+            // }
+            // let elapsed = start.elapsed().as_nanos();
+            // eprintln!("constructed results in {elapsed} ns");
             return results;
         }
 
@@ -237,8 +251,9 @@ fn parse_loop(
                 delim_1b,
                 &mut scanner_1,
                 &mut table,
-                &mut station_keys,
-                &mut station_stats,
+                // &mut station_keys,
+                // &mut station_stats,
+                &mut results,
                 file_end,
             );
             let index2 = find_result_unsafe_idx(
@@ -248,8 +263,9 @@ fn parse_loop(
                 delim_2b,
                 &mut scanner_2,
                 &mut table,
-                &mut station_keys,
-                &mut station_stats,
+                // &mut station_keys,
+                // &mut station_stats,
+                &mut results,
                 file_end,
             );
             let index3 = find_result_unsafe_idx(
@@ -259,8 +275,9 @@ fn parse_loop(
                 delim_3b,
                 &mut scanner_3,
                 &mut table,
-                &mut station_keys,
-                &mut station_stats,
+                // &mut station_keys,
+                // &mut station_stats,
+                &mut results,
                 file_end,
             );
 
@@ -268,9 +285,12 @@ fn parse_loop(
             let number_2 = scan_number_unsafe(&mut scanner_2);
             let number_3 = scan_number_unsafe(&mut scanner_3);
 
-            unsafe { stat_get_mut(&mut station_stats, index1).record(number_1) };
-            unsafe { stat_get_mut(&mut station_stats, index2).record(number_2) };
-            unsafe { stat_get_mut(&mut station_stats, index3).record(number_3) };
+            // unsafe { stat_get_mut(&mut station_stats, index1).record(number_1) };
+            // unsafe { stat_get_mut(&mut station_stats, index2).record(number_2) };
+            // unsafe { stat_get_mut(&mut station_stats, index3).record(number_3) };
+            unsafe { results.get_unchecked_mut(index1).record(number_1) };
+            unsafe { results.get_unchecked_mut(index2).record(number_2) };
+            unsafe { results.get_unchecked_mut(index3).record(number_3) };
         }
 
         while scanner_1.has_next_safe() {
@@ -286,13 +306,15 @@ fn parse_loop(
                 delim_1b,
                 &mut scanner_1,
                 &mut table,
-                &mut station_keys,
-                &mut station_stats,
+                // &mut station_keys,
+                // &mut station_stats,
+                &mut results,
                 file_end,
             );
 
             let number_1 = scan_number_unsafe(&mut scanner_1);
-            unsafe { stat_get_mut(&mut station_stats, index).record(number_1) };
+            // unsafe { stat_get_mut(&mut station_stats, index).record(number_1) };
+            unsafe { results.get_unchecked_mut(index).record(number_1) };
         }
         while scanner_2.has_next_safe() {
             let word_2 = scanner_2.get_u64_unsafe();
@@ -307,13 +329,15 @@ fn parse_loop(
                 delim_2b,
                 &mut scanner_2,
                 &mut table,
-                &mut station_keys,
-                &mut station_stats,
+                // &mut station_keys,
+                // &mut station_stats,
+                &mut results,
                 file_end,
             );
 
             let number_2 = scan_number_unsafe(&mut scanner_2);
-            unsafe { stat_get_mut(&mut station_stats, index).record(number_2) };
+            // unsafe { stat_get_mut(&mut station_stats, index).record(number_2) };
+            unsafe { results.get_unchecked_mut(index).record(number_2) };
         }
         while scanner_3.has_next_safe() {
             let word_3 = scanner_3.get_u64_unsafe();
@@ -328,13 +352,15 @@ fn parse_loop(
                 delim_1b,
                 &mut scanner_3,
                 &mut table,
-                &mut station_keys,
-                &mut station_stats,
+                // &mut station_keys,
+                // &mut station_stats,
+                &mut results,
                 file_end,
             );
 
             let number_3 = scan_number_unsafe(&mut scanner_3);
-            unsafe { stat_get_mut(&mut station_stats, index).record(number_3) };
+            // unsafe { stat_get_mut(&mut station_stats, index).record(number_3) };
+            unsafe { results.get_unchecked_mut(index).record(number_3) };
         }
     }
 }
@@ -374,7 +400,7 @@ struct Scanner<'a> {
     data: &'a [u8],
     end: usize,
     pos: usize,
-    file_end: usize
+    file_end: usize,
 }
 
 impl<'a> Scanner<'a> {
@@ -383,7 +409,7 @@ impl<'a> Scanner<'a> {
             data,
             end,
             pos: start,
-            file_end
+            file_end,
         }
     }
 
@@ -424,38 +450,38 @@ pub fn next_newline(data: &[u8], prev: usize) -> usize {
     prev + memchr::memchr(b'\n', &data[prev..]).expect("expected newline")
 }
 
-#[repr(C)]
-#[derive(Clone, Debug)]
-struct StationKey {
-    first: u64,
-    second: u64,
-    name_address: usize,
-}
-
 // #[repr(C)]
-#[repr(align(16))]
-#[derive(Clone, Debug)]
-struct StationStats {
-    min: i16,
-    max: i16,
-    count: u32,
-    sum: i64,
-}
-
-impl StationStats {
-    #[inline(always)]
-    fn record(&mut self, number: i16) {
-        if number < self.min {
-            self.min = number;
-        }
-        if number > self.max {
-            self.max = number;
-        }
-
-        self.sum += number as i64;
-        self.count += 1;
-    }
-}
+// #[derive(Clone, Debug)]
+// struct StationKey {
+//     first: u64,
+//     second: u64,
+//     name_address: usize,
+// }
+//
+// // #[repr(C)]
+// #[repr(align(16))]
+// #[derive(Clone, Debug)]
+// struct StationStats {
+//     min: i16,
+//     max: i16,
+//     count: u32,
+//     sum: i64,
+// }
+//
+// impl StationStats {
+//     #[inline(always)]
+//     fn record(&mut self, number: i16) {
+//         if number < self.min {
+//             self.min = number;
+//         }
+//         if number > self.max {
+//             self.max = number;
+//         }
+//
+//         self.sum += number as i64;
+//         self.count += 1;
+//     }
+// }
 
 #[inline(always)]
 fn hash_to_index(hash: u64, table_len: usize) -> usize {
@@ -464,30 +490,55 @@ fn hash_to_index(hash: u64, table_len: usize) -> usize {
     (hash_as_int as usize) & (table_len - 1)
 }
 
+// fn new_entry_unsafe(
+//     name_address: usize,
+//     name_length: usize,
+//     scanner: &Scanner,
+// ) -> (StationKey, StationStats) {
+//     let mut key = StationKey {
+//         first: scanner.get_u64_at_unsafe(name_address),
+//         second: scanner.get_u64_at_unsafe(name_address + 8),
+//         name_address,
+//     };
+//     let total_length = name_length + 1;
+//     if total_length <= 8 {
+//         key.first &= unsafe { MASK1.get_unchecked(total_length - 1) };
+//         key.second = 0;
+//     } else if total_length < 16 {
+//         key.second &= unsafe { MASK1.get_unchecked(total_length - 9) };
+//     }
+//     let stat = StationStats {
+//         min: i16::MAX,
+//         max: i16::MIN,
+//         sum: 0,
+//         count: 0,
+//     };
+//     (key, stat)
+// }
+
+// TODO: inline?
 fn new_entry_unsafe(
     name_address: usize,
     name_length: usize,
     scanner: &Scanner,
-) -> (StationKey, StationStats) {
-    let mut key = StationKey {
-        first: scanner.get_u64_at_unsafe(name_address),
-        second: scanner.get_u64_at_unsafe(name_address + 8),
+) -> (Result) {
+    let mut result = Result {
+        first_name_word: scanner.get_u64_at_unsafe(name_address),
+        second_name_word: scanner.get_u64_at_unsafe(name_address + 8),
         name_address,
-    };
-    let total_length = name_length + 1;
-    if total_length <= 8 {
-        key.first &= unsafe { MASK1.get_unchecked(total_length - 1) };
-        key.second = 0;
-    } else if total_length < 16 {
-        key.second &= unsafe { MASK1.get_unchecked(total_length - 9) };
-    }
-    let stat = StationStats {
         min: i16::MAX,
         max: i16::MIN,
         sum: 0,
         count: 0,
     };
-    (key, stat)
+    let total_length = name_length + 1;
+    if total_length <= 8 {
+        result.first_name_word &= unsafe { *MASK1.get_unchecked(total_length - 1) };
+        result.second_name_word = 0;
+    } else if total_length < 16 {
+        result.second_name_word &= unsafe { *MASK1.get_unchecked(total_length - 9) };
+    }
+    result
 }
 
 const MASK1: [u64; 9] = [
@@ -524,14 +575,14 @@ unsafe fn table_set(table: &mut [u32], i: usize, v: u32) {
         *table.get_unchecked_mut(i) = v;
     }
 }
-#[inline(always)]
-unsafe fn key_get(out: &[StationKey], i: usize) -> &StationKey {
-    unsafe { out.get_unchecked(i) }
-}
-#[inline(always)]
-unsafe fn stat_get_mut(out: &mut [StationStats], i: usize) -> &mut StationStats {
-    unsafe { out.get_unchecked_mut(i) }
-}
+// #[inline(always)]
+// unsafe fn key_get(out: &[StationKey], i: usize) -> &StationKey {
+//     unsafe { out.get_unchecked(i) }
+// }
+// #[inline(always)]
+// unsafe fn stat_get_mut(out: &mut [StationStats], i: usize) -> &mut StationStats {
+//     unsafe { out.get_unchecked_mut(i) }
+// }
 
 #[inline(always)]
 fn find_result_unsafe_idx<'a, 'b>(
@@ -541,8 +592,9 @@ fn find_result_unsafe_idx<'a, 'b>(
     delim_mask_b: u64,
     scanner: &mut Scanner<'a>,
     table: &mut [u32],
-    station_keys: &mut Vec<StationKey>,
-    station_stats: &mut Vec<StationStats>,
+    // station_keys: &mut Vec<StationKey>,
+    // station_stats: &mut Vec<StationStats>,
+    results: &mut Vec<Result>,
     file_end: usize,
 ) -> usize {
     let orig_w1 = initial_word;
@@ -635,18 +687,17 @@ fn find_result_unsafe_idx<'a, 'b>(
     loop {
         let mut entry = unsafe { table_get(table, table_index) };
         if entry == 0 {
-            let (key, stat) = new_entry_unsafe(name_address, name_length, scanner);
-            station_keys.push(key);
-            station_stats.push(stat);
-            entry = station_keys.len() as u32;
+            let result = new_entry_unsafe(name_address, name_length, scanner);
+            results.push(result);
+            entry = results.len() as u32;
             unsafe { table_set(table, table_index, entry) };
             return entry as usize - 1;
         }
 
         let idx = (entry - 1) as usize;
 
-        let r = unsafe { key_get(station_keys, idx) };
-        if r.first == cmp_w1 && r.second == cmp_w2 {
+        let r = unsafe { results.get_unchecked(idx) };
+        if r.first_name_word == cmp_w1 && r.second_name_word == cmp_w2 {
             return idx;
         }
 
