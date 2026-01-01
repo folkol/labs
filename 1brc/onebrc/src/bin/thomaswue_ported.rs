@@ -1,10 +1,10 @@
 use memmap2::Mmap;
 use std::collections::BTreeMap;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{stdout, BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::{env, io};
+use std::{env, io, process};
 use std::{sync::Arc, thread};
 
 const FILE: &str = "./measurements.txt";
@@ -75,6 +75,8 @@ fn main() -> io::Result<()> {
         report.push('}');
 
         println!("{report}");
+        stdout().flush().unwrap();
+        process::exit(0);
     });
     Ok(())
 }
@@ -87,7 +89,7 @@ fn spawn_worker() -> io::Result<()> {
     let mut result = String::new();
     BufReader::new(pipe).read_line(&mut result)?;
     println!("{result}");
-    Ok(())
+    process::exit(0);
 }
 
 pub struct Result {
@@ -235,9 +237,7 @@ fn parse_loop(
             let number_2 = scan_number_unsafe(&mut scanner_2);
             let number_3 = scan_number_unsafe(&mut scanner_3);
 
-            // unsafe { stat_get_mut(&mut station_stats, index1).record(number_1) };
-            // unsafe { stat_get_mut(&mut station_stats, index2).record(number_2) };
-            // unsafe { stat_get_mut(&mut station_stats, index3).record(number_3) };
+            // SAFETY: We only ever push to the Vec, so index should be valid
             unsafe { results.get_unchecked_mut(index1).record(number_1) };
             unsafe { results.get_unchecked_mut(index2).record(number_2) };
             unsafe { results.get_unchecked_mut(index3).record(number_3) };
@@ -395,8 +395,40 @@ fn find_delimiter(word: u64) -> u64 {
 
 #[inline]
 pub fn next_newline(data: &[u8], prev: usize) -> usize {
-    prev + memchr::memchr(b'\n', &data[prev..]).expect("expected newline")
+    // prev + memchr::memchr(b'\n', &data[prev..]).expect("expected newline")
+    next_newline_swar(data, prev)
 }
+
+#[inline]
+fn next_newline_swar(data: , mut prev: usize) -> usize {
+    loop {
+        let current_word = scanner.get_u64_at_unsafe(prev);
+        let input = current_word ^ 0x0A0A0A0A0A0A0A0A;
+        let pos = (input - 0x0101010101010101 & !input & 0x8080808080808080) as usize;
+        if pos != 0 {
+            prev += pos.trailing_zeros() as usize >> 2;
+            break
+        } else {
+            prev += 8;
+        }
+    }
+    prev
+}
+//     private static long nextNewLine(long prev) {
+//         while (true) {
+//             long currentWord = Scanner.UNSAFE.getLong(prev);
+//             long input = currentWord ^ 0x0A0A0A0A0A0A0A0AL;
+//             long pos = (input - 0x0101010101010101L) & ~input & 0x8080808080808080L;
+//             if (pos != 0) {
+//                 prev += Long.numberOfTrailingZeros(pos) >>> 3;
+//                 break;
+//             }
+//             else {
+//                 prev += 8;
+//             }
+//         }
+//         return prev;
+//     }
 
 #[inline(always)]
 fn hash_to_index(hash: u64, table_len: usize) -> usize {

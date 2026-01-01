@@ -3392,3 +3392,104 @@ Summary
     1.13 ± 0.02 times faster than target/release/thomaswue_ported
 
 
+##### experiment, can we loop the tail scanners?
+
+Maybe not...
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ NUM_THREADS=7 hyperfine --warmup 2 './baseline --worker' 'target/release/thomaswue_ported --worker'
+Benchmark 1: ./baseline --worker
+  Time (mean ± σ):     852.0 ms ±   1.7 ms    [User: 4871.3 ms, System: 379.9 ms]
+  Range (min … max):   849.6 ms … 854.7 ms    10 runs
+ 
+Benchmark 2: target/release/thomaswue_ported --worker
+  Time (mean ± σ):     867.5 ms ±   3.3 ms    [User: 4984.2 ms, System: 381.6 ms]
+  Range (min … max):   863.2 ms … 873.6 ms    10 runs
+ 
+Summary
+  ./baseline --worker ran
+    1.02 ± 0.00 times faster than target/release/thomaswue_ported --worker
+
+
+
+#### experiment, remove "near file end" special code
+
+No improvement.
+
+
+#### experiment, try 2 scanners instead of 3
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ NUM_THREADS=24 hyperfine --warmup 2 './baseline --worker' 'target/release/thomaswue_ported --worker'
+Benchmark 1: ./baseline --worker
+  Time (mean ± σ):     356.8 ms ±   5.8 ms    [User: 5037.4 ms, System: 422.6 ms]
+  Range (min … max):   347.6 ms … 363.7 ms    10 runs
+ 
+Benchmark 2: target/release/thomaswue_ported --worker
+  Time (mean ± σ):     387.2 ms ±   3.7 ms    [User: 5825.3 ms, System: 412.1 ms]
+  Range (min … max):   378.0 ms … 391.4 ms    10 runs
+ 
+Summary
+  ./baseline --worker ran
+    1.09 ± 0.02 times faster than target/release/thomaswue_ported --worker
+
+
+#### experiment, try 4 scanners instead of 3
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ NUM_THREADS=24 hyperfine --warmup 2 './baseline --worker' 'target/release/thomaswue_ported --worker'
+Benchmark 1: ./baseline --worker
+  Time (mean ± σ):     344.5 ms ±   4.1 ms    [User: 5035.4 ms, System: 417.8 ms]
+  Range (min … max):   338.9 ms … 352.8 ms    10 runs
+ 
+Benchmark 2: target/release/thomaswue_ported --worker
+  Time (mean ± σ):     347.4 ms ±   6.1 ms    [User: 5166.0 ms, System: 431.0 ms]
+  Range (min … max):   337.5 ms … 357.9 ms    10 runs
+ 
+Summary
+  ./baseline --worker ran
+    1.01 ± 0.02 times faster than target/release/thomaswue_ported --worker
+
+No improvement
+
+
+#### build both java and rust with debugsymbols so that I can perf annotate
+
+folkol@ubuntu:~/code/labs/1brc/java-orig$ diff prepare_thomaswue{,_perf}.sh
+22c22
+< if [ ! -f target/CalculateAverage_thomaswue_image ]; then
+---
+> if [ ! -f target/CalculateAverage_thomaswue_image_perf ]; then
+33a34,35
+>     NATIVE_IMAGE_OPTS="$NATIVE_IMAGE_OPTS -g -H:+PreserveFramePointer"
+> 
+37c39
+<     native-image $NATIVE_IMAGE_OPTS -cp target/average-1.0.0-SNAPSHOT.jar -o target/CalculateAverage_thomaswue_image dev.morling.onebrc.CalculateAverage_thomaswue
+---
+>     native-image $NATIVE_IMAGE_OPTS -cp target/average-1.0.0-SNAPSHOT.jar -o target/CalculateAverage_thomaswue_image_perf dev.morling.onebrc.CalculateAverage_thomaswue
+
+
+folkol@ubuntu:~/code/labs/1brc/java-orig$ file target/CalculateAverage_thomaswue_image_perf
+target/CalculateAverage_thomaswue_image_perf: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=d31031174f9bfe59e58a4b7b7ca9420b3e3449a4, for GNU/Linux 3.2.0, not stripped
+folkol@ubuntu:~/code/labs/1brc/java-orig$ readelf -S target/CalculateAverage_thomaswue_image_perf | rg -i '\.debug_|\.symtab'
+  [31] .symtab           SYMTAB           0000000000000000  01430250
+folkol@ubuntu:~/code/labs/1brc/java-orig$ nm -n target/CalculateAverage_thomaswue_image_perf | head
+000000000006f000 T __svm_code_section
+000000000009be70 T JNI_GetDefaultJavaVMInitArgs
+000000000009be70 T __ZN41com_002eoracle_002esvm_002ecore_002ecode_002eIsolateEnterStub100JNIInvocationInterface_0024Exports__JNI__GetDefaultJavaVMInitArgs__8fe7b7a26fde0b5d6373df2756c2f2545cfc5fedEJi49com_002eoracle_002esvm_002ecore_002ejni_002eheaders_002eJNIJavaVMInitArgs
+000000000009c5c0 T graal_attach_thread
+000000000009c5c0 T __ZN41com_002eoracle_002esvm_002ecore_002ecode_002eIsolateEnterStub80CEntryPointNativeFunctions__attachThread__fe8e89788bae97cf98065b8b062da14102a906b7EJi31org_002egraalvm_002enativeimage_002eIsolate78com_002eoracle_002esvm_002ecore_002ec_002efunction_002eCEntryPointNativeFunctions_0024IsolateThreadPointer
+000000000009c6b0 T graal_create_isolate
+000000000009c6b0 T __ZN41com_002eoracle_002esvm_002ecore_002ecode_002eIsolateEnterStub81CEntryPointNativeFunctions__createIsolate__c5b5663bc8e51fac8eb7cc2a6c1952957d7e49f1EJi65com_002eoracle_002esvm_002ecore_002ec_002efunction_002eCEntryPointCreateIsolateParameters72com_002eoracle_002esvm_002ecore_002ec_002efunction_002eCEntryPointNativeFunctions_0024IsolatePointer78com_002eoracle_002esvm_002ecore_002ec_002efunction_002eCEntryPointNativeFunctions_0024IsolateThreadPointer
+000000000009c7e0 T graal_detach_all_threads_and_tear_down_isolate
+000000000009c7e0 T __ZN41com_002eoracle_002esvm_002ecore_002ecode_002eIsolateEnterStub102CEntryPointNativeFunctions__detachAllThreadsAndTearDownIsolate__803a26f98b4febfb61e3b676ead8b433cc2f21b3EJi37org_002egraalvm_002enativeimage_002eIsolateThread
+000000000009c8e0 T graal_detach_thread
+
+
+
+You do have symbols, but your debug info is not in the binary. .gnu_debuglink means: “debug symbols live in a separate file; this binary only has a pointer to it”. perf can’t find that file, so it collapses to raw addresses like 0x27dce3.
+
+
+folkol@ubuntu:~/code/labs/1brc/java-orig$ perf buildid-cache --add target/CalculateAverage_thomaswue_image_perf
+folkol@ubuntu:~/code/labs/1brc/java-orig$ perf buildid-cache --add target/CalculateAverage_thomaswue_image_perf.debug
+folkol@ubuntu:~/code/labs/1brc/java-orig$ perf report --stdio --sort overhead,symbol
+
+
+
