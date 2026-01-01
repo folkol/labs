@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::{env, io, time};
+use std::{env, io};
 use std::{sync::Arc, thread};
 
 const FILE: &str = "./measurements.txt";
@@ -58,12 +58,8 @@ fn main() -> io::Result<()> {
         for h in handles {
             all_results.push(h.join().expect("worker panicked"));
         }
-        let begin = time::Instant::now();
         let final_result = accumulate_results(data, all_results);
-        let elapsed = begin.elapsed().as_nanos();
-        eprintln!("accumulate results in {elapsed} ns");
-        let render_begin = time::Instant::now();
-        let mut report = String::new();
+        let mut report = String::with_capacity(final_result.len() * 20);
         report.push('{');
         let mut prefix = "";
         for (station, stats) in final_result {
@@ -78,8 +74,6 @@ fn main() -> io::Result<()> {
         }
         report.push('}');
 
-        let render_elapsed = render_begin.elapsed().as_nanos();
-        eprintln!("render result in: {render_elapsed} ns");
         println!("{report}");
     });
     Ok(())
@@ -155,38 +149,21 @@ impl Result {
 
 fn parse_loop(
     data: &[u8],
-    _cursor: &AtomicUsize,
+    cursor: &AtomicUsize,
     file_end: usize,
-    _file_start: usize,
+    file_start: usize,
 ) -> Vec<Result> {
     let mut table: Vec<u32> = vec![0; HASH_TABLE_SIZE as usize];
 
     let mut results: Vec<Result> = Vec::with_capacity(MAX_CITIES as usize);
-    // let mut station_keys: Vec<StationKey> = Vec::with_capacity(MAX_CITIES as usize);
-    // let mut station_stats: Vec<StationStats> = Vec::with_capacity(MAX_CITIES as usize);
 
     loop {
-        let current = _cursor.fetch_add(SEGMENT_SIZE as usize, Ordering::Relaxed);
+        let current = cursor.fetch_add(SEGMENT_SIZE as usize, Ordering::Relaxed);
         if current >= file_end {
-            // let start = time::Instant::now();
-            // let mut results = Vec::with_capacity(station_keys.len());
-            // for (key, stat) in station_keys.iter().zip(station_stats) {
-            //     results.push(Result {
-            //         first_name_word: key.first,
-            //         second_name_word: key.second,
-            //         name_address: key.name_address,
-            //         count: stat.count,
-            //         sum: stat.sum,
-            //         min: stat.min,
-            //         max: stat.max,
-            //     });
-            // }
-            // let elapsed = start.elapsed().as_nanos();
-            // eprintln!("constructed results in {elapsed} ns");
             return results;
         }
 
-        let segment_start = if current == _file_start {
+        let segment_start = if current == file_start {
             current
         } else {
             next_newline(data, current) + 1
@@ -230,8 +207,6 @@ fn parse_loop(
                 delim_1b,
                 &mut scanner_1,
                 &mut table,
-                // &mut station_keys,
-                // &mut station_stats,
                 &mut results,
                 file_end,
             );
@@ -242,8 +217,6 @@ fn parse_loop(
                 delim_2b,
                 &mut scanner_2,
                 &mut table,
-                // &mut station_keys,
-                // &mut station_stats,
                 &mut results,
                 file_end,
             );
@@ -254,8 +227,6 @@ fn parse_loop(
                 delim_3b,
                 &mut scanner_3,
                 &mut table,
-                // &mut station_keys,
-                // &mut station_stats,
                 &mut results,
                 file_end,
             );
@@ -434,8 +405,8 @@ fn hash_to_index(hash: u64, table_len: usize) -> usize {
     (hash_as_int as usize) & (table_len - 1)
 }
 
-// TODO: inline?
-fn new_entry_unsafe(name_address: usize, name_length: usize, scanner: &Scanner) -> Result  {
+#[inline(always)]
+fn new_entry_unsafe(name_address: usize, name_length: usize, scanner: &Scanner) -> Result {
     let mut result = Result {
         first_name_word: scanner.get_u64_at_unsafe(name_address),
         second_name_word: scanner.get_u64_at_unsafe(name_address + 8),
@@ -489,14 +460,6 @@ unsafe fn table_set(table: &mut [u32], i: usize, v: u32) {
         *table.get_unchecked_mut(i) = v;
     }
 }
-// #[inline(always)]
-// unsafe fn key_get(out: &[StationKey], i: usize) -> &StationKey {
-//     unsafe { out.get_unchecked(i) }
-// }
-// #[inline(always)]
-// unsafe fn stat_get_mut(out: &mut [StationStats], i: usize) -> &mut StationStats {
-//     unsafe { out.get_unchecked_mut(i) }
-// }
 
 #[inline(always)]
 fn find_result_unsafe_idx<'a, 'b>(

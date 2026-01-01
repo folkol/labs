@@ -6,7 +6,6 @@ edition = "2024"
 [profile.release]
 opt-level = 3
 debug = 1
-embed-bitcode = true
 lto = "fat"        # or true / "fat"
 panic = "abort"
 debug-assertions = false
