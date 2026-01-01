@@ -1,7 +1,7 @@
 use memmap2::Mmap;
 use std::collections::BTreeMap;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write, stdout};
+use std::io::{stdout, BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{env, io, process};
@@ -19,6 +19,10 @@ unsafe fn madvise(ptr: *const u8, len: usize, advice: i32) {
 }
 
 fn main() -> io::Result<()> {
+    eprintln!(
+        "std::mem::size_of::<Result>() = {}",
+        std::mem::size_of::<Result>()
+    );
     let is_worker = env::args().any(|a| a == "--worker");
     if !is_worker {
         return spawn_worker();
@@ -465,9 +469,6 @@ fn find_result_unsafe_idx<'a, 'b>(
     table: &mut [u32],
     results: &mut Vec<Result>,
 ) -> usize {
-    let orig_w1 = initial_word;
-    let orig_w2 = word_b;
-
     let mut word = initial_word;
     let mut word2 = word_b;
 
@@ -477,25 +478,29 @@ fn find_result_unsafe_idx<'a, 'b>(
     let mut hash: u64;
     let name_address = scanner.pos;
 
-    let mut cmp_w1 = orig_w1;
-    let mut cmp_w2 = orig_w2;
-
     if (delimiter_mask | delimiter_mask2) != 0 {
         // ';' in first 16 bytes: compute the masked signature exactly like Java.
         let letter_count1 = (delimiter_mask.trailing_zeros() as usize) >> 3;
         let letter_count2 = (delimiter_mask2.trailing_zeros() as usize) >> 3;
 
-        let mask = MASK2[letter_count1];
-        word &= MASK1[letter_count1];
-        word2 = mask & word2 & MASK1[letter_count2];
-
-        cmp_w1 = word;
-        cmp_w2 = word2;
-
+        let mask = unsafe { *MASK2.get_unchecked(letter_count1) };
+        word &= unsafe { *MASK1.get_unchecked(letter_count1) };
+        word2 = mask & word2 & unsafe { *MASK1.get_unchecked(letter_count2) };
         hash = word ^ word2;
 
         let i1 = letter_count1 + ((letter_count2 as u64 & mask) as usize);
         scanner.add(i1);
+
+        let table_index = hash_to_index(hash, table.len());
+
+        let entry0 = unsafe { table_get(table, table_index) };
+        if entry0 != 0 {
+            let idx0 = (entry0 - 1) as usize;
+            let r0 = unsafe { results.get_unchecked(idx0) };
+            if r0.first_name_word == word && r0.second_name_word == word2 {
+                return idx0;
+            }
+        }
     } else {
         // Slow path: ';' not in first 16 bytes.
         hash = word ^ word2;
@@ -522,33 +527,24 @@ fn find_result_unsafe_idx<'a, 'b>(
     let mut table_index = hash_to_index(hash, table.len());
     let mask = table.len() - 1;
 
-    let entry0 = unsafe { table_get(table, table_index) };
-    if entry0 != 0 {
-        let idx0 = (entry0 - 1) as usize;
-        let r0 = unsafe { results.get_unchecked(idx0) };
-        if r0.first_name_word == cmp_w1 && r0.second_name_word == cmp_w2 {
-            return idx0;
-        }
-    }
-
     'outer: loop {
-        let mut entry = unsafe { table_get(table, table_index) };
-        if entry == 0 {
+        let entry0 = unsafe { table_get(table, table_index) };
+        if entry0 == 0 {
             let result = new_entry_unsafe(name_address, name_length, scanner);
             results.push(result);
-            entry = results.len() as u32;
+            let entry = results.len() as u32;
             unsafe { table_set(table, table_index, entry) };
             return entry as usize - 1;
         }
 
-        let idx = (entry - 1) as usize;
+        let idx = (entry0 - 1) as usize;
         let r = unsafe { results.get_unchecked(idx) };
         let existing_addr = r.name_address;
 
         let end = name_length + 1;
         let mut i = 0usize;
 
-        while i < end - 8 {
+        while i + 8 < end {
             if scanner.get_u64_at_unsafe(existing_addr + i)
                 != scanner.get_u64_at_unsafe(name_address + i)
             {
