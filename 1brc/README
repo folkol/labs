@@ -3492,4 +3492,27 @@ folkol@ubuntu:~/code/labs/1brc/java-orig$ perf buildid-cache --add target/Calcul
 folkol@ubuntu:~/code/labs/1brc/java-orig$ perf report --stdio --sort overhead,symbol
 
 
+#### experiment, try swar next_newline
 
+
+Slower
+
+
+#### experiment, try pointers instead of slices
+
+(also using SWAR isntead of memchr now...)
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 3 './baseline --worker' 'target/release/thomaswue_ported --worker'
+Benchmark 1: ./baseline --worker
+  Time (mean ± σ):     301.8 ms ±   4.1 ms    [User: 5059.2 ms, System: 336.5 ms]
+  Range (min … max):   294.5 ms … 307.7 ms    10 runs
+ 
+Benchmark 2: target/release/thomaswue_ported --worker
+  Time (mean ± σ):     323.8 ms ±   2.4 ms    [User: 5493.2 ms, System: 345.2 ms]
+  Range (min … max):   319.8 ms … 327.2 ms    10 runs
+ 
+Summary
+  ./baseline --worker ran
+    1.07 ± 0.02 times faster than target/release/thomaswue_ported --worker
+
+Slower

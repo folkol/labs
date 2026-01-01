@@ -522,7 +522,7 @@ fn find_result_unsafe_idx<'a, 'b>(
     scanner: &mut Scanner<'a>,
     table: &mut [u32],
     results: &mut Vec<Result>,
-    file_end: usize,
+    _file_end: usize,
 ) -> usize {
     let orig_w1 = initial_word;
     let orig_w2 = word_b;
@@ -539,36 +539,7 @@ fn find_result_unsafe_idx<'a, 'b>(
     let mut cmp_w1 = orig_w1;
     let mut cmp_w2 = orig_w2;
 
-    if scanner.pos > file_end - 120 {
-        hash = word ^ word2;
-
-        while scanner.pos + 8 <= scanner.end {
-            word = scanner.get_u64_at_unsafe(scanner.pos);
-            delimiter_mask = find_delimiter(word);
-
-            if delimiter_mask != 0 {
-                let tz = delimiter_mask.trailing_zeros() as usize;
-                word <<= 63 - tz;
-                scanner.add(tz >> 3);
-                hash ^= word;
-                break;
-            } else {
-                scanner.add(8);
-                hash ^= word;
-            }
-        }
-
-        if delimiter_mask == 0 {
-            while scanner.pos < scanner.end {
-                let b = unsafe { scanner.data.get_unchecked(scanner.pos) };
-                if b == &b';' {
-                    break;
-                }
-                hash ^= *b as u64;
-                scanner.add(1);
-            }
-        }
-    } else if (delimiter_mask | delimiter_mask2) != 0 {
+    if (delimiter_mask | delimiter_mask2) != 0 {
         // ';' in first 16 bytes: compute the masked signature exactly like Java.
         let letter_count1 = (delimiter_mask.trailing_zeros() as usize) >> 3;
         let letter_count2 = (delimiter_mask2.trailing_zeros() as usize) >> 3;
@@ -611,7 +582,7 @@ fn find_result_unsafe_idx<'a, 'b>(
     let mut table_index = hash_to_index(hash, table.len());
     let mask = table.len() - 1;
 
-    loop {
+    'outer: loop {
         let mut entry = unsafe { table_get(table, table_index) };
         if entry == 0 {
             let result = new_entry_unsafe(name_address, name_length, scanner);
@@ -637,7 +608,7 @@ fn find_result_unsafe_idx<'a, 'b>(
                 != scanner.get_u64_at_unsafe(name_address + i)
             {
                 table_index = (table_index + 31) & mask;
-                continue;
+                continue 'outer;
             }
             i += 8;
         }
