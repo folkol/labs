@@ -210,7 +210,6 @@ fn parse_loop(
                 &mut scanner_1,
                 &mut table,
                 &mut results,
-                file_end,
             );
             let index2 = find_result_unsafe_idx(
                 word_2,
@@ -220,7 +219,6 @@ fn parse_loop(
                 &mut scanner_2,
                 &mut table,
                 &mut results,
-                file_end,
             );
             let index3 = find_result_unsafe_idx(
                 word_3,
@@ -230,7 +228,6 @@ fn parse_loop(
                 &mut scanner_3,
                 &mut table,
                 &mut results,
-                file_end,
             );
 
             let number_1 = scan_number_unsafe(&mut scanner_1);
@@ -259,7 +256,6 @@ fn parse_loop(
                 // &mut station_keys,
                 // &mut station_stats,
                 &mut results,
-                file_end,
             );
 
             let number_1 = scan_number_unsafe(&mut scanner_1);
@@ -282,7 +278,6 @@ fn parse_loop(
                 // &mut station_keys,
                 // &mut station_stats,
                 &mut results,
-                file_end,
             );
 
             let number_2 = scan_number_unsafe(&mut scanner_2);
@@ -305,7 +300,6 @@ fn parse_loop(
                 // &mut station_keys,
                 // &mut station_stats,
                 &mut results,
-                file_end,
             );
 
             let number_3 = scan_number_unsafe(&mut scanner_3);
@@ -396,59 +390,7 @@ fn find_delimiter(word: u64) -> u64 {
 #[inline]
 pub fn next_newline(data: &[u8], prev: usize) -> usize {
     prev + memchr::memchr(b'\n', &data[prev..]).expect("expected newline")
-    // next_newline_swar(data, prev)
 }
-
-/// Find the offset (in bytes) from `prev` to the next `\n` byte, scanning 8 bytes at a time.
-/// `data` must contain a `\n` at/after `prev` before the end of the slice, otherwise this loops forever
-/// (same as the Java version).
-#[inline(always)]
-pub fn next_newline_swar(data: &[u8], mut prev: usize) -> usize {
-    const NL: u64 = 0x0A0A0A0A0A0A0A0A;
-    const ONES: u64 = 0x0101010101010101;
-    const HIGHS: u64 = 0x8080808080808080;
-
-    // You *can* keep this as a debug assert, or turn it into a checked loop below.
-    debug_assert!(prev <= data.len());
-
-    unsafe {
-        loop {
-            // Equivalent to Unsafe.getLong(prev) in Java: unaligned 8-byte load.
-            let p = data.as_ptr().add(prev) as *const u64;
-            let current_word = p.read_unaligned();
-
-            // SWAR "has zero byte" after XOR with '\n'
-            let input = current_word ^ NL;
-            let pos = (input.wrapping_sub(ONES)) & !input & HIGHS;
-
-            if pos != 0 {
-                // tz / 8 gives the byte index of the first matching byte in the word
-                prev += (pos.trailing_zeros() as usize) >> 3;
-                return prev;
-            } else {
-                prev += 8;
-                // If you want safety instead of "Java semantics", add:
-                // if prev + 8 > data.len() { return data.len(); }
-            }
-        }
-    }
-}
-
-//     private static long nextNewLine(long prev) {
-//         while (true) {
-//             long currentWord = Scanner.UNSAFE.getLong(prev);
-//             long input = currentWord ^ 0x0A0A0A0A0A0A0A0AL;
-//             long pos = (input - 0x0101010101010101L) & ~input & 0x8080808080808080L;
-//             if (pos != 0) {
-//                 prev += Long.numberOfTrailingZeros(pos) >>> 3;
-//                 break;
-//             }
-//             else {
-//                 prev += 8;
-//             }
-//         }
-//         return prev;
-//     }
 
 #[inline(always)]
 fn hash_to_index(hash: u64, table_len: usize) -> usize {
@@ -522,7 +464,6 @@ fn find_result_unsafe_idx<'a, 'b>(
     scanner: &mut Scanner<'a>,
     table: &mut [u32],
     results: &mut Vec<Result>,
-    _file_end: usize,
 ) -> usize {
     let orig_w1 = initial_word;
     let orig_w2 = word_b;
@@ -599,7 +540,7 @@ fn find_result_unsafe_idx<'a, 'b>(
             unsafe { table_set(table, table_index, entry) };
             return entry as usize - 1;
         }
-        
+
         let idx = (entry - 1) as usize;
         let r = unsafe { results.get_unchecked(idx) };
         let existing_addr = r.name_address;
