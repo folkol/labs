@@ -7,177 +7,7 @@
 
 ## Machine
 
-$ uname -a
-Linux ubuntu 6.17.0-8-generic #8-Ubuntu SMP PREEMPT_DYNAMIC Fri Nov 14 21:44:46 UTC 2025 x86_64 GNU/Linux
-$ lscpu 
-Architecture:                x86_64
-  CPU op-mode(s):            32-bit, 64-bit
-  Address sizes:             46 bits physical, 48 bits virtual
-  Byte Order:                Little Endian
-CPU(s):                      24
-  On-line CPU(s) list:       0-23
-Vendor ID:                   GenuineIntel
-  Model name:                Intel(R) Core(TM) Ultra 9 285K
-    CPU family:              6
-    Model:                   198
-    Thread(s) per core:      1
-    Core(s) per socket:      24
-    Socket(s):               1
-    Stepping:                2
-    CPU(s) scaling MHz:      26%
-    CPU max MHz:             5800.0000
-    CPU min MHz:             800.0000
-    BogoMIPS:                7372.80
-    Flags:                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rd
-                             tscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monit
-                             or ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand l
-                             ahf_lm abm 3dnowprefetch cpuid_fault ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2
-                              smep bmi2 erms invpcid rdt_a rdseed adx smap clflushopt clwb intel_pt sha_ni xsaveopt xsavec xgetbv1 xsaves split_lock_detect user_shstk avx
-                             _vnni lam wbnoinvd dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp hwp_pkg_req hfi vnmi umip pku ospke waitpkg gfni vaes vpclmu
-                             lqdq rdpid bus_lock_detect movdiri movdir64b fsrm md_clear serialize arch_lbr ibt flush_l1d arch_capabilities
-Virtualization features:     
-  Virtualization:            VT-x
-Caches (sum of all):         
-  L1d:                       768 KiB (20 instances)
-  L1i:                       1.3 MiB (20 instances)
-  L2:                        40 MiB (12 instances)
-  L3:                        36 MiB (1 instance)
-NUMA:                        
-  NUMA node(s):              1
-  NUMA node0 CPU(s):         0-23
-Vulnerabilities:             
-  Gather data sampling:      Not affected
-  Ghostwrite:                Not affected
-  Indirect target selection: Not affected
-  Itlb multihit:             Not affected
-  L1tf:                      Not affected
-  Mds:                       Not affected
-  Meltdown:                  Not affected
-  Mmio stale data:           Not affected
-  Old microcode:             Not affected
-  Reg file data sampling:    Not affected
-  Retbleed:                  Not affected
-  Spec rstack overflow:      Not affected
-  Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl
-  Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization
-  Spectre v2:                Mitigation; Enhanced / Automatic IBRS; IBPB conditional; PBRSB-eIBRS Not affected; BHI BHI_DIS_S
-  Srbds:                     Not affected
-  Tsa:                       Not affected
-  Tsx async abort:           Not affected
-folkol@ubuntu:~/code/labs/1brc/java-orig$ sudo dmidecode -t memory
-# dmidecode 3.6
-Getting SMBIOS data from sysfs.
-SMBIOS 3.8.0 present.
-# SMBIOS implementations newer than version 3.7.0 are not
-# fully supported by this version of dmidecode.
-
-Handle 0x0027, DMI type 16, 23 bytes
-Physical Memory Array
-	Location: System Board Or Motherboard
-	Use: System Memory
-	Error Correction Type: None
-	Maximum Capacity: 128 GB
-	Error Information Handle: Not Provided
-	Number Of Devices: 4
-
-Handle 0x0028, DMI type 17, 92 bytes
-Memory Device
-	Array Handle: 0x0027
-	Error Information Handle: Not Provided
-	Total Width: Unknown
-	Data Width: Unknown
-	Size: No Module Installed
-	Form Factor: Unknown
-	Set: None
-	Locator: DIMMA1
-	Bank Locator: BANK 0
-	Type: Unknown
-	Type Detail: None
-
-Handle 0x0029, DMI type 17, 92 bytes
-Memory Device
-	Array Handle: 0x0027
-	Error Information Handle: Not Provided
-	Total Width: 64 bits
-	Data Width: 64 bits
-	Size: 16 GB
-	Form Factor: DIMM
-	Set: None
-	Locator: DIMMA2
-	Bank Locator: BANK 0
-	Type: DDR5
-	Type Detail: Synchronous
-	Speed: 6400 MT/s
-	Manufacturer: Corsair
-	Serial Number: 00000000
-	Asset Tag: 9876543210
-	Part Number: CMK32GX5M2B6400C32  
-	Rank: 1
-	Configured Memory Speed: 6400 MT/s
-	Minimum Voltage: 1.4 V
-	Maximum Voltage: 1.4 V
-	Configured Voltage: 1.4 V
-	Memory Technology: DRAM
-	Memory Operating Mode Capability: Volatile memory
-	Firmware Version: Not Specified
-	Module Manufacturer ID: Bank 3, Hex 0x9E
-	Module Product ID: Unknown
-	Memory Subsystem Controller Manufacturer ID: Unknown
-	Memory Subsystem Controller Product ID: Unknown
-	Non-Volatile Size: None
-	Volatile Size: 16 GB
-	Cache Size: None
-	Logical Size: None
-
-Handle 0x002A, DMI type 17, 92 bytes
-Memory Device
-	Array Handle: 0x0027
-	Error Information Handle: Not Provided
-	Total Width: Unknown
-	Data Width: Unknown
-	Size: No Module Installed
-	Form Factor: Unknown
-	Set: None
-	Locator: DIMMB1
-	Bank Locator: BANK 1
-	Type: Unknown
-	Type Detail: None
-
-Handle 0x002B, DMI type 17, 92 bytes
-Memory Device
-	Array Handle: 0x0027
-	Error Information Handle: Not Provided
-	Total Width: 64 bits
-	Data Width: 64 bits
-	Size: 16 GB
-	Form Factor: DIMM
-	Set: None
-	Locator: DIMMB2
-	Bank Locator: BANK 1
-	Type: DDR5
-	Type Detail: Synchronous
-	Speed: 6400 MT/s
-	Manufacturer: Corsair
-	Serial Number: 00000000
-	Asset Tag: 9876543210
-	Part Number: CMK32GX5M2B6400C32  
-	Rank: 1
-	Configured Memory Speed: 6400 MT/s
-	Minimum Voltage: 1.4 V
-	Maximum Voltage: 1.4 V
-	Configured Voltage: 1.4 V
-	Memory Technology: DRAM
-	Memory Operating Mode Capability: Volatile memory
-	Firmware Version: Not Specified
-	Module Manufacturer ID: Bank 3, Hex 0x9E
-	Module Product ID: Unknown
-	Memory Subsystem Controller Manufacturer ID: Unknown
-	Memory Subsystem Controller Product ID: Unknown
-	Non-Volatile Size: None
-	Volatile Size: 16 GB
-	Cache Size: None
-	Logical Size: None
-
+See [MACHINE]().
 
 ## Set up the test environment and run the fastest solution
 
@@ -188,6 +18,20 @@ Memory Device
 - ln -sf /media/measurements/measurements.txt measurements.txt
 - sdk use java 21.0.2-graal
 - ./create_measurements.sh 1000000000
+
+$ head /media/measurements/measurements.txt
+...
+Canberra;2.4
+Prague;10.1
+Madrid;12.2
+Bissau;31.1
+Tabriz;-5.0
+Barcelona;21.6
+Hat Yai;3.7
+Tbilisi;15.4
+Accra;45.6
+Cairo;29.6
+
 - ./mvnw clean package
 - ./prepare_thomaswue.sh
 
