@@ -238,3 +238,6 @@ Summary
   target/CalculateAverage_thomaswue_image ran
     1.06 ± 0.02 times faster than ../onebrc/target-pgo-use/release/thomaswue_ported
 
+## WORKNOTES
+
+The old readme grew a bit too large, work notes related to experiements can be found in [WORKNOTES]().
