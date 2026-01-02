@@ -3715,5 +3715,102 @@ folkol@ubuntu:~/code/labs/1brc/onebrc$ taskset -c 0-23 perf stat -ddd -- "./${PG
 
 
 
+#### PGO and std src
+
+cargo +nightly build -r \
+  -Z build-std=std,panic_abort \
+  --bin thomaswue_ported
+
+export PGO_DIR=/tmp/pgo-onebrc
+export PGO_GEN=target-pgo-gen
+rm -rf "$PGO_DIR" "$PGO_GEN"
+mkdir -p "$PGO_DIR"
+
+RUSTFLAGS="-C target-cpu=native -C profile-generate=$PGO_DIR" \
+CARGO_TARGET_DIR="$PGO_GEN" \
+cargo +nightly build -r \
+  -Z build-std=std,panic_abort \
+  --bin thomaswue_ported
+
+taskset -c 0-23 "./$PGO_GEN/release/thomaswue_ported" --worker >/dev/null
+
+llvm-profdata-20 merge -o "$PGO_DIR/merged.profdata" "$PGO_DIR"/*.profraw
+
+export PGO_USE=target-pgo-use
+rm -rf "$PGO_USE"
+
+RUSTFLAGS="-C target-cpu=native -C profile-use=$PGO_DIR/merged.profdata" \
+CARGO_TARGET_DIR="$PGO_USE" \
+cargo +nightly build -r \
+  -Z build-std=std,panic_abort \
+  --bin thomaswue_ported
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ taskset -c 0-23 hyperfine --warmup 5 -r 30   "./target-pgo-use/release/thomaswue_ported --worker"   "../java-orig/target/CalculateAverage_thomaswue_image --worker"
+Benchmark 1: ./target-pgo-use/release/thomaswue_ported --worker
+  Time (mean ± σ):     289.6 ms ±   4.6 ms    [User: 4598.0 ms, System: 362.5 ms]
+  Range (min … max):   280.0 ms … 297.2 ms    30 runs
+ 
+Benchmark 2: ../java-orig/target/CalculateAverage_thomaswue_image --worker
+  Time (mean ± σ):     294.9 ms ±   3.5 ms    [User: 4546.0 ms, System: 359.6 ms]
+  Range (min … max):   289.8 ms … 302.3 ms    30 runs
+ 
+Summary
+  ./target-pgo-use/release/thomaswue_ported --worker ran
+    1.02 ± 0.02 times faster than ../java-orig/target/CalculateAverage_thomaswue_image --worker
+
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ taskset -c 0-7 hyperfine --warmup 5 -r 30   "./target-pgo-use/release/thomaswue_ported --worker"   "../java-orig/target/CalculateAverage_thomaswue_image --worker"
+Benchmark 1: ./target-pgo-use/release/thomaswue_ported --worker
+  Time (mean ± σ):     655.4 ms ±   2.6 ms    [User: 4419.5 ms, System: 310.2 ms]
+  Range (min … max):   651.2 ms … 663.8 ms    30 runs
+ 
+Benchmark 2: ../java-orig/target/CalculateAverage_thomaswue_image --worker
+  Time (mean ± σ):     653.5 ms ±   1.7 ms    [User: 4387.6 ms, System: 307.6 ms]
+  Range (min … max):   651.3 ms … 660.6 ms    30 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image --worker ran
+    1.00 ± 0.00 times faster than ./target-pgo-use/release/thomaswue_ported --worker
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ taskset -c 0 hyperfine --warmup 1   "./target-pgo-use/release/thomaswue_ported --worker"   "../java-orig/target/CalculateAverage_thomaswue_image --worker"
+Benchmark 1: ./target-pgo-use/release/thomaswue_ported --worker
+  Time (mean ± σ):      4.467 s ±  0.024 s    [User: 4.191 s, System: 0.271 s]
+  Range (min … max):    4.436 s …  4.513 s    10 runs
+ 
+Benchmark 2: ../java-orig/target/CalculateAverage_thomaswue_image --worker
+  Time (mean ± σ):      4.285 s ±  0.026 s    [User: 4.003 s, System: 0.277 s]
+  Range (min … max):    4.244 s …  4.338 s    10 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image --worker ran
+    1.04 ± 0.01 times faster than ./target-pgo-use/release/thomaswue_ported --worker
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ taskset -c 0-23 hyperfine --warmup 1   "./target-pgo-use/release/thomaswue_ported"   "../java-orig/target/CalculateAverage_thomaswue_image"
+Benchmark 1: ./target-pgo-use/release/thomaswue_ported
+  Time (mean ± σ):     218.3 ms ±   4.8 ms    [User: 0.5 ms, System: 0.4 ms]
+  Range (min … max):   212.1 ms … 228.1 ms    13 runs
+ 
+Benchmark 2: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     216.0 ms ±   4.8 ms    [User: 0.6 ms, System: 2.2 ms]
+  Range (min … max):   212.4 ms … 226.8 ms    14 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image ran
+    1.01 ± 0.03 times faster than ./target-pgo-use/release/thomaswue_ported
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ taskset -c 0-23 hyperfine --warmup 5 -r 30   "./target-pgo-use/release/thomaswue_ported"   "../java-orig/target/CalculateAverage_thomaswue_image"
+Benchmark 1: ./target-pgo-use/release/thomaswue_ported
+  Time (mean ± σ):     217.8 ms ±   4.6 ms    [User: 0.5 ms, System: 0.5 ms]
+  Range (min … max):   212.6 ms … 229.1 ms    30 runs
+ 
+Benchmark 2: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     215.1 ms ±   3.8 ms    [User: 0.5 ms, System: 2.4 ms]
+  Range (min … max):   211.7 ms … 226.6 ms    30 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image ran
+    1.01 ± 0.03 times faster than ./target-pgo-use/release/thomaswue_ported
+
+
 
 
