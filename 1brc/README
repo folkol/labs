@@ -3573,3 +3573,147 @@ Summary
     1.06 ± 0.01 times faster than ./baseline --worker
 
 
+
+
+##### try PGO again
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ cargo build -r --bin thomaswue_ported
+folkol@ubuntu:~/code/labs/1brc/onebrc$ time target/release/thomaswue_ported 
+folkol@ubuntu:~/code/labs/1brc/onebrc$ cp target/release/thomaswue_ported baseline
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ cargo clean 
+export PGO_DIR=/tmp/pgo-onebrc
+export PGO_TGT=target-pgo-gen
+rm -rf "$PGO_DIR" "$PGO_TGT"
+mkdir -p "$PGO_DIR"
+
+RUSTFLAGS="-C target-cpu=native -C profile-generate=${PGO_DIR}" \
+CARGO_TARGET_DIR="$PGO_TGT" \
+cargo build -r --bin thomaswue_ported
+
+taskset -c 0-23 "./${PGO_TGT}/release/thomaswue_ported" --worker >/dev/null
+llvm-profdata-20 merge -o "${PGO_DIR}/merged.profdata" "${PGO_DIR}"/*.profraw
+
+export PGO_USE_TGT=target-pgo-use
+rm -rf "$PGO_USE_TGT"
+
+RUSTFLAGS="-C target-cpu=native -C profile-use=${PGO_DIR}/merged.profdata -C llvm-args=-pgo-warn-missing-function" \
+CARGO_TARGET_DIR="$PGO_USE_TGT" \
+cargo build -r --bin thomaswue_ported
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ taskset -c 0-23 hyperfine --warmup 5 -r 30 \
+  "./${PGO_USE_TGT}/release/thomaswue_ported --worker" \
+  "../java-orig/target/CalculateAverage_thomaswue_image --worker"
+Benchmark 1: ./target-pgo-use/release/thomaswue_ported --worker
+  Time (mean ± σ):     290.7 ms ±   8.2 ms    [User: 4618.4 ms, System: 351.5 ms]
+  Range (min … max):   279.8 ms … 321.3 ms    30 runs
+ 
+Benchmark 2: ../java-orig/target/CalculateAverage_thomaswue_image --worker
+  Time (mean ± σ):     292.6 ms ±   3.6 ms    [User: 4552.1 ms, System: 358.3 ms]
+  Range (min … max):   289.4 ms … 301.6 ms    30 runs
+ 
+Summary
+  ./target-pgo-use/release/thomaswue_ported --worker ran
+    1.01 ± 0.03 times faster than ../java-orig/target/CalculateAverage_thomaswue_image --worker
+
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ taskset -c 0-23 perf stat -ddd -- ../java-orig/target/CalculateAverage_thomaswue_image --worker >/dev/null
+In worker!
+
+ Performance counter stats for '../java-orig/target/CalculateAverage_thomaswue_image --worker':
+
+     4,813,637,252      task-clock                       #   16.679 CPUs utilized             
+               323      context-switches                 #   67.101 /sec                      
+                30      cpu-migrations                   #    6.232 /sec                      
+           216,395      page-faults                      #   44.955 K/sec                     
+    99,373,065,208      cpu_atom/instructions/           #    4.32  insn per cycle              (35.40%)
+   123,884,532,471      cpu_core/instructions/           #    4.81  insn per cycle              (30.56%)
+    23,005,070,208      cpu_atom/cycles/                 #    4.779 GHz                         (35.10%)
+    25,736,101,586      cpu_core/cycles/                 #    5.346 GHz                         (30.57%)
+     7,413,621,698      cpu_atom/branches/               #    1.540 G/sec                       (34.89%)
+     9,249,358,274      cpu_core/branches/               #    1.921 G/sec                       (30.58%)
+        28,239,935      cpu_atom/branch-misses/          #    0.38% of all branches             (34.89%)
+        36,184,761      cpu_core/branch-misses/          #    0.39% of all branches             (28.01%)
+ #     39.9 %  tma_backend_bound        (34.91%)
+ #     43.8 %  tma_backend_bound      
+                                                  #      4.3 %  tma_bad_speculation    
+                                                  #      3.5 %  tma_frontend_bound     
+                                                  #     48.5 %  tma_retiring             (30.64%)
+ #      0.0 %  tma_retiring             (34.91%)
+ #      5.0 %  tma_bad_speculation    
+                                                  #      0.0 %  tma_frontend_bound       (34.91%)
+    22,337,106,038      cpu_atom/L1-dcache-loads/        #    4.640 G/sec                       (39.03%)
+    28,090,096,664      cpu_core/L1-dcache-loads/        #    5.836 G/sec                       (30.73%)
+        77,522,878      cpu_core/L1-dcache-load-misses/  #    0.28% of all L1-dcache accesses   (30.74%)
+         2,126,136      cpu_atom/LLC-loads/              #  441.690 K/sec                       (35.67%)
+         2,164,365      cpu_core/LLC-loads/              #  449.632 K/sec                       (30.74%)
+                16      cpu_atom/LLC-load-misses/        #    0.00% of all LL-cache accesses    (35.87%)
+           642,089      cpu_core/LLC-load-misses/        #   29.67% of all LL-cache accesses    (30.72%)
+    15,022,452,481      cpu_atom/L1-icache-loads/        #    3.121 G/sec                       (35.87%)
+        23,945,111      cpu_atom/L1-icache-load-misses/  #    0.16% of all L1-icache accesses   (35.85%)
+         3,658,376      cpu_core/L1-icache-load-misses/                                         (30.74%)
+    22,587,023,798      cpu_atom/dTLB-loads/             #    4.692 G/sec                       (35.85%)
+    28,089,043,533      cpu_core/dTLB-loads/             #    5.835 G/sec                       (30.74%)
+           243,346      cpu_atom/dTLB-load-misses/       #    0.00% of all dTLB cache accesses  (35.84%)
+         1,467,592      cpu_core/dTLB-load-misses/       #    0.01% of all dTLB cache accesses  (30.74%)
+             5,393      cpu_atom/iTLB-load-misses/                                              (31.73%)
+             3,542      cpu_core/iTLB-load-misses/                                              (27.97%)
+
+       0.288607024 seconds time elapsed
+
+       4.518691000 seconds user
+       0.379806000 seconds sys
+
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ taskset -c 0-23 perf stat -ddd -- "./${PGO_USE_TGT}/release/thomaswue_ported" --worker >/dev/null
+
+ Performance counter stats for './target-pgo-use/release/thomaswue_ported --worker':
+
+     4,882,033,420      task-clock                       #   17.043 CPUs utilized             
+               292      context-switches                 #   59.811 /sec                      
+                24      cpu-migrations                   #    4.916 /sec                      
+           218,124      page-faults                      #   44.679 K/sec                     
+    89,578,668,031      cpu_atom/instructions/           #    3.84  insn per cycle              (35.23%)
+   123,156,926,020      cpu_core/instructions/           #    4.73  insn per cycle              (30.67%)
+    23,310,624,836      cpu_atom/cycles/                 #    4.775 GHz                         (35.26%)
+    26,055,880,092      cpu_core/cycles/                 #    5.337 GHz                         (30.69%)
+     6,726,204,321      cpu_atom/branches/               #    1.378 G/sec                       (35.27%)
+     9,257,408,974      cpu_core/branches/               #    1.896 G/sec                       (30.69%)
+        27,325,566      cpu_atom/branch-misses/          #    0.41% of all branches             (35.28%)
+        38,575,852      cpu_core/branch-misses/          #    0.42% of all branches             (28.07%)
+ #     46.2 %  tma_backend_bound        (35.29%)
+ #     43.6 %  tma_backend_bound      
+                                                  #      3.9 %  tma_bad_speculation    
+                                                  #      3.1 %  tma_frontend_bound     
+                                                  #     49.4 %  tma_retiring             (30.69%)
+ #      0.0 %  tma_retiring             (35.29%)
+ #      4.1 %  tma_bad_speculation    
+                                                  #      0.0 %  tma_frontend_bound       (35.29%)
+    18,366,863,448      cpu_atom/L1-dcache-loads/        #    3.762 G/sec                       (39.29%)
+    25,284,357,104      cpu_core/L1-dcache-loads/        #    5.179 G/sec                       (30.69%)
+        73,515,964      cpu_core/L1-dcache-load-misses/  #    0.29% of all L1-dcache accesses   (30.69%)
+         1,691,409      cpu_atom/LLC-loads/              #  346.456 K/sec                       (35.36%)
+         2,212,951      cpu_core/LLC-loads/              #  453.285 K/sec                       (30.73%)
+                 2      cpu_atom/LLC-load-misses/        #    0.00% of all LL-cache accesses    (35.34%)
+           595,748      cpu_core/LLC-load-misses/        #   26.92% of all LL-cache accesses    (30.85%)
+    14,155,884,073      cpu_atom/L1-icache-loads/        #    2.900 G/sec                       (35.33%)
+        22,724,067      cpu_atom/L1-icache-load-misses/  #    0.16% of all L1-icache accesses   (35.33%)
+         3,508,542      cpu_core/L1-icache-load-misses/                                         (30.85%)
+    18,581,030,118      cpu_atom/dTLB-loads/             #    3.806 G/sec                       (35.33%)
+    25,280,575,123      cpu_core/dTLB-loads/             #    5.178 G/sec                       (30.85%)
+           240,217      cpu_atom/dTLB-load-misses/       #    0.00% of all dTLB cache accesses  (35.33%)
+         1,412,905      cpu_core/dTLB-load-misses/       #    0.01% of all dTLB cache accesses  (30.85%)
+            12,974      cpu_atom/iTLB-load-misses/                                              (31.32%)
+             3,807      cpu_core/iTLB-load-misses/                                              (28.13%)
+
+       0.286453034 seconds time elapsed
+
+       4.583115000 seconds user
+       0.379678000 seconds sys
+
+
+
+
+
+
+
