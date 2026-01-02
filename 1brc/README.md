@@ -56,7 +56,7 @@ Benchmark 1: target/CalculateAverage_thomaswue_image
 
 ## Results
 
-The current best candidate is as fast on the 8 core run (as in the official 1BRC test), but a bit slower when using all cores.
+The [current best candidate](onebrc/src/bin/thomaswue_ported.rs) (a port of the Java code) is as fast on the 8 core run (as in the official 1BRC test), but still a bit slower when using all cores.
 
 ```
 $ taskset -c 0-7 hyperfine --warmup 5 --runs 20 target/CalculateAverage_thomaswue_image ../onebrc/target-pgo-use/release/thomaswue_ported 
