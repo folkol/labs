@@ -34,25 +34,14 @@ fn main() -> io::Result<()> {
     unsafe {
         madvise(mmap.as_ptr(), mmap.len(), libc::MADV_SEQUENTIAL);
     }
-    let file_len = mmap.len();
-    let page = unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize };
-    let mapped_len = (file_len + page - 1) & !(page - 1);
-    // SAFETY: the VMA backing the mapping is page-granular, so bytes up to mapped_len
-    // are mapped. We only *interpret* bytes beyond file_len as padding.
-    let data: &[u8] = unsafe { std::slice::from_raw_parts(mmap.as_ptr(), mapped_len) };
-
-    let file_start = 0;
-    let file_end = file_start + mmap.len();
-    let cursor = Arc::new(AtomicUsize::new(file_start));
+    let data = &mmap;
+    let cursor = Arc::new(AtomicUsize::new(0));
 
     thread::scope(|s| {
         let mut handles = Vec::with_capacity(number_of_workers);
         for _ in 0..number_of_workers {
             let cursor = Arc::clone(&cursor);
-            let file_start = file_start;
-            let file_end = file_end;
-
-            handles.push(s.spawn(move || parse_loop(data, &cursor, file_end, file_start)));
+            handles.push(s.spawn(move || parse_loop(data, &cursor)));
         }
         let mut all_results = Vec::with_capacity(number_of_workers);
         for h in handles {
@@ -149,18 +138,13 @@ impl Result {
     }
 }
 
-fn parse_loop(
-    data: &[u8],
-    cursor: &AtomicUsize,
-    file_end: usize,
-    file_start: usize,
-) -> Vec<Result> {
+fn parse_loop(data: &[u8], cursor: &AtomicUsize) -> Vec<Result> {
     let mut table: Vec<u32> = vec![0; HASH_TABLE_SIZE as usize];
 
     let mut results: Vec<Result> = Vec::with_capacity(MAX_CITIES as usize);
     unsafe {
         let ptr = results.as_mut_ptr() as *mut u8;
-        let bytes = results.capacity() * std::mem::size_of::<Result>();
+        let bytes = results.capacity() * size_of::<Result>();
         let page = libc::sysconf(libc::_SC_PAGESIZE) as usize;
         for off in (0..bytes).step_by(page) {
             std::ptr::write_volatile(ptr.add(off), 0);
@@ -169,11 +153,11 @@ fn parse_loop(
 
     loop {
         let current = cursor.fetch_add(SEGMENT_SIZE as usize, Ordering::Relaxed);
-        if current >= file_end {
+        if current >= data.len() {
             return results;
         }
 
-        let segment_start = if current == file_start {
+        let segment_start = if current == 0 {
             current
         } else {
             next_newline(data, current) + 1
@@ -181,7 +165,7 @@ fn parse_loop(
 
         let segment_end_nl = next_newline(
             data,
-            usize::min(file_end - 1, current + SEGMENT_SIZE as usize),
+            usize::min(data.len() - 1, current + SEGMENT_SIZE as usize),
         );
         let segment_end = segment_end_nl + 1;
 
@@ -242,7 +226,6 @@ fn parse_loop(
             let number_2 = scan_number_unsafe(&mut scanner_2);
             let number_3 = scan_number_unsafe(&mut scanner_3);
 
-            // SAFETY: We only ever push to the Vec, so index should be valid
             unsafe { results.get_unchecked_mut(index1).record(number_1) };
             unsafe { results.get_unchecked_mut(index2).record(number_2) };
             unsafe { results.get_unchecked_mut(index3).record(number_3) };
@@ -308,12 +291,6 @@ fn parse_loop(
     }
 }
 
-/// Port of the Java `scanNumber`, returning `i16`.
-///
-/// Assumptions (same as the Java trick):
-/// - The number starts at `scanner.pos + 1` (i.e. right after ';').
-/// - The textual format is fixed-width like `[-]dd.d`,
-///   and you want to advance past the number (matches `+ 4`).
 #[inline(always)]
 fn scan_number_unsafe(scanner: &mut Scanner) -> i16 {
     let number_word: u64 = scanner.get_u64_at_unsafe(scanner.pos() + 1);
@@ -325,9 +302,6 @@ fn scan_number_unsafe(scanner: &mut Scanner) -> i16 {
     number
 }
 
-/// Branchless ASCII-to-i16 conversion (ported from Java by Quan Anh Mai).
-///
-/// `decimal_sep_pos` is the *bit index* of the decimal separator (from trailing_zeros).
 #[inline(always)]
 fn convert_into_number_i16(decimal_sep_pos: u32, number_word: u64) -> i16 {
     let shift: i32 = 28 - decimal_sep_pos as i32;
@@ -357,11 +331,6 @@ impl<'a> Scanner<'a> {
     #[inline(always)]
     fn has_next(&self) -> bool {
         self.pos < self.end
-    }
-
-    #[inline(always)]
-    fn has_next_safe(&self) -> bool {
-        self.pos + 16 < self.end
     }
 
     #[inline(always)]
@@ -452,6 +421,7 @@ const MASK2: [u64; 9] = [
 unsafe fn table_get(table: &[u32], i: usize) -> u32 {
     unsafe { *table.get_unchecked(i) }
 }
+
 #[inline(always)]
 unsafe fn table_set(table: &mut [u32], i: usize, v: u32) {
     unsafe {

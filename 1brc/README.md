@@ -86,6 +86,10 @@ Summary
     1.06 ± 0.02 times faster than ../onebrc/target-pgo-use/release/thomaswue_ported
 ```
 
+## Soundness
+
+This program is not sound, for example because we read past the end of the mmapped region (same as the Java original) in the tail.
+
 ## WORKNOTES
 
 The old readme grew a bit too large, work notes related to experiements can be found in [WORKNOTES]().

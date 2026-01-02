@@ -3813,4 +3813,215 @@ Summary
 
 
 
+#### final cleanup, measure against baseline
+
+$ ./rebuild-with-pgo.sh 
+$ cp ./target-pgo-use/release/thomaswue_ported baseline
+$ hyperfine --warmup 10 --runs 30 ../java-orig/target/CalculateAverage_thomaswue_image ./target-pgo-use/release/thomaswue_ported 
+Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     214.6 ms ±   3.0 ms    [User: 0.8 ms, System: 1.9 ms]
+  Range (min … max):   210.8 ms … 220.7 ms    30 runs
+ 
+Benchmark 2: ./target-pgo-use/release/thomaswue_ported
+  Time (mean ± σ):     225.1 ms ±   2.4 ms    [User: 0.5 ms, System: 0.5 ms]
+  Range (min … max):   221.0 ms … 230.7 ms    30 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image ran
+    1.05 ± 0.02 times faster than ./target-pgo-use/release/thomaswue_ported
+
+$ taskset -c 0-7 hyperfine --warmup 10 --runs 30 ../java-orig/target/CalculateAverage_thomaswue_image ./target-pgo-use/release/thomaswue_ported 
+Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     592.6 ms ±   2.4 ms    [User: 0.6 ms, System: 1.8 ms]
+  Range (min … max):   590.2 ms … 602.6 ms    30 runs
+ 
+Benchmark 2: ./target-pgo-use/release/thomaswue_ported
+  Time (mean ± σ):     591.7 ms ±   3.0 ms    [User: 0.4 ms, System: 0.3 ms]
+  Range (min … max):   588.9 ms … 601.5 ms    30 runs
+ 
+Summary
+  ./target-pgo-use/release/thomaswue_ported ran
+    1.00 ± 0.01 times faster than ../java-orig/target/CalculateAverage_thomaswue_image
+
+
+##### minor cleanup
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ taskset -c 0-7 hyperfine --warmup 10 --runs 30 ../java-orig/target/CalculateAverage_thomaswue_image ./target-pgo-use/release/thomaswue_ported ./baseline 
+Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     592.7 ms ±   1.2 ms    [User: 0.8 ms, System: 1.7 ms]
+  Range (min … max):   591.1 ms … 596.5 ms    30 runs
+ 
+Benchmark 2: ./target-pgo-use/release/thomaswue_ported
+  Time (mean ± σ):     541.0 ms ±   1.8 ms    [User: 0.4 ms, System: 0.3 ms]
+  Range (min … max):   538.4 ms … 545.2 ms    30 runs
+ 
+Benchmark 3: ./baseline
+  Time (mean ± σ):     591.9 ms ±   2.7 ms    [User: 0.5 ms, System: 0.2 ms]
+  Range (min … max):   588.6 ms … 597.9 ms    30 runs
+ 
+Summary
+  ./target-pgo-use/release/thomaswue_ported ran
+    1.09 ± 0.01 times faster than ./baseline
+    1.10 ± 0.00 times faster than ../java-orig/target/CalculateAverage_thomaswue_image
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 10 --runs 30 ../java-orig/target/CalculateAverage_thomaswue_image ./target-pgo-use/release/thomaswue_ported ./baseline 
+ ⠙ Measuring shell spawning time  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ETA 00:00:00 Benchmark 1: ../java-orig/target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     215.0 ms ±   2.1 ms    [User: 0.6 ms, System: 2.2 ms]
+  Range (min … max):   212.1 ms … 220.9 ms    30 runs
+ 
+Benchmark 2: ./target-pgo-use/release/thomaswue_ported
+  Time (mean ± σ):     228.9 ms ±   5.1 ms    [User: 0.7 ms, System: 0.4 ms]
+  Range (min … max):   219.9 ms … 235.9 ms    30 runs
+ 
+Benchmark 3: ./baseline
+  Time (mean ± σ):     230.1 ms ±   4.9 ms    [User: 0.6 ms, System: 0.5 ms]
+  Range (min … max):   221.5 ms … 238.4 ms    30 runs
+ 
+Summary
+  ../java-orig/target/CalculateAverage_thomaswue_image ran
+    1.06 ± 0.03 times faster than ./target-pgo-use/release/thomaswue_ported
+    1.07 ± 0.03 times faster than ./baseline
+
+
+10% faster? What happened?
+
+$ RUSTFLAGS="-C target-cpu=native -C profile-use=$PGO_DIR/merged.profdata" CARGO_TARGET_DIR="$PGO_USE" cargo +nightly --color asm -Z build-std=std,panic_abort --bin thomaswue_ported --rust 655 | less -R
+
+
+
+##### Skip bounds check without unsafe
+
+- https://shnatsel.medium.com/how-to-avoid-bounds-checks-in-rust-without-unsafe-f65e618b4c1e
+- 
+
+##### graal image with debug info
+
+folkol@ubuntu:~/code/labs/1brc/java-orig$ diff prepare_thomaswue*
+22c22
+< if [ ! -f target/CalculateAverage_thomaswue_image_debug ]; then
+---
+> if [ ! -f target/CalculateAverage_thomaswue_image ]; then
+37,39c37
+<     NATIVE_IMAGE_OPTS="$NATIVE_IMAGE_OPTS -g -H:+SourceLevelDebug -H:-DeleteLocalSymbols -H:+PreserveFramePointer -H:-OmitInlinedMethodDebugLineInfo"
+<     
+<     native-image $NATIVE_IMAGE_OPTS -cp target/average-1.0.0-SNAPSHOT.jar -o target/CalculateAverage_thomaswue_image_debug dev.morling.onebrc.CalculateAverage_thomaswue
+---
+>     native-image $NATIVE_IMAGE_OPTS -cp target/average-1.0.0-SNAPSHOT.jar -o target/CalculateAverage_thomaswue_image dev.morling.onebrc.CalculateAverage_thomaswue
+
+- https://www.graalvm.org/latest/reference-manual/native-image/debugging-and-diagnostics/DebugInfo/
+- perf record -F 99 --all-user --call-graph dwarf,16384 -g -- target/CalculateAverage_thomaswue_image_debug --worker # -F 99 or perf script took forever...
+- perf script --inline -F comm,pid,tid,time,event,ip,sym,dso,srcline > perf.txt
+# open in speedscope.app
+- https://eighty-twenty.org/2021/09/09/perf-addr2line-speed-improvement
+- https://michcioperz.com/post/slow-perf-script/
+
+###### Building faster perf (libbfd)
+
+- apt source linux-perf-4.19
+- folkol@ubuntu:~/code/labs/1brc/java-orig$ apt-cache search libbfd
+- libbinutils - GNU binary utilities (private shared library)
+- sudo apt install -y libbinutils
+- # installed a bunch of things it asked for ...
+$ make perf NO_LIBPYTHON=1 (couldn't get setuptools to work)
+
+$ time perf script --inline -F comm,pid,tid,time,event,ip,sym,dso,srcline > perf.txt
+
+real	5m11.477s
+user	0m3.591s
+sys	0m2.660s
+$ time linux-6.17.0/tools/perf/perf script --inline -F comm,pid,tid,time,event,ip,sym,dso,srcline > perf.txt
+
+real	0m1.774s
+user	0m1.568s
+sys	0m0.197s
+
+- got unnamed attribution (like .java:426)
+- worked without the -F switch: $ time linux-6.17.0/tools/perf/perf script > perf.txt
+- but the final program is slower:
+
+$ hyperfine target/CalculateAverage_thomaswue_image{,_debug}
+Benchmark 1: target/CalculateAverage_thomaswue_image
+  Time (mean ± σ):     213.4 ms ±   3.3 ms    [User: 0.7 ms, System: 2.4 ms]
+  Range (min … max):   208.1 ms … 218.2 ms    14 runs
+ 
+Benchmark 2: target/CalculateAverage_thomaswue_image_debug
+  Time (mean ± σ):     275.0 ms ±   2.5 ms    [User: 1.2 ms, System: 1.6 ms]
+  Range (min … max):   272.9 ms … 280.1 ms    10 runs
+ 
+Summary
+  target/CalculateAverage_thomaswue_image ran
+    1.29 ± 0.02 times faster than target/CalculateAverage_thomaswue_image_debug
+
+####### does this affect rust as well?
+
+Probably not
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ hyperfine --warmup 10 --runs 20 ./baseline* ./pgo*
+Benchmark 1: ./baseline
+  Time (mean ± σ):     229.6 ms ±   3.5 ms    [User: 0.4 ms, System: 0.6 ms]
+  Range (min … max):   225.1 ms … 238.3 ms    20 runs
+ 
+Benchmark 2: ./baseline_debug
+  Time (mean ± σ):     230.0 ms ±   1.7 ms    [User: 0.4 ms, System: 0.6 ms]
+  Range (min … max):   226.5 ms … 233.1 ms    20 runs
+ 
+Benchmark 3: ./pgo
+  Time (mean ± σ):     229.5 ms ±   3.6 ms    [User: 0.6 ms, System: 0.5 ms]
+  Range (min … max):   222.4 ms … 237.5 ms    20 runs
+ 
+Benchmark 4: ./pgo_debug
+  Time (mean ± σ):     229.4 ms ±   3.8 ms    [User: 0.5 ms, System: 0.5 ms]
+  Range (min … max):   224.4 ms … 241.5 ms    20 runs
+ 
+Benchmark 5: ./pgo_std
+  Time (mean ± σ):     230.3 ms ±   2.3 ms    [User: 0.5 ms, System: 0.6 ms]
+  Range (min … max):   226.5 ms … 234.8 ms    20 runs
+ 
+Benchmark 6: ./pgo_std_debug
+  Time (mean ± σ):     228.8 ms ±   3.3 ms    [User: 0.5 ms, System: 0.6 ms]
+  Range (min … max):   224.6 ms … 234.6 ms    20 runs
+ 
+Summary
+  ./pgo_std_debug ran
+    1.00 ± 0.02 times faster than ./pgo_debug
+    1.00 ± 0.02 times faster than ./pgo
+    1.00 ± 0.02 times faster than ./baseline
+    1.01 ± 0.02 times faster than ./baseline_debug
+    1.01 ± 0.02 times faster than ./pgo_std
+
+
+...but maybe for 'P-core runs'?
+
+folkol@ubuntu:~/code/labs/1brc/onebrc$ taskset -c 0-7 hyperfine --warmup 10 --runs 20 './baseline --worker' './baseline_debug --worker' './pgo --worker' './pgo_debug --worker' './pgo_std --worker' './pgo_std_debug --worker'
+Benchmark 1: ./baseline --worker
+ ⠹ Performing warmup runs         ███████████████████████████████████████████████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ETA 00:00:02  Time (mean ± σ):     675.7 ms ±   3.3 ms    [User: 4614.0 ms, System: 294.6 ms]
+  Range (min … max):   670.9 ms … 687.8 ms    20 runs
+ 
+Benchmark 2: ./baseline_debug --worker
+  Time (mean ± σ):     674.7 ms ±   1.9 ms    [User: 4610.5 ms, System: 293.6 ms]
+  Range (min … max):   671.0 ms … 678.2 ms    20 runs
+ 
+Benchmark 3: ./pgo --worker
+  Time (mean ± σ):     591.9 ms ±   0.9 ms    [User: 3945.3 ms, System: 297.6 ms]
+  Range (min … max):   590.2 ms … 594.0 ms    20 runs
+ 
+Benchmark 4: ./pgo_debug --worker
+  Time (mean ± σ):     593.8 ms ±   1.0 ms    [User: 3959.6 ms, System: 296.0 ms]
+  Range (min … max):   592.1 ms … 595.8 ms    20 runs
+ 
+Benchmark 5: ./pgo_std --worker
+  Time (mean ± σ):     602.8 ms ±   2.0 ms    [User: 4028.7 ms, System: 299.3 ms]
+  Range (min … max):   599.8 ms … 607.5 ms    20 runs
+ 
+Benchmark 6: ./pgo_std_debug --worker
+  Time (mean ± σ):     596.2 ms ±   1.3 ms    [User: 3983.4 ms, System: 292.6 ms]
+  Range (min … max):   594.5 ms … 598.9 ms    20 runs
+ 
+Summary
+  ./pgo --worker ran
+    1.00 ± 0.00 times faster than ./pgo_debug --worker
+    1.01 ± 0.00 times faster than ./pgo_std_debug --worker
+    1.02 ± 0.00 times faster than ./pgo_std --worker
+    1.14 ± 0.00 times faster than ./baseline_debug --worker
+    1.14 ± 0.01 times faster than ./baseline --worker
 
