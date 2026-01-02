@@ -1,7 +1,7 @@
 use memmap2::Mmap;
 use std::collections::BTreeMap;
 use std::fs::File;
-use std::io::{stdout, BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Write, stdout};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{env, io, process};
@@ -158,6 +158,14 @@ fn parse_loop(
     let mut table: Vec<u32> = vec![0; HASH_TABLE_SIZE as usize];
 
     let mut results: Vec<Result> = Vec::with_capacity(MAX_CITIES as usize);
+    unsafe {
+        let ptr = results.as_mut_ptr() as *mut u8;
+        let bytes = results.capacity() * std::mem::size_of::<Result>();
+        let page = libc::sysconf(libc::_SC_PAGESIZE) as usize;
+        for off in (0..bytes).step_by(page) {
+            std::ptr::write_volatile(ptr.add(off), 0);
+        }
+    }
 
     loop {
         let current = cursor.fetch_add(SEGMENT_SIZE as usize, Ordering::Relaxed);
@@ -185,7 +193,7 @@ fn parse_loop(
         let mut scanner_2 = Scanner::new(data, mid1_nl + 1, mid2_nl + 1);
         let mut scanner_3 = Scanner::new(data, mid2_nl + 1, segment_end);
 
-        while scanner_1.has_next_safe() && scanner_2.has_next_safe() && scanner_3.has_next_safe() {
+        while scanner_1.has_next() && scanner_2.has_next() && scanner_3.has_next() {
             let word_1 = scanner_1.get_u64_unsafe();
             let word_2 = scanner_2.get_u64_unsafe();
             let word_3 = scanner_3.get_u64_unsafe();
@@ -240,7 +248,7 @@ fn parse_loop(
             unsafe { results.get_unchecked_mut(index3).record(number_3) };
         }
 
-        while scanner_1.has_next_safe() {
+        while scanner_1.has_next() {
             let word_1 = scanner_1.get_u64_unsafe();
             let delim_1 = find_delimiter(word_1);
             let word_1b = scanner_1.get_u64_at_unsafe(scanner_1.pos + 8);
@@ -259,7 +267,7 @@ fn parse_loop(
             let number_1 = scan_number_unsafe(&mut scanner_1);
             unsafe { results.get_unchecked_mut(index).record(number_1) };
         }
-        while scanner_2.has_next_safe() {
+        while scanner_2.has_next() {
             let word_2 = scanner_2.get_u64_unsafe();
             let delim_2 = find_delimiter(word_2);
             let word_2b = scanner_2.get_u64_at_unsafe(scanner_2.pos + 8);
@@ -278,7 +286,7 @@ fn parse_loop(
             let number_2 = scan_number_unsafe(&mut scanner_2);
             unsafe { results.get_unchecked_mut(index).record(number_2) };
         }
-        while scanner_3.has_next_safe() {
+        while scanner_3.has_next() {
             let word_3 = scanner_3.get_u64_unsafe();
             let delim_3 = find_delimiter(word_3);
             let word_1b = scanner_3.get_u64_at_unsafe(scanner_3.pos + 8);
@@ -344,6 +352,11 @@ impl<'a> Scanner<'a> {
             end,
             pos: start,
         }
+    }
+
+    #[inline(always)]
+    fn has_next(&self) -> bool {
+        self.pos < self.end
     }
 
     #[inline(always)]
