@@ -4025,3 +4025,72 @@ Summary
     1.14 ± 0.00 times faster than ./baseline_debug --worker
     1.14 ± 0.01 times faster than ./baseline --worker
 
+G
+##### perf report with source annotations
+
+- this also made perf report easier to read!
+- $ ./prepare_thomaswue_debug.sh 
+- $ taskset -c 0 perf record -F 9999 --all-user --call-graph dwarf,16384 -g -- target/CalculateAverage_thomaswue_image_debug --worker
+- $ linux-6.17.0/tools/perf/perf report
+
+Samples: 50K of event 'cpu_core/cycles/P', Event count (approx.): 24824990987
+  Children      Self  Command          Shared Object                           Symbol
++   99.99%    99.96%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] void dev.morling.onebrc.CalculateAverage_thomaswue::parseLoop(java.util.concurrent.atomic.AtomicLong*, long, long, java.util.List*)
++   99.59%     0.00%  Thread-0         libc.so.6                               [.] start_thread
++   99.59%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] org.graalvm.word.WordBase com.oracle.svm.core.code.IsolateEnterStub::PosixPlatformThreads_pthreadStartRoutine_38d96cbc1a188a6051c29be1299afe681d67942e(com.oracle.svm.core.thread.PlatformTh
++   99.59%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] org.graalvm.word.WordBase com.oracle.svm.core.posix.thread.PosixPlatformThreads::pthreadStartRoutine(com.oracle.svm.core.thread.PlatformThreads$ThreadStartData)
++   99.59%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] void com.oracle.svm.core.thread.PlatformThreads::threadStartRoutine(org.graalvm.nativeimage.ObjectHandle)
++   99.59%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] void java.lang.Thread::run()
++   99.59%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] void java.lang.Thread::runWith(java.lang.Object*, java.lang.Runnable*) (inlined)
++   99.59%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] void dev.morling.onebrc.CalculateAverage_thomaswue$$Lambda$7b9e9d68466629a55dca79bd19220dd33b731929::run()
++   99.59%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] void dev.morling.onebrc.CalculateAverage_thomaswue::lambda$main$0(java.util.concurrent.atomic.AtomicLong*, long, long, java.util.List[]*, int) (inlined)
++   35.89%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] dev.morling.onebrc.CalculateAverage_thomaswue$Result* dev.morling.onebrc.CalculateAverage_thomaswue::findResult(long, long, long, long, dev.morling.onebrc.CalculateAverage_thomaswue$Scanne
++   20.84%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] long dev.morling.onebrc.CalculateAverage_thomaswue::scanNumber(dev.morling.onebrc.CalculateAverage_thomaswue$Scanner*) (inlined)
++   12.92%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] long dev.morling.onebrc.CalculateAverage_thomaswue::findDelimiter(long) (inlined)
++    9.73%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] long dev.morling.onebrc.CalculateAverage_thomaswue::convertIntoNumber(int, long) (inlined)
++    8.71%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] long dev.morling.onebrc.CalculateAverage_thomaswue$Scanner::getLongAt(long) (inlined)
++    7.70%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] void dev.morling.onebrc.CalculateAverage_thomaswue::record(dev.morling.onebrc.CalculateAverage_thomaswue$Result*, long) (inlined)
++    7.00%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] long dev.morling.onebrc.CalculateAverage_thomaswue$Scanner::pos() (inlined)
++    5.96%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] void dev.morling.onebrc.CalculateAverage_thomaswue$Scanner::add(long) (inlined)
++    5.38%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] int dev.morling.onebrc.CalculateAverage_thomaswue::hashToIndex(long, dev.morling.onebrc.CalculateAverage_thomaswue$Result[]*) (inlined)
++    3.94%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] long dev.morling.onebrc.CalculateAverage_thomaswue$Scanner::getLong() (inlined)
++    2.34%     0.00%  Thread-0         CalculateAverage_thomaswue_image_debug  [.] boolean dev.morling.onebrc.CalculateAverage_thomaswue$Scanner::hasNext() (inlined)
+
+
+$ linux-6.17.0/tools/perf/perf report --sort overhead
+Samples: 50K of event 'cpu_core/cycles/P', Event count (approx.): 24824990987
+      Self
+-  100.00%                                                                                                                                                                                                                                                                    ▒
+     46.05% start_thread                                                                                                                                                                                                                                                      ▒
+        org.graalvm.word.WordBase com.oracle.svm.core.code.IsolateEnterStub::PosixPlatformThreads_pthreadStartRoutine_38d96cbc1a188a6051c29be1299afe681d67942e(com.oracle.svm.core.thread.PlatformThreads$ThreadStartData)                                                    ▒
+        org.graalvm.word.WordBase com.oracle.svm.core.posix.thread.PosixPlatformThreads::pthreadStartRoutine(com.oracle.svm.core.thread.PlatformThreads$ThreadStartData)                                                                                                      ▒
+        void com.oracle.svm.core.thread.PlatformThreads::threadStartRoutine(org.graalvm.nativeimage.ObjectHandle)                                                                                                                                                             ▒
+        void java.lang.Thread::run()                                                                                                                                                                                                                                          ▒
+        void java.lang.Thread::runWith(java.lang.Object*, java.lang.Runnable*) (inlined)                                                                                                                                                                                      ▒
+        void dev.morling.onebrc.CalculateAverage_thomaswue$$Lambda$7b9e9d68466629a55dca79bd19220dd33b731929::run()                                                                                                                                                            ▒
+        void dev.morling.onebrc.CalculateAverage_thomaswue::lambda$main$0(java.util.concurrent.atomic.AtomicLong*, long, long, java.util.List[]*, int) (inlined)                                                                                                              ▒
+      - void dev.morling.onebrc.CalculateAverage_thomaswue::parseLoop(java.util.concurrent.atomic.AtomicLong*, long, long, java.util.List*)                                                                                                                                   ▒
+         - 20.84% long dev.morling.onebrc.CalculateAverage_thomaswue::scanNumber(dev.morling.onebrc.CalculateAverage_thomaswue$Scanner*) (inlined)                                                                                                                            ▒
+              9.73% long dev.morling.onebrc.CalculateAverage_thomaswue::convertIntoNumber(int, long) (inlined)                                                                                                                                                                ▒
+              3.02% void dev.morling.onebrc.CalculateAverage_thomaswue$Scanner::add(long) (inlined)                                                                                                                                                                           ▒
+              2.28% long dev.morling.onebrc.CalculateAverage_thomaswue$Scanner::getLongAt(long) (inlined)                                                                                                                                                                     ▒
+              1.44% long dev.morling.onebrc.CalculateAverage_thomaswue$Scanner::pos() (inlined)                                                                                                                                                                               ▒
+         - 16.66% dev.morling.onebrc.CalculateAverage_thomaswue$Result* dev.morling.onebrc.CalculateAverage_thomaswue::findResult(long, long, long, long, dev.morling.onebrc.CalculateAverage_thomaswue$Scanner*, dev.morling.onebrc.CalculateAverage_thomaswue$Result[]*, jav▒
+              3.56% int dev.morling.onebrc.CalculateAverage_thomaswue::hashToIndex(long, dev.morling.onebrc.CalculateAverage_thomaswue$Result[]*) (inlined)                                                                                                                   ▒
+              2.03% void dev.morling.onebrc.CalculateAverage_thomaswue$Scanner::add(long) (inlined)                                                                                                                                                                           ▒
+           7.70% void dev.morling.onebrc.CalculateAverage_thomaswue::record(dev.morling.onebrc.CalculateAverage_thomaswue$Result*, long) (inlined)      
+
+ChatGPT comments:
+Good perf record commands to understand time vs stalls
+
+There are two complementary approaches:
+
+    Sampling (“where are we spending cycles?”) → perf record + perf report/speedscope
+
+    Counting (“what kind of work is this? IPC? cache misses? branches?”) → perf stat
+
+You asked for record commands; I’ll include the stat ones because stalls are mostly “counting” territory.
+
+$ taskset -c 0 linux-6.17.0/tools/perf/perf record -F 9999 --all-user -e cycles,instructions,branches,branch-misses,cache-references,cache-misses -g --call-graph dwarf,16384 -- target/CalculateAverage_thomaswue_image_debug --workerIn worker!
+
+
