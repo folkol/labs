@@ -86,9 +86,964 @@ Summary
     1.06 ± 0.02 times faster than ../onebrc/target-pgo-use/release/thomaswue_ported
 ```
 
+### Compare to query engine on .parquet
+
+```
+$ sudo snap install duckdb
+duckdb 1.1.3 from Hassan Abedi (habedi) installed
+
+folkol@ubuntu:~$ sudo mount -t tmpfs -o size=16G tmpfs /media/measurements
+folkol@ubuntu:~$ time duckdb /media/measurements/measurements.duckdb <<'SQL'
+CREATE OR REPLACE TABLE measurements AS
+SELECT
+  column0::VARCHAR AS station,
+  column1::DOUBLE  AS temp
+FROM read_csv(
+  'measurements.txt',
+  delim=';',
+  header=false,
+  columns={'column0':'VARCHAR','column1':'DOUBLE'}
+);
+
+CREATE OR REPLACE TABLE m_bucketed AS
+SELECT
+  station,
+  temp,
+  (hash(station) % 64)::INTEGER AS bucket
+FROM measurements;
+
+COPY (
+  SELECT station, temp, bucket
+  FROM m_bucketed
+) TO 'parquet_out'
+(FORMAT PARQUET,
+ PARTITION_BY (bucket),
+ COMPRESSION ZSTD,
+ ROW_GROUP_SIZE 1000000);
+SQL
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+
+real	0m24.203s
+user	8m15.677s
+sys	0m18.359s
+
+```
+folkol@ubuntu:/media/measurements$ cat query.sh 
+duckdb -c "
+PRAGMA threads=8;
+SELECT station, min(temp) AS min, max(temp) AS max, avg(temp) AS avg
+FROM read_parquet('parquet_out/bucket=*/data_0.parquet')
+GROUP BY station
+ORDER BY station;
+"
+
+folkol@ubuntu:/media/measurements$ ./query.sh 
+100% ▕████████████████████████████████████████████████████████████▏ 
+┌──────────────────┬────────┬────────┬──────────────────────┐
+│     station      │  min   │  max   │         avg          │
+│     varchar      │ double │ double │        double        │
+├──────────────────┼────────┼────────┼──────────────────────┤
+│ Abha             │  -32.2 │   63.7 │   17.998749943241158 │
+│ Abidjan          │  -29.5 │   79.7 │   25.994422452811854 │
+│ Abéché           │  -17.4 │   81.6 │    29.39551100194818 │
+│ Accra            │  -23.8 │   79.5 │   26.388241179346416 │
+│ Addis Ababa      │  -32.3 │   67.7 │   16.003941846881606 │
+│ Adelaide         │  -34.1 │   70.5 │   17.301633641702416 │
+│ Aden             │  -26.7 │   88.7 │   29.093780848148537 │
+│ Ahvaz            │  -25.6 │   75.1 │   25.400849621775528 │
+│ Albuquerque      │  -34.7 │   65.9 │   13.999044398481779 │
+│ Alexandra        │  -43.6 │   58.6 │   11.005210691603194 │
+│ Alexandria       │  -31.7 │   69.2 │   20.003987944288088 │
+│ Algiers          │  -32.6 │   68.9 │    18.19320434118324 │
+│ Alice Springs    │  -25.5 │   72.3 │   21.005575752668356 │
+│ Almaty           │  -40.4 │   58.3 │   10.001510780402645 │
+│ Amsterdam        │  -38.8 │   57.2 │    10.20279489122065 │
+│ Anadyr           │  -55.2 │   43.2 │   -6.896348845914473 │
+│ Anchorage        │  -46.8 │   51.3 │   2.8025350268732936 │
+│ Andorra la Vella │  -43.7 │   59.4 │     9.80363732213116 │
+│ Ankara           │  -42.2 │   59.6 │   11.996429990899436 │
+│ Antananarivo     │  -28.0 │   69.1 │   17.907086862962924 │
+│      ·           │    ·   │     ·  │            ·         │
+│      ·           │    ·   │     ·  │            ·         │
+│      ·           │    ·   │     ·  │            ·         │
+│ Washington, D.C. │  -34.3 │   67.8 │   14.599906557976198 │
+│ Wau              │  -24.2 │   77.4 │   27.807157662465617 │
+│ Wellington       │  -34.7 │   65.5 │   12.901295373900604 │
+│ Whitehorse       │  -50.5 │   49.6 │ -0.08943931361578232 │
+│ Wichita          │  -34.6 │   69.2 │   13.898354418567012 │
+│ Willemstad       │  -25.1 │   82.7 │   27.995685928175988 │
+│ Winnipeg         │  -49.8 │   55.7 │    3.001167869895295 │
+│ Wrocław          │  -37.9 │   60.1 │    9.601961898582271 │
+│ Xi'an            │  -36.8 │   62.7 │    14.09624454513195 │
+│ Yakutsk          │  -62.9 │   39.9 │    -8.79802816959591 │
+│ Yangon           │  -21.7 │   78.5 │   27.502614229128092 │
+│ Yaoundé          │  -24.4 │   72.0 │   23.803188513545226 │
+│ Yellowknife      │  -54.6 │   50.1 │    -4.30253096594418 │
+│ Yerevan          │  -38.2 │   61.6 │   12.396115662662439 │
+│ Yinchuan         │  -44.9 │   58.5 │    8.998356055921285 │
+│ Zagreb           │  -38.1 │   67.1 │   10.691305572430771 │
+│ Zanzibar City    │  -24.4 │   77.1 │   25.994763615219888 │
+│ Zürich           │  -39.8 │   57.9 │     9.29392563863812 │
+│ Ürümqi           │  -43.2 │   59.3 │     7.40012809772406 │
+│ İzmir            │  -32.7 │   68.4 │     17.8933333305793 │
+├──────────────────┴────────┴────────┴──────────────────────┤
+│ 413 rows (40 shown)                             4 columns │
+└───────────────────────────────────────────────────────────┘
+
+folkol@ubuntu:/media/measurements$ taskset -c 0-7 hyperfine --warmup 5 --runs 20 ./query.sh 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.601 s ±  0.009 s    [User: 26.815 s, System: 1.237 s]
+  Range (min … max):    3.589 s …  3.618 s    20 runs
+```
+ 
+#### Trying some different row group sizes
+
+
+```
+folkol@ubuntu:~$ sudo mount -t tmpfs -o size=10G tmpfs /media/measurements
+folkol@ubuntu:~$ cat make_parquet.sh 
+ROW_GROUP_SIZE=${1:?usage: ./make_parquet ROW_GROUP SIZE}
+
+PARQUET_PATH=/media/measurements/measurements.parquet
+
+rm -r /home/folkol/duckdb_tmp/* 2>/dev/null
+rm $PARQUET_PATH 2>/dev/null
+
+duckdb :memory: <<SQL
+PRAGMA temp_directory='/home/folkol/duckdb_tmp';
+CREATE OR REPLACE TABLE measurements AS
+SELECT
+  column0::VARCHAR AS station,
+  column1::DOUBLE  AS temp
+FROM read_csv(
+  'measurements.txt',
+  delim=';',
+  header=false,
+  columns={'column0':'VARCHAR','column1':'DOUBLE'}
+);
+
+COPY (
+  SELECT station, temp
+  FROM measurements
+) TO "$PARQUET_PATH"
+(FORMAT PARQUET,
+ COMPRESSION ZSTD,
+ ROW_GROUP_SIZE $ROW_GROUP_SIZE);
+SQL
+folkol@ubuntu:~$ for n in {10000..100000..10000}; do echo ">>> $n"; ./make_parquet.sh $n; hyperfine --warmup 1 --runs 5 ./query; echo; done
+
+>>> 10000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      4.113 s ±  0.005 s    [User: 29.768 s, System: 1.170 s]
+  Range (min … max):    4.106 s …  4.118 s    5 runs
+ 
+
+>>> 20000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.802 s ±  0.021 s    [User: 28.495 s, System: 0.727 s]
+  Range (min … max):    3.778 s …  3.825 s    5 runs
+ 
+
+>>> 30000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.681 s ±  0.014 s    [User: 27.887 s, System: 0.577 s]
+  Range (min … max):    3.663 s …  3.694 s    5 runs
+ 
+
+>>> 40000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.626 s ±  0.008 s    [User: 27.676 s, System: 0.473 s]
+  Range (min … max):    3.616 s …  3.637 s    5 runs
+ 
+
+>>> 50000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.607 s ±  0.013 s    [User: 27.633 s, System: 0.475 s]
+  Range (min … max):    3.592 s …  3.623 s    5 runs
+ 
+
+>>> 60000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.571 s ±  0.005 s    [User: 27.419 s, System: 0.440 s]
+  Range (min … max):    3.565 s …  3.576 s    5 runs
+ 
+
+>>> 80000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.546 s ±  0.006 s    [User: 27.392 s, System: 0.332 s]
+  Range (min … max):    3.537 s …  3.551 s    5 runs
+ 
+
+>>> 90000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.551 s ±  0.009 s    [User: 27.318 s, System: 0.447 s]
+  Range (min … max):    3.541 s …  3.566 s    5 runs
+ 
+
+>>> 100000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.522 s ±  0.016 s    [User: 27.286 s, System: 0.300 s]
+  Range (min … max):    3.497 s …  3.535 s    5 runs
+ 
+
+...
+
+
+>>> 100000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.529 s ±  0.005 s    [User: 27.333 s, System: 0.291 s]
+  Range (min … max):    3.524 s …  3.537 s    5 runs
+ 
+
+>>> 200000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.497 s ±  0.008 s    [User: 27.027 s, System: 0.403 s]
+  Range (min … max):    3.490 s …  3.510 s    5 runs
+ 
+
+>>> 300000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.471 s ±  0.007 s    [User: 26.864 s, System: 0.408 s]
+  Range (min … max):    3.461 s …  3.477 s    5 runs
+ 
+
+>>> 400000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.476 s ±  0.003 s    [User: 26.769 s, System: 0.533 s]
+  Range (min … max):    3.472 s …  3.480 s    5 runs
+ 
+
+>>> 500000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.468 s ±  0.020 s    [User: 26.906 s, System: 0.320 s]
+  Range (min … max):    3.449 s …  3.501 s    5 runs
+ 
+
+>>> 600000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.476 s ±  0.015 s    [User: 26.766 s, System: 0.506 s]
+  Range (min … max):    3.455 s …  3.496 s    5 runs
+
+
+>>> 700000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.479 s ±  0.006 s    [User: 26.776 s, System: 0.517 s]
+  Range (min … max):    3.471 s …  3.485 s    5 runs
+ 
+
+>>> 800000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.483 s ±  0.005 s    [User: 26.831 s, System: 0.515 s]
+  Range (min … max):    3.475 s …  3.487 s    5 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+
+>>> 900000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.474 s ±  0.013 s    [User: 26.790 s, System: 0.499 s]
+  Range (min … max):    3.453 s …  3.485 s    5 runs
+ 
+ 
+>>> 1000000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.482 s ±  0.010 s    [User: 26.962 s, System: 0.358 s]
+  Range (min … max):    3.472 s …  3.496 s    5 runs
+```
+
+
+#### Without compression (100_000_000 lines instead)
+
+```
+folkol@ubuntu:~$ sudo mount -t tmpfs -o size=10G tmpfs /media/measurements
+folkol@ubuntu:~$ cat make_parquet.sh 
+ROW_GROUP_SIZE=${1:?usage: ./make_parquet ROW_GROUP SIZE}
+
+PARQUET_PATH=/media/measurements/measurements.parquet
+
+rm -r /home/folkol/duckdb_tmp/* 2>/dev/null
+rm $PARQUET_PATH 2>/dev/null
+
+duckdb :memory: <<SQL
+PRAGMA temp_directory='/home/folkol/duckdb_tmp';
+CREATE OR REPLACE TABLE measurements AS
+SELECT
+  column0::VARCHAR AS station,
+  column1::DOUBLE  AS temp
+FROM read_csv(
+  'measurements.txt',
+  delim=';',
+  header=false,
+  columns={'column0':'VARCHAR','column1':'DOUBLE'}
+);
+
+COPY (
+  SELECT station, temp
+  FROM measurements
+) TO "$PARQUET_PATH"
+(FORMAT PARQUET,
+ COMPRESSION 'UNCOMPRESSED',
+ ROW_GROUP_SIZE $ROW_GROUP_SIZE);
+SQL
+
+
+folkol@ubuntu:~$ for n in {100000..1000000..100000}; do echo ">>> $n"; ./make_parquet.sh $n; hyperfine --warmup 1 --runs 5 ./query.sh; echo; done
+>>> 100000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     337.5 ms ±   5.4 ms    [User: 2151.9 ms, System: 105.4 ms]
+  Range (min … max):   332.3 ms … 346.3 ms    5 runs
+ 
+
+>>> 200000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     330.2 ms ±   7.5 ms    [User: 2125.5 ms, System: 112.8 ms]
+  Range (min … max):   323.4 ms … 341.8 ms    5 runs
+ 
+
+>>> 300000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     339.8 ms ±   7.9 ms    [User: 2142.2 ms, System: 111.5 ms]
+  Range (min … max):   329.1 ms … 348.9 ms    5 runs
+ 
+
+>>> 400000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     343.8 ms ±   4.9 ms    [User: 2155.8 ms, System: 135.6 ms]
+  Range (min … max):   335.3 ms … 348.0 ms    5 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+
+>>> 500000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     344.1 ms ±   4.8 ms    [User: 2149.7 ms, System: 143.8 ms]
+  Range (min … max):   339.8 ms … 351.6 ms    5 runs
+ 
+
+>>> 600000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     345.5 ms ±   8.6 ms    [User: 2160.4 ms, System: 153.3 ms]
+  Range (min … max):   334.6 ms … 357.9 ms    5 runs
+ 
+
+>>> 700000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     349.7 ms ±   7.5 ms    [User: 2164.8 ms, System: 170.4 ms]
+  Range (min … max):   338.0 ms … 356.3 ms    5 runs
+ 
+
+>>> 800000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     349.9 ms ±   3.6 ms    [User: 2148.2 ms, System: 167.9 ms]
+  Range (min … max):   345.9 ms … 354.1 ms    5 runs
+ 
+
+>>> 900000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     349.9 ms ±   8.4 ms    [User: 2133.3 ms, System: 179.4 ms]
+  Range (min … max):   338.8 ms … 361.2 ms    5 runs
+ 
+
+>>> 1000000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     356.4 ms ±   7.3 ms    [User: 2161.6 ms, System: 181.5 ms]
+  Range (min … max):   345.5 ms … 362.3 ms    5 runs
+
+
+folkol@ubuntu:~$ parquet-tools inspect /media/measurements/measurements.parquet
+
+############ file meta data ############
+created_by: DuckDB version v1.1.3 (build 19864453f7)
+num_columns: 2
+num_rows: 100000000
+num_row_groups: 100
+format_version: 1.0
+serialized_size: 18543
+
+
+############ Columns ############
+station
+temp
+
+############ Column(station) ############
+name: station
+path: station
+max_definition_level: 1
+max_repetition_level: 0
+physical_type: BYTE_ARRAY
+logical_type: String
+converted_type (legacy): UTF8
+compression: UNCOMPRESSED (space_saved: 0%)
+
+############ Column(temp) ############
+name: temp
+path: temp
+max_definition_level: 1
+max_repetition_level: 0
+physical_type: DOUBLE
+logical_type: None
+converted_type (legacy): NONE
+compression: UNCOMPRESSED (space_saved: 0%)
+
+
+folkol@ubuntu:~$ ls -lah /media/measurements/measurements.parquet 
+-rw-rw-r-- 1 folkol folkol 1.1G Jan 21 22:28 /media/measurements/measurements.parquet
+
+
+
+...
+
+# reference with ZSTD
+
+folkol@ubuntu:~$ for n in {100000..1000000..100000}; do echo ">>> $n"; ./make_parquet.sh $n; hyperfine --warmup 1 --runs 5 ./query.sh; echo; done
+>>> 100000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     418.4 ms ±   5.4 ms    [User: 2860.9 ms, System: 53.8 ms]
+  Range (min … max):   410.8 ms … 424.3 ms    5 runs
+ 
+
+>>> 200000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     418.4 ms ±   5.5 ms    [User: 2846.1 ms, System: 63.9 ms]
+  Range (min … max):   413.1 ms … 427.7 ms    5 runs
+ 
+
+>>> 300000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     417.5 ms ±   5.3 ms    [User: 2829.1 ms, System: 66.7 ms]
+  Range (min … max):   410.6 ms … 425.4 ms    5 runs
+ 
+
+>>> 400000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     417.2 ms ±   9.0 ms    [User: 2792.0 ms, System: 78.2 ms]
+  Range (min … max):   407.3 ms … 428.7 ms    5 runs
+ 
+
+>>> 500000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     423.4 ms ±   6.4 ms    [User: 2840.7 ms, System: 68.2 ms]
+  Range (min … max):   416.7 ms … 431.1 ms    5 runs
+ 
+
+>>> 600000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     419.5 ms ±   5.7 ms    [User: 2831.0 ms, System: 81.8 ms]
+  Range (min … max):   412.6 ms … 427.4 ms    5 runs
+ 
+
+>>> 700000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     428.7 ms ±   3.6 ms    [User: 2824.0 ms, System: 93.4 ms]
+  Range (min … max):   424.9 ms … 434.1 ms    5 runs
+ 
+
+>>> 800000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     424.8 ms ±  10.8 ms    [User: 2814.9 ms, System: 89.1 ms]
+  Range (min … max):   414.7 ms … 438.6 ms    5 runs
+ 
+
+>>> 900000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     426.0 ms ±  11.4 ms    [User: 2817.8 ms, System: 97.6 ms]
+  Range (min … max):   405.8 ms … 434.0 ms    5 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+
+>>> 1000000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):     422.9 ms ±   6.4 ms    [User: 2813.2 ms, System: 85.0 ms]
+  Range (min … max):   413.8 ms … 431.5 ms    5 runs
+ 
+folkol@ubuntu:~$ parquet-tools inspect /media/measurements/measurements.parquet
+
+############ file meta data ############
+created_by: DuckDB version v1.1.3 (build 19864453f7)
+num_columns: 2
+num_rows: 100000000
+num_row_groups: 100
+format_version: 1.0
+serialized_size: 18442
+
+
+############ Columns ############
+station
+temp
+
+############ Column(station) ############
+name: station
+path: station
+max_definition_level: 1
+max_repetition_level: 0
+physical_type: BYTE_ARRAY
+logical_type: String
+converted_type (legacy): UTF8
+compression: ZSTD (space_saved: 51%)
+
+############ Column(temp) ############
+name: temp
+path: temp
+max_definition_level: 1
+max_repetition_level: 0
+physical_type: DOUBLE
+logical_type: None
+converted_type (legacy): NONE
+compression: ZSTD (space_saved: 74%)
+
+
+folkol@ubuntu:~$ ls -lah /media/measurements/measurements.parquet 
+-rw-rw-r-- 1 folkol folkol 342M Jan 21 22:31 /media/measurements/measurements.parquet
+
+```
+
+
+#### Comparing compression algorithms and row group sizes
+
+```
+folkol@ubuntu:~$ cat make_parquet.sh 
+ROW_GROUP_SIZE=${1:?usage: ./make_parquet ROW_GROUP SIZE}
+COMP_ALGO=${2:?usage: ./make_parquet COMP_ALGO}
+
+PARQUET_PATH=/media/measurements/measurements.parquet
+PARQUET_PATH=measurements.parquet
+
+rm -r /home/folkol/duckdb_tmp/* 2>/dev/null
+rm $PARQUET_PATH 2>/dev/null
+
+duckdb :memory: <<SQL
+PRAGMA temp_directory='/home/folkol/duckdb_tmp';
+CREATE OR REPLACE TABLE measurements AS
+SELECT
+  column0::VARCHAR AS station,
+  column1::DOUBLE  AS temp
+FROM read_csv(
+  'measurements.txt.gz',
+  delim=';',
+  header=false,
+  columns={'column0':'VARCHAR','column1':'DOUBLE'}
+);
+
+COPY (
+  SELECT station, temp
+  FROM measurements
+) TO "$PARQUET_PATH"
+(FORMAT PARQUET,
+ COMPRESSION "$COMP_ALGO",
+ ROW_GROUP_SIZE $ROW_GROUP_SIZE);
+SQL
+folkol@ubuntu:~$ cat query.sh 
+duckdb -c "
+PRAGMA threads=8;
+SELECT station, min(temp) AS min, max(temp) AS max, avg(temp) AS avg
+FROM read_parquet('measurements.parquet')
+GROUP BY station
+ORDER BY station;
+"
+
+folkol@ubuntu:~$ for algo in ZSTD SNAPPY UNCOMPRESSED; do for n in 1000000; do echo ">>> $algo $n"; ./make_parquet.sh $n $algo; hyperfine --warmup 1 --runs 3 ./query.sh; echo; done; done
+
+>>> ZSTD 10000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      4.122 s ±  0.006 s    [User: 29.725 s, System: 1.378 s]
+  Range (min … max):    4.116 s …  4.127 s    3 runs
+ 
+
+>>> ZSTD 1000000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.470 s ±  0.010 s    [User: 26.935 s, System: 0.246 s]
+  Range (min … max):    3.459 s …  3.480 s    3 runs
+ 
+
+>>> SNAPPY 10000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.882 s ±  0.004 s    [User: 27.621 s, System: 1.503 s]
+  Range (min … max):    3.878 s …  3.885 s    3 runs
+ 
+
+>>> SNAPPY 1000000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.368 s ±  0.001 s    [User: 25.900 s, System: 0.539 s]
+  Range (min … max):    3.367 s …  3.368 s    3 runs
+ 
+
+>>> UNCOMPRESSED 10000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ ^[
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      3.146 s ±  0.006 s    [User: 21.497 s, System: 1.782 s]
+  Range (min … max):    3.139 s …  3.150 s    3 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+
+>>> UNCOMPRESSED 1000000
+100% ▕████████████████████████████████████████████████████████████▏ 
+100% ▕████████████████████████████████████████████████████████████▏ 
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      2.695 s ±  0.016 s    [User: 20.081 s, System: 0.915 s]
+  Range (min … max):    2.684 s …  2.713 s    3 runs
+
+```
+
+
+##### matrix of compressions and row group sizes (for smaller file)
+
+> 8 cores
+
+```
+folkol@ubuntu:~$ gunzip -c measurements.txt.gz | head -n 8000000 >measurements.txt
+folkol@ubuntu:~$ cat make_parquet.sh 
+ROW_GROUP_SIZE=${1:?usage: ./make_parquet ROW_GROUP SIZE}
+COMP_ALGO=${2:?usage: ./make_parquet COMP_ALGO}
+
+PARQUET_PATH=measurements.parquet
+PARQUET_PATH=/media/measurements/measurements.parquet
+
+rm -r /home/folkol/duckdb_tmp/* 2>/dev/null
+rm $PARQUET_PATH 2>/dev/null
+
+duckdb :memory: <<SQL
+PRAGMA temp_directory='/home/folkol/duckdb_tmp';
+CREATE OR REPLACE TABLE measurements AS
+SELECT
+  column0::VARCHAR AS station,
+  column1::DOUBLE  AS temp
+FROM read_csv(
+  'measurements.txt',
+  delim=';',
+  header=false,
+  columns={'column0':'VARCHAR','column1':'DOUBLE'}
+);
+
+COPY (
+  SELECT station, temp
+  FROM measurements
+) TO "$PARQUET_PATH"
+(FORMAT PARQUET,
+ COMPRESSION "$COMP_ALGO",
+ ROW_GROUP_SIZE $ROW_GROUP_SIZE);
+SQL
+folkol@ubuntu:~$ cat query.sh 
+duckdb -c "
+PRAGMA threads=8;
+SELECT station, min(temp) AS min, max(temp) AS max, avg(temp) AS avg
+FROM read_parquet('/media/measurements/measurements.parquet')
+GROUP BY station
+ORDER BY station;
+"
+folkol@ubuntu:~$ mount | grep measure
+tmpfs on /media/measurements type tmpfs (rw,relatime,size=10485760k,inode64)
+```
+
+```
+folkol@ubuntu:~$ for algo in ZSTD SNAPPY UNCOMPRESSED; do for n in {10000..100000..10000}; do echo ">>> $algo $n"; ./make_parquet.sh $n $algo; hyperfine --warmup 3 --runs 10 ./query.sh; echo; done; done
+>>> ZSTD 10000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      95.9 ms ±   4.5 ms    [User: 329.7 ms, System: 30.7 ms]
+  Range (min … max):    90.3 ms … 104.6 ms    10 runs
+ 
+
+>>> ZSTD 20000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      96.8 ms ±   4.3 ms    [User: 320.0 ms, System: 27.0 ms]
+  Range (min … max):    91.7 ms … 104.2 ms    10 runs
+ 
+
+>>> ZSTD 30000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      96.5 ms ±   5.1 ms    [User: 326.6 ms, System: 25.6 ms]
+  Range (min … max):    87.6 ms … 105.6 ms    10 runs
+ 
+
+>>> ZSTD 40000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      93.2 ms ±   6.7 ms    [User: 317.2 ms, System: 24.2 ms]
+  Range (min … max):    85.3 ms … 104.9 ms    10 runs
+ 
+
+>>> ZSTD 50000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      95.1 ms ±   7.0 ms    [User: 316.2 ms, System: 25.6 ms]
+  Range (min … max):    85.2 ms … 108.2 ms    10 runs
+ 
+
+>>> ZSTD 60000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      93.7 ms ±   3.6 ms    [User: 317.1 ms, System: 26.0 ms]
+  Range (min … max):    87.3 ms …  99.2 ms    10 runs
+ 
+
+>>> ZSTD 70000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      94.4 ms ±   4.9 ms    [User: 317.7 ms, System: 28.1 ms]
+  Range (min … max):    85.1 ms … 100.3 ms    10 runs
+ 
+
+>>> ZSTD 80000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      96.4 ms ±   4.4 ms    [User: 314.2 ms, System: 27.6 ms]
+  Range (min … max):    89.0 ms … 106.3 ms    10 runs
+ 
+
+>>> ZSTD 90000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      94.8 ms ±   5.0 ms    [User: 310.5 ms, System: 27.4 ms]
+  Range (min … max):    87.7 ms … 103.0 ms    10 runs
+ 
+
+>>> ZSTD 100000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      94.8 ms ±   4.4 ms    [User: 313.5 ms, System: 29.2 ms]
+  Range (min … max):    89.4 ms … 102.3 ms    10 runs
+ 
+
+>>> SNAPPY 10000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      92.7 ms ±   5.9 ms    [User: 306.0 ms, System: 33.3 ms]
+  Range (min … max):    80.4 ms … 100.9 ms    10 runs
+ 
+
+>>> SNAPPY 20000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      92.8 ms ±   4.2 ms    [User: 308.0 ms, System: 28.7 ms]
+  Range (min … max):    84.5 ms …  98.1 ms    10 runs
+ 
+
+>>> SNAPPY 30000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      90.8 ms ±   4.9 ms    [User: 306.1 ms, System: 27.4 ms]
+  Range (min … max):    83.6 ms …  96.6 ms    10 runs
+ 
+
+>>> SNAPPY 40000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      92.8 ms ±   6.9 ms    [User: 301.1 ms, System: 27.6 ms]
+  Range (min … max):    81.0 ms … 101.5 ms    10 runs
+ 
+
+>>> SNAPPY 50000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      91.4 ms ±   3.8 ms    [User: 305.1 ms, System: 28.8 ms]
+  Range (min … max):    86.4 ms …  96.8 ms    10 runs
+ 
+
+>>> SNAPPY 60000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      93.4 ms ±   5.7 ms    [User: 293.1 ms, System: 30.1 ms]
+  Range (min … max):    85.3 ms … 100.0 ms    10 runs
+ 
+
+>>> SNAPPY 70000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      93.8 ms ±   7.5 ms    [User: 297.0 ms, System: 28.3 ms]
+  Range (min … max):    85.7 ms … 107.6 ms    10 runs
+ 
+
+>>> SNAPPY 80000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      92.2 ms ±   5.2 ms    [User: 292.4 ms, System: 28.8 ms]
+  Range (min … max):    83.0 ms … 101.5 ms    10 runs
+ 
+
+>>> SNAPPY 90000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      89.8 ms ±   5.8 ms    [User: 292.7 ms, System: 34.9 ms]
+  Range (min … max):    81.7 ms … 102.6 ms    10 runs
+ 
+
+>>> SNAPPY 100000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      92.2 ms ±   5.1 ms    [User: 291.1 ms, System: 32.1 ms]
+  Range (min … max):    86.3 ms … 101.3 ms    10 runs
+ 
+
+>>> UNCOMPRESSED 10000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      87.3 ms ±   6.7 ms    [User: 250.8 ms, System: 38.6 ms]
+  Range (min … max):    76.0 ms …  98.5 ms    10 runs
+ 
+
+>>> UNCOMPRESSED 20000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      88.7 ms ±   4.6 ms    [User: 255.3 ms, System: 32.9 ms]
+  Range (min … max):    84.4 ms …  99.4 ms    10 runs
+ 
+
+>>> UNCOMPRESSED 30000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      85.3 ms ±   4.5 ms    [User: 254.7 ms, System: 31.9 ms]
+  Range (min … max):    79.5 ms …  91.4 ms    10 runs
+ 
+
+>>> UNCOMPRESSED 40000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      84.9 ms ±   4.7 ms    [User: 250.1 ms, System: 31.5 ms]
+  Range (min … max):    79.5 ms …  95.4 ms    10 runs
+ 
+
+>>> UNCOMPRESSED 50000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      88.2 ms ±   6.2 ms    [User: 248.7 ms, System: 34.8 ms]
+  Range (min … max):    81.3 ms …  99.2 ms    10 runs
+ 
+
+>>> UNCOMPRESSED 60000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      89.1 ms ±   5.2 ms    [User: 249.9 ms, System: 32.0 ms]
+  Range (min … max):    82.2 ms …  96.0 ms    10 runs
+ 
+
+>>> UNCOMPRESSED 70000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      85.2 ms ±   7.3 ms    [User: 238.1 ms, System: 33.9 ms]
+  Range (min … max):    72.4 ms …  98.3 ms    10 runs
+ 
+
+>>> UNCOMPRESSED 80000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      86.8 ms ±   5.5 ms    [User: 243.4 ms, System: 34.0 ms]
+  Range (min … max):    80.6 ms …  95.5 ms    10 runs
+ 
+
+>>> UNCOMPRESSED 90000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      88.8 ms ±   6.2 ms    [User: 250.9 ms, System: 35.1 ms]
+  Range (min … max):    76.0 ms …  95.5 ms    10 runs
+ 
+
+>>> UNCOMPRESSED 100000
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      85.8 ms ±   5.2 ms    [User: 249.8 ms, System: 31.5 ms]
+  Range (min … max):    78.3 ms …  94.0 ms    10 runs
+```
+
+#### Parquet structure
+
+folkol@ubuntu:~$ uv tool install parquet-tools
+folkol@ubuntu:~$ parquet-tools inspect /media/measurements/measurements.parquet 
+
+############ file meta data ############
+created_by: DuckDB version v1.1.3 (build 19864453f7)
+num_columns: 2
+num_rows: 1000000000
+num_row_groups: 999
+format_version: 1.0
+serialized_size: 184759
+
+
+############ Columns ############
+station
+temp
+
+############ Column(station) ############
+name: station
+path: station
+max_definition_level: 1
+max_repetition_level: 0
+physical_type: BYTE_ARRAY
+logical_type: String
+converted_type (legacy): UTF8
+compression: ZSTD (space_saved: 51%)
+
+############ Column(temp) ############
+name: temp
+path: temp
+max_definition_level: 1
+max_repetition_level: 0
+physical_type: DOUBLE
+logical_type: None
+converted_type (legacy): NONE
+compression: ZSTD (space_saved: 74%)
+
+
+folkol@ubuntu:~$ uv run python
+Python 3.13.7 (main, Jan  8 2026, 12:15:45) [GCC 15.2.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import pyarrow.parquet as pq
+... 
+... pf = pq.ParquetFile("/media/measurements/measurements.parquet")
+... md = pf.metadata
+... 
+... for rg in range(md.num_row_groups):
+...     col = md.row_group(rg).column(0)  # station
+...     print(
+...         f"rg={rg:3d} "
+...         f"dict={'yes' if col.dictionary_page_offset is not None else 'no '} "
+...         f"encodings={list(col.encodings)}"
+...     )
+...     if rg == 5:
+...         break
+...         
+rg=  0 dict=yes encodings=['PLAIN', 'RLE_DICTIONARY']
+rg=  1 dict=yes encodings=['PLAIN', 'RLE_DICTIONARY']
+rg=  2 dict=yes encodings=['PLAIN', 'RLE_DICTIONARY']
+rg=  3 dict=yes encodings=['PLAIN', 'RLE_DICTIONARY']
+rg=  4 dict=yes encodings=['PLAIN', 'RLE_DICTIONARY']
+rg=  5 dict=yes encodings=['PLAIN', 'RLE_DICTIONARY']
+
+
+
+
+
+
+
+
+TODO: Verify dict encoding, try with different compression algos, maybe try other string type?
+
+
 ## Soundness
 
-This program is not sound, for example because we read past the end of the mmapped region (same as the Java original) in the tail.
+This program is unsound, for example because we might read past the end of the mmapped region (same as the Java original) in the tail chunk.
 
 ## WORKNOTES
 
