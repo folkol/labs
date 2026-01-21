@@ -971,6 +971,7 @@ Benchmark 1: ./query.sh
 
 #### Parquet structure
 
+```
 folkol@ubuntu:~$ uv tool install parquet-tools
 folkol@ubuntu:~$ parquet-tools inspect /media/measurements/measurements.parquet 
 
@@ -1032,16 +1033,7 @@ rg=  2 dict=yes encodings=['PLAIN', 'RLE_DICTIONARY']
 rg=  3 dict=yes encodings=['PLAIN', 'RLE_DICTIONARY']
 rg=  4 dict=yes encodings=['PLAIN', 'RLE_DICTIONARY']
 rg=  5 dict=yes encodings=['PLAIN', 'RLE_DICTIONARY']
-
-
-
-
-
-
-
-
-TODO: Verify dict encoding, try with different compression algos, maybe try other string type?
-
+```
 
 ## Soundness
 
