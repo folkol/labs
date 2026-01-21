@@ -5042,3 +5042,13 @@ rg=  3 dict=yes encodings=['PLAIN', 'RLE_DICTIONARY']
 rg=  4 dict=yes encodings=['PLAIN', 'RLE_DICTIONARY']
 rg=  5 dict=yes encodings=['PLAIN', 'RLE_DICTIONARY']
 ```
+
+
+#### Fastest duckdb / parquet candidate (UNCOMPRESSED, ROW_GROUP_SIZE 100000, RAMDISK)
+
+```
+folkol@ubuntu:~$ hyperfine --warmup 3 --runs 10 ./query.sh
+Benchmark 1: ./query.sh
+  Time (mean ± σ):      2.689 s ±  0.005 s    [User: 20.097 s, System: 0.814 s]
+  Range (min … max):    2.678 s …  2.696 s    10 runs
+```
