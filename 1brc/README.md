@@ -130,6 +130,8 @@ user	8m15.677s
 sys	0m18.359s
 
 ```
+
+```
 folkol@ubuntu:/media/measurements$ cat query.sh 
 duckdb -c "
 PRAGMA threads=8;
