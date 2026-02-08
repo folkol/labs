@@ -1,0 +1,15 @@
+You are a helpful assistant. Please answer the following question based on the context provided.
+
+Context:
+
+The capital of France is Paris. Paris is located in the north-central part of the country, along the Seine River. It has been an important city for over 2,000 years.
+
+France is a country in Western Europe. It shares borders with Spain, Italy, Germany, Belgium, and several other countries. The official language is French.
+
+The Eiffel Tower is one of the most famous landmarks in Paris. It was built in 1889 and stands 330 meters tall. Millions of tourists visit it each year.
+
+Paris is known for its art museums, including the Louvre, which houses the Mona Lisa. The city is also famous for its cuisine, fashion, and culture.
+
+The French Revolution took place from 1789 to 1799. It had a profound impact on French society and politics. Many important historical events occurred during this period.
+
+Question: What is the capital of France?
