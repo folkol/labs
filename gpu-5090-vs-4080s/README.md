@@ -30,6 +30,22 @@ Same-system GPU comparison on **Intel Core Ultra 9 285K**, 32 GB DDR5-6400.
 
 Raw numbers: [`comparison_data.json`](comparison_data.json)
 
+### WoW scenario labels
+
+Each flight-path capture is named **`{resolution} {quality} · {route}`**. These are **in-game graphics settings**, not benchmark metrics.
+
+| Label | Meaning |
+|-------|---------|
+| **low** | Low **render resolution** (sub-native render scale) |
+| **native** | **Native 5K** render resolution (panel/native res) |
+| **min** | Minimum **GPU quality** preset — most quality sliders at minimum |
+| **max** | Maximum **GPU quality** preset — high settings, but not every slider maxed |
+| **max++** | **All quality sliders maxed** — heaviest GPU load in this test matrix |
+| **max (−dist)** / **min (−dist)** | Same as max/min, but **drawing distance** left at default (not forced to min/max) |
+| **RE→SoL** / **SoL→RE** | Flight path direction (Revendreth ↔ Shadowlands zone) |
+
+**Not the same as chart metrics:** “1% low FPS”, “0.1% low FPS”, etc. refer to **low-percentile frametime** statistics — nothing to do with the `low` resolution setting.
+
 ---
 
 ## WoW — normal settings
