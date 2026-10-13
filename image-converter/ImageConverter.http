@@ -1,0 +1,56 @@
+@ImageConverter_HostAddress = http://localhost:5044
+
+GET {{ImageConverter_HostAddress}}/health
+Accept: application/json
+
+###
+
+# Scale to max width 800, preserve aspect ratio, output WebP
+POST {{ImageConverter_HostAddress}}/convert
+Content-Type: multipart/form-data; boundary=----ImageConverter
+
+------ImageConverter
+Content-Disposition: form-data; name="file"; filename="sample.png"
+Content-Type: image/png
+
+< ./sample.png
+------ImageConverter
+Content-Disposition: form-data; name="width"
+
+800
+------ImageConverter
+Content-Disposition: form-data; name="format"
+
+webp
+------ImageConverter
+Content-Disposition: form-data; name="quality"
+
+85
+------ImageConverter--
+
+###
+
+# Scale to fit 400x400 box, output AVIF
+POST {{ImageConverter_HostAddress}}/convert
+Content-Type: multipart/form-data; boundary=----ImageConverter
+
+------ImageConverter
+Content-Disposition: form-data; name="file"; filename="sample.png"
+Content-Type: image/png
+
+< ./sample.png
+------ImageConverter
+Content-Disposition: form-data; name="width"
+
+400
+------ImageConverter
+Content-Disposition: form-data; name="height"
+
+400
+------ImageConverter
+Content-Disposition: form-data; name="format"
+
+avif
+------ImageConverter--
+
+###

@@ -1,0 +1,26 @@
+﻿## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.DotSettings.user
+
+## Secrets / local
+appsettings.*.local.json
+.env
+.env.*
+
+## Local test artifacts
+sample.png
+out.webp
+out.avif
+root.html
+DimCheck/
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store

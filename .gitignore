@@ -1,1 +1,7 @@
 venv
+
+# .NET
+**/bin/
+**/obj/
+**/.vs/
+
