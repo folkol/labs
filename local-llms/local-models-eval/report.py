@@ -29,7 +29,30 @@ def main():
         "## Speed",
         "",
     ]
+    turns = "turn_medium" in baseline["speed"]
     dual = "no_thinking_low" in baseline["speed"]
+
+    def vs_rate(sp):
+        if sp is baseline["speed"]:
+            return "1.00× (baseline)"
+        ratio = sp["tok_per_s_mean"] / baseline["speed"]["tok_per_s_mean"]
+        return f"{ratio:.2f}× faster" if ratio >= 1 else f"{1/ratio:.2f}× slower"
+
+    def vs_turn(sp, key):
+        if sp is baseline["speed"]:
+            return "1.00× (baseline)"
+        a = sp[key]["seconds_mean"]
+        b = baseline["speed"][key]["seconds_mean"]
+        if a is None or b is None or a == 0:
+            return "—"
+        ratio = b / a
+        return f"{ratio:.2f}× faster" if ratio >= 1 else f"{1/ratio:.2f}× slower"
+
+    def turn_cell(block):
+        if block["seconds_mean"] is None:
+            return "—"
+        mark = "" if block["finished"] == block["runs"] else "*"
+        return f"{block['seconds_mean']}{mark}"
 
     def vs_base(sp, key):
         if sp is baseline["speed"]:
@@ -37,7 +60,23 @@ def main():
         ratio = sp[key]["tok_per_s_mean"] / baseline["speed"][key]["tok_per_s_mean"]
         return f"{ratio:.2f}× faster" if ratio >= 1 else f"{1/ratio:.2f}× slower"
 
-    if dual:
+    if turns:
+        lines += [
+            "tok/s is the decode rate with thinking off, over a fixed 512-token generation. "
+            "Turn time is seconds until the model finishes a short edit, from send until it stops. "
+            "A star means at least one run hit the token cap and was left out of the mean.",
+            "",
+            "| model | TTFT (ms) | tok/s | vs baseline | turn no-think (s) | vs baseline | turn medium (s) | vs baseline |",
+            "|---|---|---|---|---|---|---|---|",
+        ]
+        for r in [baseline] + rows:
+            sp = r["speed"]
+            lines.append(
+                f"| {r['name']} | {sp['ttft_ms_mean']} | {sp['tok_per_s_mean']} | {vs_rate(sp)} "
+                f"| {turn_cell(sp['turn_no_thinking_low'])} | {vs_turn(sp, 'turn_no_thinking_low')} "
+                f"| {turn_cell(sp['turn_medium'])} | {vs_turn(sp, 'turn_medium')} |"
+            )
+    elif dual:
         lines += [
             "tok/s counts every generated token, including the reasoning trace. "
             "Quality tasks run at medium effort with thinking on.",

@@ -13,24 +13,47 @@ def task(id_):
 
 GOOD_SCORES = {}
 GOOD = {
-    "json_extract": '{"vendor": "Bluepeak Logistics", "due_date": "2027-03-15", "amount": 4312.5}',
-    "constraints": "Solar microgrids cut diesel use by 61%. Inverter faults averaged one per 18 months, mostly from heat. Local ownership correlated with higher uptime. The study covered 14 sites across three countries. Governance proved more important than hardware choice.",
-    "math_word": "Draft: 200*0.6=120. Full: 100*0.4=40. Rate=160. 4800/160=30. ANSWER: 30",
-    "reasoning": "Ben must be seat 2, Cara is interior, so the middle is her. ANSWER: Cara",
+    "json_extract": '{"vendor": "Bluepeak Logistics", "due_date": "2027-03-31", "amount": 4132.5}',
+    "constraints": "Hybrid systems cut diesel use by 61 percent. Inverters failed about once every 18 months. Field work covered 14 sites. Local owners saw higher uptime than outside operators.",
+    "math_word": "Draft 2000/200=10. Quality 2000/100=20. Reprint 200/100=2. ANSWER: 32",
+    "reasoning": "Only Ana, Ben, Dev, Cara, Elia fits. The middle seat is Dev. ANSWER: Dev",
     "coding": (
         "```python\n"
-        "def split_words(text, max_len):\n"
-        "    words = text.split()\n"
-        "    return [w[i:i+max_len] for w in words for i in range(0, len(w), max_len)]\n"
+        "def fold_ledger(lines, rates):\n"
+        "    txns = []\n"
+        "    for raw in lines:\n"
+        "        line = raw.strip()\n"
+        "        if not line or line.startswith('#'):\n"
+        "            continue\n"
+        "        if line.startswith('VOID'):\n"
+        "            parts = line.split()\n"
+        "            if len(parts) != 4:\n"
+        "                continue\n"
+        "            _, vendor, amount_s, currency = parts\n"
+        "            amount = float(amount_s)\n"
+        "            for txn in txns:\n"
+        "                if txn[3] and txn[0] == vendor and txn[2] == currency and abs(txn[1] - amount) < 1e-9:\n"
+        "                    txn[3] = False\n"
+        "                    break\n"
+        "            continue\n"
+        "        _, vendor, amount_s, currency = [p.strip() for p in line.split(',')]\n"
+        "        txns.append([vendor, float(amount_s), currency, True])\n"
+        "    nets = {}\n"
+        "    for vendor, amount, currency, alive in txns:\n"
+        "        if alive:\n"
+        "            nets[vendor] = nets.get(vendor, 0.0) + amount * rates[currency]\n"
+        "    out = [(v, round(n, 2)) for v, n in nets.items() if abs(n) > 1e-9]\n"
+        "    out.sort()\n"
+        "    return out\n"
         "```"
     ),
 }
 BAD = {
     "json_extract": "The vendor is Bluepeak, due March 15 2027, 4312.50 USD.",
-    "constraints": "Solar microgrids! We utilize solar. A",
-    "math_word": "It is about 42 minutes. ANSWER: 42",
-    "reasoning": "I think it is Dev. ANSWER: Dev",
-    "coding": "def split_words(text, max_len):\n    return text.split()",
+    "constraints": "Solar microgrids cut diesel use by 61%, and inverters failed every 18 months across 14 sites.",
+    "math_word": "The quote says 40 minutes. ANSWER: 40",
+    "reasoning": "I think it is Cara. ANSWER: Cara",
+    "coding": "def fold_ledger(lines, rates):\n    return []",
 }
 
 fails = 0

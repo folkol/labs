@@ -47,8 +47,9 @@ python run_eval.py --no-judge --runs 5
 python test_tasks.py                              # checker smoke tests
 ```
 
-One model at a time; a fresh `llama-server` (ctx 8192) per model. 3 runs per
-task. Speed is the mean of two probes: no thinking at low effort, and thinking
+One model at a time; a fresh `llama-server` (ctx 16384) per model. 3 runs per
+task. tok/s is one decode-rate probe: thinking off, fixed 512 tokens. Turn time
+is seconds until a short edit finishes, measured with thinking off and again
 at medium effort. Quality tasks run at medium effort with thinking on, and the
 score is the best run. Server logs in `logs/`.
 
@@ -58,13 +59,13 @@ Each task scores 0–100; overall quality = mean of task scores.
 
 | Task | Type | Scoring |
 |---|---|---|
-| `json_extract` | extract vendor/date/amount from an invoice email | 4 exact checks (parses, vendor, ISO date, amount) |
-| `constraints` | 4–6 sentence summary under strict formatting rules | 5 rule checks (count, banned word, no `!`, first word, sentence ends) |
-| `math_word` | two-rate work problem (answer: 30 min) | answer line present + exact value |
-| `coding` | `split_words` with chunking + whitespace collapse | hidden 5-case unit test actually executed |
-| `reasoning` | 5-seat ordering puzzle (answer: Cara) | answer present + correct name |
-| `summarize` | 2–3 sentence summary of a cause/effect passage | judge ×3: accuracy, coverage, concision (0/1/2 each) |
-| `rewrite_tone` | angry vendor email → professional, keep all facts | judge ×3: facts preserved, tone, action clarity (0/1/2 each) |
+| `json_extract` | invoice thread: credit, replaced due date, distractor vendor | 4 exact checks (parses, vendor, ISO date, net amount) |
+| `constraints` | 4-sentence summary, short lines, facts split, banned words | 8 rule checks (count, length, split numbers, bans, diesel first, periods) |
+| `math_word` | two speeds plus a reprint pass (answer: 32 min) | answer line present + exact value |
+| `coding` | `fold_ledger` with voids, comments, and currency conversion | hidden 5-case unit test actually executed |
+| `reasoning` | 5-seat ordering puzzle with one valid arrangement (answer: Dev) | answer present + correct name |
+| `summarize` | 2-sentence summary that must drop a rejected proposal and a decoy statistic | judge ×3: accuracy, coverage, selection (0/1/2 each) |
+| `rewrite_tone` | facts buried in insults; a sarcastic $50 must be dropped | judge ×3: facts preserved, decoy omitted, tone (0/1/2 each) |
 
 ## Reading the results
 

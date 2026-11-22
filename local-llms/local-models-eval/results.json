@@ -48,23 +48,31 @@
         "details": {
           "accuracy": 2,
           "coverage": 2,
-          "concision": 2
+          "selection": 2
         },
-        "response": "A city that replaced 12% of its streetlights with smart-dimming LEDs achieved a 34% reduction in lighting electricity use but saw a 9% rise in nighttime traffic incidents, which was traced to three corridors dimmed well below the city standard. After those corridors were brightened, incident rates returned to baseline within a quarter. The city now treats dimming level as a safety parameter rather than a cost lever."
+        "response": "A city that replaced 12% of its streetlights with smart-dimming LEDs achieved a 34% reduction in lighting electricity use but saw a 9% spike in nighttime traffic incidents, which an audit traced to three arterials dimmed well below the city standard. Once those corridors were brightened, incident rates returned to baseline within a quarter. The city now treats dimming level as a safety parameter rather than a cost-saving lever."
       },
       "rewrite_tone": {
         "score": 100,
         "details": {
           "facts_preserved": 2,
-          "tone": 2,
-          "action_clarity": 2
+          "no_decoy": 2,
+          "tone": 2
         },
-        "response": "Hi [Name],\n\nI'm reaching out regarding item #A-118 ($2,140), which was due yesterday and has not yet been received. We need this item by Thursday.\n\nPlease note that this is the second late delivery this quarter. If it is not received by Thursday, we will need to cancel the entire contract.\n\nCould you please confirm the expected delivery date?\n\nThank you,\n[Your name]"
+        "response": "Subject: Outstanding Delivery \u2013 Item #A-118\n\nDear [Vendor Contact],\n\nI'm writing to follow up on item #A-118 ($2,140), which was due for delivery yesterday. As of today, we have not yet received it.\n\nWe need to have this item in hand by Thursday. If it is not received by then, we will unfortunately have to cancel the entire contract.\n\nI also want to note that this is the second delayed delivery we've encountered this quarter, so I'd appreciate your prompt attention to getting this resolved.\n\nCould you please confirm the current status and expected delivery date at your earliest convenience?\n\nThank you,\n[Your Name]\n[Title / Company]"
       }
     },
     "speed": {
-      "ttft_ms_mean": 2247,
-      "tok_per_s_mean": 99.1
+      "ttft_ms_mean": 2244,
+      "tok_per_s_mean": 103.1,
+      "no_thinking_low": {
+        "ttft_ms_mean": 2222,
+        "tok_per_s_mean": 100.0
+      },
+      "medium": {
+        "ttft_ms_mean": 2244,
+        "tok_per_s_mean": 103.1
+      }
     }
   },
   {
@@ -107,32 +115,40 @@
       "reasoning": {
         "score": 100,
         "details": {
-          "answer_present": false,
-          "answer_correct": false
+          "answer_present": true,
+          "answer_correct": true
         }
       },
       "summarize": {
-        "score": 100,
+        "score": 67,
         "details": {
-          "accuracy": 2,
+          "accuracy": 1,
           "coverage": 2,
-          "concision": 2
+          "selection": 1
         },
-        "response": "A city swapped 12% of its streetlights for smart-dimming LEDs and added a night-work curfew, cutting lighting electricity use by 34% but raising nighttime traffic incidents by 9%. An audit traced the spike to three arterials dimmed 40% below standard, and brightening them restored incident rates to baseline within a quarter. As a result, the city now treats dimming level as a safety parameter rather than a cost-saving measure."
+        "response": "A city's switch to smart-dimming LEDs and a night-work curfew cut lighting electricity use by 34% but raised nighttime traffic incidents by 9%, concentrated on three corridors dimmed 40% below standard. Brightening those corridors returned incident rates to baseline within a quarter, leading the city to treat dimming level as a safety parameter rather than a cost-saving measure."
       },
       "rewrite_tone": {
-        "score": 83,
+        "score": 100,
         "details": {
-          "facts_preserved": 1,
-          "tone": 2,
-          "action_clarity": 2
+          "facts_preserved": 2,
+          "no_decoy": 2,
+          "tone": 2
         },
-        "response": "Subject: Follow-Up on Outstanding Order for Item #A-118\n\nHi [Vendor Name],\n\nI'm writing to follow up on our order for item #A-118, valued at $2,140. Our records show the delivery was due yesterday, and we have not yet received it.\n\nWe would appreciate it if this could be delivered by Thursday. Please let us know if there's anything we can do to help move this along, or if you're anticipating any further delays.\n\nFor context, this is the second late delivery we've experienced this quarter, so we'd like to make sure things get back on track going forward.\n\nThanks for your help, and I look forward to hearing from you soon.\n\nBest regards,\n[Your Name]"
+        "response": "Subject: Follow-Up on Outstanding Order for Item #A-118\n\nDear [Vendor Name],\n\nI'm writing to follow up on our order for item #A-118, valued at $2,140. The scheduled delivery date was yesterday, and we have not yet received the shipment.\n\nCould you please provide an update on the status of this order? We would need the delivery by Thursday to keep our timeline on track. Please note that if we are unable to receive the item by then, we will need to review our options, which could include cancelling the contract.\n\nI also want to flag that this is the second late delivery we've experienced this quarter, and I'd appreciate your help in ensuring this is resolved.\n\nPlease let me know the expected delivery date at your earliest convenience.\n\nBest regards,\n[Your Name]"
       }
     },
     "speed": {
-      "ttft_ms_mean": 2160,
-      "tok_per_s_mean": 258.0
+      "ttft_ms_mean": 2119,
+      "tok_per_s_mean": 262.9,
+      "no_thinking_low": {
+        "ttft_ms_mean": 2155,
+        "tok_per_s_mean": 260.9
+      },
+      "medium": {
+        "ttft_ms_mean": 2119,
+        "tok_per_s_mean": 262.9
+      }
     }
   },
   {
@@ -151,11 +167,11 @@
       "constraints": {
         "score": 100,
         "details": {
-          "sentence_count": true,
-          "no_utilize": true,
-          "no_exclaim": true,
-          "starts_solar": true,
-          "all_periods": true
+          "sentence_count": false,
+          "no_utilize": false,
+          "no_exclaim": false,
+          "starts_solar": false,
+          "all_periods": false
         }
       },
       "math_word": {
@@ -180,27 +196,35 @@
         }
       },
       "summarize": {
-        "score": 100,
+        "score": 83,
         "details": {
           "accuracy": 2,
-          "coverage": 2,
-          "concision": 2
+          "coverage": 1,
+          "selection": 2
         },
-        "response": "A city's implementation of smart-dimming LEDs reduced electricity use by 34% but initially caused a 9% increase in nighttime traffic incidents due to excessive dimming on key roads. Once lighting levels on those arterials were corrected, incident rates returned to baseline. The city now treats dimming levels as a safety parameter rather than a cost-saving measure."
+        "response": "A city's implementation of smart-dimming LEDs reduced electricity use by 34% but initially caused a 9% increase in traffic incidents due to excessive dimming on specific roads. Once brightness was restored to those corridors, incident rates returned to baseline. As a result, the city now treats dimming levels as a safety parameter rather than just a cost-saving tool."
       },
       "rewrite_tone": {
         "score": 100,
         "details": {
           "facts_preserved": 2,
-          "tone": 2,
-          "action_clarity": 2
+          "no_decoy": 2,
+          "tone": 2
         },
-        "response": "Here are three ways to rewrite this, depending on the level of firmness you want to convey.\n\n### Option 1: Firm and Direct (Recommended)\nThis version maintains the seriousness of the situation and the ultimatum without sounding emotional.\n\n**Subject:** Urgent: Delivery Status Required for Item #A-118\n\nHello [Vendor Name],\n\nI am writing to follow up on Item #A-118 ($2,140), which was scheduled for delivery yesterday. As of this morning, we have not yet received the shipment.\n\nAs this is the second delivery delay we have experienced this quarter, we need to ensure this is resolved immediately. Please confirm that this item will arrive no later than Thursday. Please be advised that if we do not receive the delivery by this deadline, we will be forced to move forward with canceling our contract.\n\nI look forward to your prompt update regarding the status of this shipment.\n\nBest regards,\n\n[Your Name]\n\n***\n\n### Option 2: Concise and Formal\nThis version is best if you want to keep the communication strictly \"by the books\" and minimal.\n\n**Subject:** Follow-up: Outstanding Delivery for Item #A-118\n\nHello [Vendor Name],\n\nWe are reaching out regarding Item #A-118 ($2,140), which missed its scheduled delivery date of yesterday. \n\nDue to this being the second delay encountered this quarter, we require the item to be delivered by Thursday at the latest. If this deadline cannot be met, we will have to initiate the cancellation of our contract.\n\nPlease provide a status update as soon as possible.\n\nRegards,\n\n[Your Name]\n\n***\n\n### Option 3: Solution-Oriented (The \"Softest\" Approach)\nUse this if you have a long-standing relationship with the vendor and want to give them one last chance to fix it before the \"hammer\" drops.\n\n**Subject:** Delivery Issue: Item #A-118\n\nHello [Vendor Name],\n\nWe noticed that Item #A-118 ($2,140) did not arrive yesterday as scheduled. \n\nBecause this is the second late delivery we have encountered this quarter, we are becoming concerned about our current agreement. We need to receive this item by Thursday to avoid a formal review and potential cancellation of our contract.\n\nCould you please confirm the current location of the shipment and ensure it reaches us by Thursday?\n\nThank you,\n\n[Your Name]"
+        "response": "Here are three ways to rewrite this, depending on the level of firmness you want to convey.\n\n### Option 1: Firm and Direct (Recommended)\nThis version is best if you want to maintain a serious tone and ensure they understand the gravity of the situation without sounding emotional.\n\n**Subject:** Urgent: Status Update Required for Item #A-118\n\nDear [Vendor Name],\n\nI am writing to follow up on the delivery of Item #A-118 ($2,140), which was scheduled to arrive yesterday. \n\nAs this is the second delivery delay we have experienced this quarter, we need to ensure this shipment arrives no later than this Thursday. Please be advised that if the item is not received by Thursday, we will be forced to move forward with cancelling our contract.\n\nPlease provide an immediate update on the status of this delivery.\n\nBest regards,\n\n[Your Name]\n\n***\n\n### Option 2: Concise and Executive\nThis version is best for a quick, high-level communication that gets straight to the point.\n\n**Subject:** Delivery Delay: Item #A-118\n\nDear [Vendor Name],\n\nWe have not yet received Item #A-118 ($2,140), which was due yesterday. This marks the second late delivery this quarter.\n\nWe require this item to be delivered by Thursday. If this deadline cannot be met, we will proceed with the cancellation of our contract. We look forward to your prompt response regarding the shipment status.\n\nRegards,\n\n[Your Name]\n\n***\n\n### Option 3: Collaborative but Serious\nUse this version if you have a long-standing relationship with the vendor and want to give them one last chance to \"fix\" the relationship before the contract is terminated.\n\n**Subject:** Follow-up regarding Item #A-118\n\nDear [Vendor Name],\n\nI am reaching out regarding the delivery of Item #A-118 ($2,140), which missed its scheduled delivery date of yesterday. \n\nBecause this is the second delay we have encountered this quarter, we are at a critical point regarding our agreement. We need this item in hand by Thursday to avoid the cancellation of our contract. \n\nPlease let us know as soon as possible when we can expect the delivery.\n\nBest regards,\n\n[Your Name]"
       }
     },
     "speed": {
-      "ttft_ms_mean": 2295,
-      "tok_per_s_mean": 176.8
+      "ttft_ms_mean": 2157,
+      "tok_per_s_mean": 181.2,
+      "no_thinking_low": {
+        "ttft_ms_mean": 2298,
+        "tok_per_s_mean": 181.9
+      },
+      "medium": {
+        "ttft_ms_mean": 2157,
+        "tok_per_s_mean": 181.2
+      }
     }
   },
   {
@@ -244,31 +268,39 @@
         "score": 100,
         "details": {
           "answer_present": true,
-          "answer_correct": false
+          "answer_correct": true
         }
       },
       "summarize": {
-        "score": 100,
+        "score": 33,
         "details": {
-          "accuracy": 2,
+          "accuracy": 0,
           "coverage": 2,
-          "concision": 2
+          "selection": 0
         },
-        "response": "A city swapped 12% of streetlights for smart-dimming LEDs and added a night-work curfew, cutting lighting electricity 34% but raising nighttime traffic incidents 9%. An audit traced the spike to three arterials dimmed 40% below standard; brightening them returned incidents to baseline within a quarter. The city now treats dimming level as a safety parameter rather than a cost lever."
+        "response": "A city cut lighting electricity use 34% by switching 12% of streetlights to smart-dimming LEDs and adding a night-work curfew, but nighttime traffic incidents rose 9%. The increase was concentrated on three arterials dimmed 40% below standard, and brightening them returned incident rates to baseline within a quarter. The city now treats dimming level as a safety parameter rather than a cost lever."
       },
       "rewrite_tone": {
         "score": 67,
         "details": {
           "facts_preserved": 1,
-          "tone": 2,
-          "action_clarity": 1
+          "no_decoy": 2,
+          "tone": 1
         },
-        "response": "Subject: Update on Order for Item #A-118\n\nHi [Vendor Name],\n\nI'm writing to follow up on our order for item #A-118 ($2,140). The delivery was scheduled for yesterday, and we have not yet received it.\n\nThis is the second late delivery we've experienced this quarter, so I wanted to check in on the status. Could you let me know when we can expect shipment?\n\nWe would need the item by Thursday to keep the order on track. Please let me know if that timeline is feasible, as we would need to discuss options if it is not.\n\nThanks for your help resolving this.\n\nBest regards,\n[Your Name]"
+        "response": "Subject: Update on Order for Item #A-118\n\nHi,\n\nI'm writing to follow up on our order for item #A-118 ($2,140). The delivery was scheduled for yesterday, and we have not yet received it.\n\nCould you please confirm the current status and expected delivery date? We would need the item by Thursday to stay on schedule. Please let me know if that timeline is feasible, as we would need to review our options otherwise.\n\nI also wanted to note that this is the second late delivery we've experienced this quarter, so I'd appreciate your help in getting this resolved.\n\nThanks for your attention to this.\n\nBest regards,\n[Your name]"
       }
     },
     "speed": {
-      "ttft_ms_mean": 2138,
-      "tok_per_s_mean": 227.4
+      "ttft_ms_mean": 2157,
+      "tok_per_s_mean": 212.1,
+      "no_thinking_low": {
+        "ttft_ms_mean": 2141,
+        "tok_per_s_mean": 215.3
+      },
+      "medium": {
+        "ttft_ms_mean": 2157,
+        "tok_per_s_mean": 212.1
+      }
     }
   },
   {
@@ -309,34 +341,42 @@
         }
       },
       "reasoning": {
-        "score": 50,
+        "score": 100,
         "details": {
           "answer_present": true,
           "answer_correct": false
         }
       },
       "summarize": {
-        "score": 100,
+        "score": 33,
         "details": {
-          "accuracy": 2,
+          "accuracy": 0,
           "coverage": 2,
-          "concision": 2
+          "selection": 0
         },
-        "response": "A city cut lighting electricity use by 34% after replacing 12% of streetlights with smart-dimming LEDs and pairing the change with a night-work curfew, but nighttime traffic incidents rose 9% initially. An audit traced the increase to three arterials where dimming was set 40% below standard; after brightening those corridors, incidents returned to baseline within one quarter. The city now treats dimming level as a safety parameter rather than a cost lever."
+        "response": "A city cut lighting electricity by 34% by replacing 12% of streetlights with smart-dimming LEDs and curfewing non-emergency night work, but nighttime traffic incidents rose 9%. The increase was concentrated on three arterials with dimming set 40% below standard; after brightening them, incidents returned to baseline within a quarter. The city now treats dimming level as a safety parameter rather than a cost lever."
       },
       "rewrite_tone": {
         "score": 100,
         "details": {
           "facts_preserved": 2,
-          "tone": 2,
-          "action_clarity": 2
+          "no_decoy": 2,
+          "tone": 2
         },
-        "response": "Hi [Vendor],\n\nI hope you\u2019re well. Our deadline for item #A-118 ($2,140) was yesterday, and the delivery is still outstanding. We need it by Thursday. Please confirm the revised delivery date and the steps you\u2019re taking to resolve this. Please note that this would be the second late delivery this quarter, and if the item is not received by Thursday, we may need to cancel the entire contract.\n\nWe appreciate your prompt attention.\n\nBest regards,"
+        "response": "Hello,\n\nI hope you\u2019re well. The original deadline for item #A-118 ($2,140) was yesterday, and the delivery is still outstanding. We need it by Thursday. If we do not receive it by Thursday, we will need to consider cancellation of the entire contract. This would be the second late delivery this quarter, so I appreciate your prompt confirmation of the revised timeline and any updates on the shipment.\n\nBest regards,\n[Your name]"
       }
     },
     "speed": {
-      "ttft_ms_mean": 210,
-      "tok_per_s_mean": 34.2
+      "ttft_ms_mean": 283,
+      "tok_per_s_mean": 30.0,
+      "no_thinking_low": {
+        "ttft_ms_mean": 251,
+        "tok_per_s_mean": 28.1
+      },
+      "medium": {
+        "ttft_ms_mean": 283,
+        "tok_per_s_mean": 30.0
+      }
     }
   }
 ]
