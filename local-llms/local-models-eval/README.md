@@ -48,7 +48,9 @@ python test_tasks.py                              # checker smoke tests
 ```
 
 One model at a time; a fresh `llama-server` (ctx 8192) per model. 3 runs per
-task: speed = mean, quality = best run. Server logs in `logs/`.
+task. Speed is the mean of two probes: no thinking at low effort, and thinking
+at medium effort. Quality tasks run at medium effort with thinking on, and the
+score is the best run. Server logs in `logs/`.
 
 ## Tasks & rubric
 

@@ -36,7 +36,7 @@ def start_server(llama, gguf, port, ctx, threads):
     logf = open(log, "ab")
     proc = subprocess.Popen(
         [llama, "-m", gguf, "-ngl", "99", "-c", str(ctx), "-t", str(threads),
-         "--port", str(port), "--no-webui", "--metrics", "--reasoning-effort", "low"],
+         "--port", str(port), "--no-webui", "--metrics", "--reasoning-effort", "medium"],
         stdout=logf, stderr=subprocess.STDOUT,
     )
     url = f"http://127.0.0.1:{port}/v1"
@@ -119,20 +119,27 @@ def unload_ollama(cfg):
 
 # ---------- inference ----------
 
-def chat_stream(url, model, prompt, max_tokens, keep_alive=None):
-    """Returns (text, ttft_s, tokens_per_s, n_tokens)."""
+def chat_stream(url, model, prompt, max_tokens, keep_alive=None,
+                thinking=True, reasoning_effort="medium"):
+    """Returns (text, ttft_s, tokens_per_s, n_tokens).
+
+    Quality tasks use the defaults (thinking on, medium effort). Speed probes
+    pass both that mode and thinking off / low effort.
+    """
     t0 = time.perf_counter()
     ttft = None
     n = 0
     parts, rparts = [], []
     body = {"model": model, "max_tokens": max_tokens,
-            "temperature": 0.2, "stream": True, "thinking": False,
-            "reasoning_effort": "low",
+            "temperature": 0.2, "stream": True, "thinking": thinking,
+            "reasoning_effort": reasoning_effort,
             "messages": [{"role": "user", "content": prompt}]}
     # -1 keeps an Ollama model loaded for this model run. The runner unloads
-    # it explicitly afterwards. Only sent for Ollama.
+    # it explicitly afterwards. Only sent for Ollama. `think` is Ollama's
+    # own switch; llama-server uses `thinking` and `reasoning_effort`.
     if keep_alive is not None:
         body["keep_alive"] = keep_alive
+        body["think"] = reasoning_effort if thinking else False
     with requests.post(
         f"{url}/chat/completions",
         json=body,
@@ -156,9 +163,8 @@ def chat_stream(url, model, prompt, max_tokens, keep_alive=None):
                 if d.get("content"):
                     parts.append(tok)
                 else:
-                    # some models think into the reasoning stream even with
-                    # thinking:False; if content ends up empty, the answer
-                    # (e.g. "ANSWER: …") lives in the reasoning text
+                    # If the visible content is empty, the answer
+                    # (e.g. "ANSWER: …") lives in the reasoning text.
                     rparts.append(tok)
         if ttft is None:
             raise RuntimeError(f"model streamed no tokens: {model}")
@@ -239,19 +245,34 @@ def eval_model(m, cfg, llama, no_judge):
     out = {"name": m["name"], "gguf": m.get("gguf"), "tasks": {}, "speed": {}}
     try:
         # warmup (compiles hot loop, loads weights)
-        chat_stream(url, name, "Say OK.", 8, keep_alive=hold)
+        chat_stream(url, name, "Say OK.", 8, keep_alive=hold,
+                    thinking=False, reasoning_effort="low")
 
-        # speed probe
-        ttps, tss = [], []
-        for i in range(runs):
-            _, ttft, tps, _ = chat_stream(url, name, SPEED_PROMPT, cfg["speed_max_tokens"], keep_alive=hold)
-            ttps.append(ttft)
-            tss.append(tps)
+        # Speed at both settings. Top-level fields are the medium numbers,
+        # which is how the quality tasks run. tok/s counts reasoning tokens.
+        def measure_speed(thinking, effort):
+            ttps, tss = [], []
+            for _ in range(runs):
+                _, ttft, tps, _ = chat_stream(
+                    url, name, SPEED_PROMPT, cfg["speed_max_tokens"],
+                    keep_alive=hold, thinking=thinking, reasoning_effort=effort)
+                ttps.append(ttft)
+                tss.append(tps)
+            return {
+                "ttft_ms_mean": round(statistics.mean(ttps) * 1000),
+                "tok_per_s_mean": round(statistics.mean(tss), 1),
+            }
+
+        low = measure_speed(False, "low")
+        med = measure_speed(True, "medium")
         out["speed"] = {
-            "ttft_ms_mean": round(statistics.mean(ttps) * 1000),
-            "tok_per_s_mean": round(statistics.mean(tss), 1),
+            "ttft_ms_mean": med["ttft_ms_mean"],
+            "tok_per_s_mean": med["tok_per_s_mean"],
+            "no_thinking_low": low,
+            "medium": med,
         }
-        print(f"  speed: ttft={out['speed']['ttft_ms_mean']}ms  {out['speed']['tok_per_s_mean']} tok/s")
+        print(f"  speed no-think/low: ttft={low['ttft_ms_mean']}ms  {low['tok_per_s_mean']} tok/s")
+        print(f"  speed medium:       ttft={med['ttft_ms_mean']}ms  {med['tok_per_s_mean']} tok/s")
 
         # quality tasks
         for t in TASKS:
@@ -331,15 +352,28 @@ def main():
 
 
 def print_report(results):
+    dual = results and "no_thinking_low" in results[0]["speed"]
     print("\n" + "=" * 78)
-    print(f"{'model':<20}{'ttft ms':>9}{'tok/s':>8}" + "".join(f"{t['id'][:9]:>10}" for t in TASKS))
+    if dual:
+        print("speed: off = no thinking, low effort; med = thinking, medium effort")
+        head = f"{'model':<20}{'off ms':>8}{'off t/s':>8}{'med ms':>8}{'med t/s':>8}"
+    else:
+        head = f"{'model':<20}{'ttft ms':>9}{'tok/s':>8}"
+    print(head + "".join(f"{t['id'][:9]:>10}" for t in TASKS))
     for r in results:
         cells = []
         for t in TASKS:
             v = r["tasks"].get(t["id"], {}).get("score")
             cells.append(f"{'-':>6}" if v is None else f"{v:>5}")
         q = "  ".join(cells)
-        print(f"{r['name']:<20}{r['speed']['ttft_ms_mean']:>9}{r['speed']['tok_per_s_mean']:>8}{q}")
+        sp = r["speed"]
+        if dual:
+            low, med = sp["no_thinking_low"], sp["medium"]
+            nums = (f"{low['ttft_ms_mean']:>8}{low['tok_per_s_mean']:>8}"
+                    f"{med['ttft_ms_mean']:>8}{med['tok_per_s_mean']:>8}")
+        else:
+            nums = f"{sp['ttft_ms_mean']:>9}{sp['tok_per_s_mean']:>8}"
+        print(f"{r['name']:<20}{nums}{q}")
     print(f"\nresults: {HERE / 'results.json'}")
 
 

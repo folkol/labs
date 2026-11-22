@@ -28,17 +28,43 @@ def main():
         "",
         "## Speed",
         "",
-        "| model | TTFT (ms) | tok/s | speedup vs baseline |",
-        "|---|---|---|---|",
     ]
-    for r in [baseline] + rows:
-        sp = r["speed"]
-        if r is baseline:
-            spstr = "1.00× (baseline)"
-        else:
-            ratio = sp["tok_per_s_mean"] / baseline["speed"]["tok_per_s_mean"]
-            spstr = f"{ratio:.2f}× faster" if ratio >= 1 else f"{1/ratio:.2f}× slower"
-        lines.append(f"| {r['name']} | {sp['ttft_ms_mean']} | {sp['tok_per_s_mean']} | {spstr} |")
+    dual = "no_thinking_low" in baseline["speed"]
+
+    def vs_base(sp, key):
+        if sp is baseline["speed"]:
+            return "1.00× (baseline)"
+        ratio = sp[key]["tok_per_s_mean"] / baseline["speed"][key]["tok_per_s_mean"]
+        return f"{ratio:.2f}× faster" if ratio >= 1 else f"{1/ratio:.2f}× slower"
+
+    if dual:
+        lines += [
+            "tok/s counts every generated token, including the reasoning trace. "
+            "Quality tasks run at medium effort with thinking on.",
+            "",
+            "| model | TTFT no-think (ms) | tok/s no-think | vs baseline | TTFT medium (ms) | tok/s medium | vs baseline |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        for r in [baseline] + rows:
+            sp = r["speed"]
+            low, med = sp["no_thinking_low"], sp["medium"]
+            lines.append(
+                f"| {r['name']} | {low['ttft_ms_mean']} | {low['tok_per_s_mean']} | {vs_base(sp, 'no_thinking_low')} "
+                f"| {med['ttft_ms_mean']} | {med['tok_per_s_mean']} | {vs_base(sp, 'medium')} |"
+            )
+    else:
+        lines += [
+            "| model | TTFT (ms) | tok/s | speedup vs baseline |",
+            "|---|---|---|---|",
+        ]
+        for r in [baseline] + rows:
+            sp = r["speed"]
+            if r is baseline:
+                spstr = "1.00× (baseline)"
+            else:
+                ratio = sp["tok_per_s_mean"] / baseline["speed"]["tok_per_s_mean"]
+                spstr = f"{ratio:.2f}× faster" if ratio >= 1 else f"{1/ratio:.2f}× slower"
+            lines.append(f"| {r['name']} | {sp['ttft_ms_mean']} | {sp['tok_per_s_mean']} | {spstr} |")
 
     lines += ["", "## Quality (0–100, judged = LLM rubric)", ""]
     header = "| task | " + " | ".join(r["name"] for r in [baseline] + rows) + " |"
