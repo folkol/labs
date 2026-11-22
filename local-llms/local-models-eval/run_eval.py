@@ -129,7 +129,8 @@ def unload_ollama(cfg):
 # ---------- inference ----------
 
 def chat_stream(url, model, prompt, max_tokens, keep_alive=None,
-                thinking=True, reasoning_effort="medium", num_ctx=None):
+                thinking=True, reasoning_effort="medium", num_ctx=None,
+                vendor="llama"):
     """Returns (text, ttft_s, tokens_per_s, n_tokens, truncated, total_s).
 
     Quality tasks use the defaults (thinking on, medium effort). The decode
@@ -145,16 +146,21 @@ def chat_stream(url, model, prompt, max_tokens, keep_alive=None,
     # as thinking on. "none" is what disables it. `think` is ignored there.
     effort = reasoning_effort if thinking else "none"
     body = {"model": model, "max_tokens": max_tokens,
-            "temperature": 0.2, "stream": True, "thinking": thinking,
+            "temperature": 0.2, "stream": True,
             "reasoning_effort": effort,
             "messages": [{"role": "user", "content": prompt}]}
-    # -1 keeps an Ollama model loaded for this model run. The runner unloads
-    # it explicitly afterwards. Only sent for Ollama.
-    if keep_alive is not None:
-        body["keep_alive"] = keep_alive
-        body["think"] = effort if thinking else False
-        if num_ctx:
-            body["options"] = {"num_ctx": num_ctx}
+    # SGLang rejects the Ollama-only fields. llama-server accepts `thinking`.
+    if vendor == "ollama":
+        body["thinking"] = thinking
+        # -1 keeps an Ollama model loaded for this model run. The runner unloads
+        # it explicitly afterwards.
+        if keep_alive is not None:
+            body["keep_alive"] = keep_alive
+            body["think"] = effort if thinking else False
+            if num_ctx:
+                body["options"] = {"num_ctx": num_ctx}
+    elif vendor == "llama":
+        body["thinking"] = thinking
     # Slow models still have to be allowed to finish a long trace.
     timeout = max(600, max_tokens)
     with requests.post(
@@ -214,7 +220,7 @@ JUDGE_SYS = (
 
 def score_judged(cfg, task, response):
     base = cfg["judge"]["base_url"].rstrip("/")
-    jmodel = (cfg["judge"].get("model") or "").split("/")[0]
+    jmodel = cfg["judge"].get("model") or ""
     body = {
         "model": jmodel or model_name(base),
         "thinking": False,
@@ -247,8 +253,8 @@ def score_judged(cfg, task, response):
 # ---------- per-model pipeline ----------
 
 def uses_ollama(m):
-    """Ollama only when the model is not explicitly on llama-server."""
-    if m.get("runner") == "llama_server":
+    """Ollama only when this model is not pinned to another runner."""
+    if m.get("runner") not in (None, "", "ollama"):
         return False
     return bool(m.get("base_url") and m.get("id"))
 
@@ -267,10 +273,18 @@ def eval_model(m, cfg, llama, no_judge):
     # own when the next runner is llama-server.
     unload_ollama(cfg)
     ollama = uses_ollama(m)
+    proc = None
     if ollama:
-        url, name, proc = m["base_url"].rstrip("/"), m["id"], None
+        url, name = m["base_url"].rstrip("/"), m["id"]
+        vendor = "ollama"
         print(f"\n=== {m['name']} ({name} @ {url}) ===")
+    elif m.get("runner") == "sglang":
+        from official_server import start_official
+        vendor = "sglang"
+        proc, url, name = start_official(m, cfg)
+        print(f"\n=== {m['name']} ({m['repo']} @ {url}) ===")
     else:
+        vendor = "llama"
         port = cfg["server"]["port_base"] + m["_idx"]
         print(f"\n=== {m['name']} (port {port}) ===")
         proc, url = start_server(llama, m["gguf"], port, cfg["server"]["ctx"], cfg["server"]["threads"])
@@ -280,11 +294,14 @@ def eval_model(m, cfg, llama, no_judge):
     hold = -1 if ollama else None
     ctx = cfg["server"]["ctx"]
     out = {"name": m["name"], "gguf": m.get("gguf"), "tasks": {}, "speed": {}, "vram": {}}
+    if vendor == "sglang":
+        out["checkpoint"] = m["repo"]
+        out["serve"] = "sglang NVFP4/MXFP8, plain decode"
     try:
         with GpuWatch() as gpu:
             # warmup (compiles hot loop, loads weights)
             chat_stream(url, name, "Say OK.", 8, keep_alive=hold,
-                        thinking=False, reasoning_effort="low", num_ctx=ctx)
+                        thinking=False, reasoning_effort="low", num_ctx=ctx, vendor=vendor)
 
             # Decode rate, once. Thinking does not change tok/s, so this probe
             # stays thinking-off with a fixed token budget.
@@ -293,7 +310,8 @@ def eval_model(m, cfg, llama, no_judge):
                 with gpu.span("tok/s"):
                     _, ttft, tps, *_ = chat_stream(
                         url, name, SPEED_PROMPT, cfg["speed_max_tokens"],
-                        keep_alive=hold, thinking=False, reasoning_effort="low", num_ctx=ctx)
+                        keep_alive=hold, thinking=False, reasoning_effort="low",
+                        num_ctx=ctx, vendor=vendor)
                 ttps.append(ttft)
                 tss.append(tps)
 
@@ -304,7 +322,7 @@ def eval_model(m, cfg, llama, no_judge):
                         _, _, _, n, truncated, total_s = chat_stream(
                             url, name, TURN_PROMPT, cfg["turn_max_tokens"],
                             keep_alive=hold, thinking=thinking, reasoning_effort=effort,
-                            num_ctx=ctx)
+                            num_ctx=ctx, vendor=vendor)
                     if truncated:
                         continue
                     elapsed.append(total_s)
@@ -349,7 +367,8 @@ def eval_model(m, cfg, llama, no_judge):
                 for i in range(runs):
                     with gpu.span(t["id"]):
                         resp, ttft, tps, *_ = chat_stream(
-                            url, name, t["prompt"], max_tok, keep_alive=hold, num_ctx=ctx)
+                            url, name, t["prompt"], max_tok, keep_alive=hold,
+                            num_ctx=ctx, vendor=vendor)
                     if first_resp is None:
                         first_resp = resp
                     if "checks" in t:
@@ -404,7 +423,7 @@ def main():
                     td["details"] = {k: v for k, v in det}
                     print(f"  {r['name']}/{tid}: {s:.0f}")
         Path(args.out).write_text(json.dumps(results, indent=2), encoding="utf-8")
-        print_report(results)
+        print_report(results, args.out)
         return
 
     models = cfg["models"]
@@ -414,7 +433,7 @@ def main():
         raise SystemExit("no models matched; check --models names against config.yaml")
     for m in models:
         m["_idx"] = cfg["models"].index(m)
-        if uses_ollama(m):
+        if uses_ollama(m) or m.get("runner") == "sglang":
             continue
         if "gguf" not in m:
             raise SystemExit(f"{m['name']}: no gguf path — run e2e.py first (it downloads and fills this in)")
@@ -424,7 +443,7 @@ def main():
 
     results = [eval_model(m, cfg, args.llama, args.no_judge) for m in models]
     Path(args.out).write_text(json.dumps(results, indent=2), encoding="utf-8")
-    print_report(results)
+    print_report(results, args.out)
 
 
 def _turn_cell(block):
@@ -436,7 +455,7 @@ def _turn_cell(block):
     return f"{text:>8}"
 
 
-def print_report(results):
+def print_report(results, out=None):
     sp0 = results[0]["speed"] if results else {}
     turns = "turn_medium" in sp0
     dual = "no_thinking_low" in sp0
@@ -468,7 +487,7 @@ def print_report(results):
         else:
             nums = f"{sp['ttft_ms_mean']:>9}{sp['tok_per_s_mean']:>8}"
         print(f"{r['name']:<20}{nums}{q}")
-    print(f"\nresults: {HERE / 'results.json'}")
+    print(f"\nresults: {out or (HERE / 'results.json')}")
 
 
 if __name__ == "__main__":

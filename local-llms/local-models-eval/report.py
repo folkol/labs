@@ -3,6 +3,7 @@
 # dependencies = ["pyyaml"]
 # ///
 """Generate REPORT.md from results.json."""
+import argparse
 import json
 from datetime import datetime
 from pathlib import Path
@@ -17,16 +18,24 @@ SAMPLED = {"ifeval", "gsm8k", "humaneval"}
 
 
 def main():
-    rows = json.loads(RESULTS.read_text(encoding="utf-8"))
-    rows = [r for r in rows if r["name"] != "qwen3.8-27b"]  # candidates only
-    baseline = next(r for r in json.loads(RESULTS.read_text(encoding="utf-8"))
-                    if r["name"] == "qwen3.8-27b")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--results", default=str(RESULTS))
+    ap.add_argument("--out", default=str(HERE / "REPORT.md"))
+    ap.add_argument("--note", default=None)
+    args = ap.parse_args()
+    results_path = Path(args.results)
+    loaded = json.loads(results_path.read_text(encoding="utf-8"))
+    rows = [r for r in loaded if r["name"] != "qwen3.8-27b"]  # candidates only
+    baseline = next(r for r in loaded if r["name"] == "qwen3.8-27b")
+    note = args.note or (
+        "RTX 5090 32 GB, Ollama 0.40.16, 3 runs, "
+        "best-of-3 per task, 3 LLM-judged (judge: qwen3.8)"
+    )
 
     lines = [
         "# Local model eval — candidates vs qwen3.8-27b baseline",
         "",
-        f"*{datetime.now():%Y-%m-%d} — RTX 5090 32 GB, Ollama 0.40.16, 3 runs, "
-        "best-of-3 per task, 3 LLM-judged (judge: qwen3.8)*",
+        f"*{datetime.now():%Y-%m-%d} — {note}*",
         "",
         "More details on the machine, the marks, and the tasks: [README.md](README.md).",
         "",
@@ -196,8 +205,9 @@ def main():
         "load them. Its two ~30 GB files under `models/minimax-h3/` are dead weight "
         "and can be deleted.",
     ]
-    (HERE / "REPORT.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"wrote {HERE / 'REPORT.md'}")
+    out = Path(args.out)
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"wrote {out}")
 
 
 if __name__ == "__main__":

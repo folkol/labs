@@ -93,3 +93,17 @@ uv run e2e.py
 Phase 1 is speed and deterministic tasks. Phase 2 is the qwen3.8 judge on the three rubric tasks. Phase 3 is IFEval, GSM8K, and HumanEval, 20 samples each, folded into the same `results.json`. `REPORT.md` is written after that. Re-runs skip finished downloads.
 
 Every candidate is served by llama-server, including qwen, whose GGUF is the large blob already in Ollama's store. The judge stays on Ollama. One run writes `results.json` and `REPORT.md`; nothing is pasted in by hand.
+
+## Linux, official Inkling
+
+Boot the Linux install and run this from the same checkout:
+
+```
+uv run e2e-linux.py
+```
+
+Inkling is the official `thinkingmachines/Inkling-2-Mini` checkpoint, NVFP4 and MXFP8, served by SGLang from `lmsysorg/sglang:inkling-2-mini`. Decode is plain: the bundled draft head stays unloaded. The other four models stay on llama-server and the same GGUF files. Context stays 16384.
+
+The script writes `results-linux.json` and `REPORT-linux.md`. The Windows measurements stay in `results.json` and `REPORT.md`.
+
+`nvidia-smi` has to see the 5090, and Docker needs the NVIDIA container toolkit. The qwen GGUF is the blob on the Windows `E:` drive, so that disk has to be mounted (often `/mnt/e/.ollama/...`). The first run downloads the SGLang image and the 20 GB checkpoint.

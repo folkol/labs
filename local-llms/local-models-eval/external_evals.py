@@ -59,6 +59,7 @@ def run_external(extra_args=None):
 
 
 def main(argv=None):
+    global CFG, HARNESS_RESULTS, LOGS
     ap = argparse.ArgumentParser(description="IFEval, GSM8K, and HumanEval")
     ap.add_argument("--config", default=str(CFG))
     ap.add_argument("--models", nargs="*", help="subset of model names in config.yaml")
@@ -66,9 +67,14 @@ def main(argv=None):
     ap.add_argument("--skip-humaneval", action="store_true")
     ap.add_argument("--sandbox", default="local", help="HumanEval sandbox: local or docker")
     ap.add_argument("--llama", default=None, help="llama-server executable")
+    ap.add_argument("--out", default=str(HARNESS_RESULTS), help="harness results json to update")
+    ap.add_argument("--logs", default=str(LOGS), help="directory for Inspect logs")
     ap.add_argument("--rescore", action="store_true",
-                    help="fill results.json from external_logs, without running models")
+                    help="fill the results json from logs, without running models")
     args = ap.parse_args(argv)
+    CFG = Path(args.config)
+    HARNESS_RESULTS = Path(args.out)
+    LOGS = Path(args.logs)
     if args.rescore:
         rescore_logs()
         return
@@ -116,7 +122,10 @@ def eval_model(m, cfg, tasks, args):
     proc = None
     try:
         unload_ollama(cfg)
-        if is_llama_server(m):
+        if m.get("runner") == "sglang":
+            from official_server import start_official
+            proc, base_url, model_id = start_official(m, cfg)
+        elif is_llama_server(m):
             exe = args.llama or find_llama()
             proc, base_url, model_id = start_llama(exe, m, cfg)
         else:
@@ -224,6 +233,8 @@ def rescore_logs():
 
 
 def is_llama_server(m):
+    if m.get("runner") in ("sglang", "ollama"):
+        return False
     return m.get("runner") == "llama_server" or not (m.get("base_url") and (m.get("id") or m.get("ollama_name")))
 
 
