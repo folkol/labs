@@ -17,6 +17,7 @@ from pathlib import Path
 import requests
 import yaml
 
+from gpu_watch import GpuWatch, warning_text
 from tasks import TASKS
 
 HERE = Path(__file__).parent
@@ -264,85 +265,98 @@ def eval_model(m, cfg, llama, no_judge):
     # and a long task list would otherwise reload mid-run.
     hold = -1 if ollama else None
     ctx = cfg["server"]["ctx"]
-    out = {"name": m["name"], "gguf": m.get("gguf"), "tasks": {}, "speed": {}}
+    out = {"name": m["name"], "gguf": m.get("gguf"), "tasks": {}, "speed": {}, "vram": {}}
     try:
-        # warmup (compiles hot loop, loads weights)
-        chat_stream(url, name, "Say OK.", 8, keep_alive=hold,
-                    thinking=False, reasoning_effort="low", num_ctx=ctx)
+        with GpuWatch() as gpu:
+            # warmup (compiles hot loop, loads weights)
+            chat_stream(url, name, "Say OK.", 8, keep_alive=hold,
+                        thinking=False, reasoning_effort="low", num_ctx=ctx)
 
-        # Decode rate, once. Thinking does not change tok/s, so this probe
-        # stays thinking-off with a fixed token budget.
-        ttps, tss = [], []
-        for _ in range(runs):
-            _, ttft, tps, *_ = chat_stream(
-                url, name, SPEED_PROMPT, cfg["speed_max_tokens"],
-                keep_alive=hold, thinking=False, reasoning_effort="low", num_ctx=ctx)
-            ttps.append(ttft)
-            tss.append(tps)
-
-        def measure_turn(thinking, effort):
-            elapsed, tokens = [], []
+            # Decode rate, once. Thinking does not change tok/s, so this probe
+            # stays thinking-off with a fixed token budget.
+            ttps, tss = [], []
             for _ in range(runs):
-                _, _, _, n, truncated, total_s = chat_stream(
-                    url, name, TURN_PROMPT, cfg["turn_max_tokens"],
-                    keep_alive=hold, thinking=thinking, reasoning_effort=effort,
-                    num_ctx=ctx)
-                if truncated:
-                    continue
-                elapsed.append(total_s)
-                tokens.append(n)
-            if not elapsed:
-                return {"seconds_mean": None, "tokens_mean": None,
-                        "finished": 0, "runs": runs}
-            return {
-                "seconds_mean": round(statistics.mean(elapsed), 1),
-                "tokens_mean": round(statistics.mean(tokens)),
-                "finished": len(elapsed),
-                "runs": runs,
+                with gpu.span("tok/s"):
+                    _, ttft, tps, *_ = chat_stream(
+                        url, name, SPEED_PROMPT, cfg["speed_max_tokens"],
+                        keep_alive=hold, thinking=False, reasoning_effort="low", num_ctx=ctx)
+                ttps.append(ttft)
+                tss.append(tps)
+
+            def measure_turn(thinking, effort, label):
+                elapsed, tokens = [], []
+                for _ in range(runs):
+                    with gpu.span(label):
+                        _, _, _, n, truncated, total_s = chat_stream(
+                            url, name, TURN_PROMPT, cfg["turn_max_tokens"],
+                            keep_alive=hold, thinking=thinking, reasoning_effort=effort,
+                            num_ctx=ctx)
+                    if truncated:
+                        continue
+                    elapsed.append(total_s)
+                    tokens.append(n)
+                if not elapsed:
+                    return {"seconds_mean": None, "tokens_mean": None,
+                            "finished": 0, "runs": runs}
+                return {
+                    "seconds_mean": round(statistics.mean(elapsed), 1),
+                    "tokens_mean": round(statistics.mean(tokens)),
+                    "finished": len(elapsed),
+                    "runs": runs,
+                }
+
+            turn_off = measure_turn(False, "low", "turn no-think")
+            turn_med = measure_turn(True, "medium", "turn medium")
+            out["speed"] = {
+                "ttft_ms_mean": round(statistics.mean(ttps) * 1000),
+                "tok_per_s_mean": round(statistics.mean(tss), 1),
+                "turn_no_thinking_low": turn_off,
+                "turn_medium": turn_med,
             }
+            print(f"  tok/s (thinking off): ttft={out['speed']['ttft_ms_mean']}ms  "
+                  f"{out['speed']['tok_per_s_mean']} tok/s")
 
-        turn_off = measure_turn(False, "low")
-        turn_med = measure_turn(True, "medium")
-        out["speed"] = {
-            "ttft_ms_mean": round(statistics.mean(ttps) * 1000),
-            "tok_per_s_mean": round(statistics.mean(tss), 1),
-            "turn_no_thinking_low": turn_off,
-            "turn_medium": turn_med,
-        }
-        print(f"  tok/s (thinking off): ttft={out['speed']['ttft_ms_mean']}ms  "
-              f"{out['speed']['tok_per_s_mean']} tok/s")
+            def fmt_turn(block):
+                if block["seconds_mean"] is None:
+                    return f"hit {cfg['turn_max_tokens']} cap"
+                note = "" if block["finished"] == block["runs"] else f" ({block['finished']}/{block['runs']} finished)"
+                return f"{block['seconds_mean']}s, {block['tokens_mean']} tok{note}"
 
-        def fmt_turn(block):
-            if block["seconds_mean"] is None:
-                return f"hit {cfg['turn_max_tokens']} cap"
-            note = "" if block["finished"] == block["runs"] else f" ({block['finished']}/{block['runs']} finished)"
-            return f"{block['seconds_mean']}s, {block['tokens_mean']} tok{note}"
+            print(f"  turn thinking off: {fmt_turn(turn_off)}")
+            print(f"  turn medium:       {fmt_turn(turn_med)}")
+            for label in ("tok/s", "turn no-think", "turn medium"):
+                info = gpu.spilled(label)
+                if info:
+                    print(f"  {label}: {warning_text(info)}")
 
-        print(f"  turn thinking off: {fmt_turn(turn_off)}")
-        print(f"  turn medium:       {fmt_turn(turn_med)}")
-
-        # quality tasks
-        for t in TASKS:
-            best, details, first_resp = -1, None, None
-            for i in range(runs):
-                resp, ttft, tps, *_ = chat_stream(
-                    url, name, t["prompt"], max_tok, keep_alive=hold, num_ctx=ctx)
-                if first_resp is None:
-                    first_resp = resp
-                if "checks" in t:
-                    score, details = score_deterministic(t, resp)
-                else:
-                    score, details = (None, None) if no_judge else score_judged(cfg, t, resp)
-                if score is not None and score > best:
-                    best, details = score, details
-            td = {
-                "score": round(best) if best >= 0 else None,
-                "details": {k: v for k, v in (details or [])},
-            }
-            if "checks" not in t:
-                td["response"] = first_resp  # for --judge-only later
-            out["tasks"][t["id"]] = td
-            print(f"  {t['id']}: " + (f"{best:.0f}" if best >= 0 else "pending judge"))
+            # quality tasks
+            for t in TASKS:
+                best, details, first_resp = -1, None, None
+                for i in range(runs):
+                    with gpu.span(t["id"]):
+                        resp, ttft, tps, *_ = chat_stream(
+                            url, name, t["prompt"], max_tok, keep_alive=hold, num_ctx=ctx)
+                    if first_resp is None:
+                        first_resp = resp
+                    if "checks" in t:
+                        score, details = score_deterministic(t, resp)
+                    else:
+                        score, details = (None, None) if no_judge else score_judged(cfg, t, resp)
+                    if score is not None and score > best:
+                        best, details = score, details
+                td = {
+                    "score": round(best) if best >= 0 else None,
+                    "details": {k: v for k, v in (details or [])},
+                }
+                if "checks" not in t:
+                    td["response"] = first_resp  # for --judge-only later
+                out["tasks"][t["id"]] = td
+                line = f"  {t['id']}: " + (f"{best:.0f}" if best >= 0 else "pending judge")
+                info = gpu.spilled(t["id"])
+                if info:
+                    line += f"  {warning_text(info)}"
+                print(line)
+            out["vram"] = gpu.results
     finally:
         if proc:
             stop_server(proc)

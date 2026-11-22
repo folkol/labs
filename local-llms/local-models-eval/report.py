@@ -10,8 +10,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 RESULTS = HERE / "results.json"
 TASK_ORDER = ["json_extract", "constraints", "math_word", "coding", "reasoning",
-              "reasoning", "fix_it", "summarize", "rewrite_tone", "triage"]
+              "fix_it", "summarize", "rewrite_tone", "triage",
+              "ifeval", "gsm8k", "humaneval"]
 JUDGED = {"summarize", "rewrite_tone", "triage"}
+SAMPLED = {"ifeval", "gsm8k", "humaneval"}
 
 
 def main():
@@ -25,6 +27,8 @@ def main():
         "",
         f"*{datetime.now():%Y-%m-%d} — RTX 5090 32 GB, Ollama 0.40.16, 3 runs, "
         "best-of-3 per task, 3 LLM-judged (judge: qwen3.8)*",
+        "",
+        "More details on the machine, the marks, and the tasks: [README.md](README.md).",
         "",
         "## Speed",
         "",
@@ -105,22 +109,72 @@ def main():
                 spstr = f"{ratio:.2f}× faster" if ratio >= 1 else f"{1/ratio:.2f}× slower"
             lines.append(f"| {r['name']} | {sp['ttft_ms_mean']} | {sp['tok_per_s_mean']} | {spstr} |")
 
+    sample_n = next(
+        (r["tasks"][tid]["details"].get("samples")
+         for r in [baseline] + rows for tid in SAMPLED
+         if tid in r["tasks"] and isinstance(r["tasks"][tid].get("details"), dict)
+         and r["tasks"][tid]["details"].get("samples")),
+        None,
+    )
     lines += ["", "## Quality (0–100, judged = LLM rubric)", ""]
+    if sample_n:
+        lines += [
+            f"Rows marked † are percent correct on {sample_n} samples of an off-the-shelf "
+            "task (IFEval, GSM8K, HumanEval), with thinking off. A star is an LLM-judged score. "
+            "A ! means that trial was paging VRAM.",
+            "",
+        ]
     header = "| task | " + " | ".join(r["name"] for r in [baseline] + rows) + " |"
     lines += [header, "|---" * (len(rows) + 2) + "|"]
     for tid in TASK_ORDER:
         cells = []
+        present = False
         for r in [baseline] + rows:
             td = r["tasks"].get(tid, {})
             v = td.get("score")
-            cells.append(f"{v}{'*' if tid in JUDGED else ''}" if v is not None else "—")
-        lines.append(f"| {tid} | " + " | ".join(cells) + " |")
+            if v is None and tid not in r["tasks"]:
+                cells.append("—")
+                continue
+            present = True
+            mark = "*" if tid in JUDGED else ("†" if tid in SAMPLED else "")
+            if (r.get("vram") or {}).get(tid, {}).get("spill"):
+                mark += "!"
+            cells.append(f"{v}{mark}" if v is not None else "—")
+        if present or tid not in SAMPLED:
+            lines.append(f"| {tid} | " + " | ".join(cells) + " |")
+
+    spills = []
+    for r in [baseline] + rows:
+        for label, info in (r.get("vram") or {}).items():
+            if info.get("spill"):
+                spills.append((r["name"], label, info))
+    if any(r.get("vram") for r in [baseline] + rows):
+        lines += ["", "## VRAM", ""]
+        if spills:
+            lines.append(
+                "These trials kept the bus busy and the GPU idle after the load window, "
+                "so the model was paging weights. A ! on a quality score is the same warning."
+            )
+            lines.append("")
+            for name, label, info in spills:
+                bus = info["bus_mbs"] / 1000
+                lines.append(
+                    f"- **{name} / {label}**: couldn't fit in VRAM "
+                    f"(GPU {info['sm_pct']}%, bus {bus:.1f} GB/s)"
+                )
+        else:
+            lines.append(
+                "No trial that ran long enough showed the low-GPU, high-bus pattern."
+            )
 
     # best candidate per task
     lines += ["", "## Notes", ""]
     best = {}
     for tid in TASK_ORDER:
-        vals = [(r["name"], r["tasks"].get(tid, {}).get("score", -1)) for r in rows]
+        if tid in SAMPLED and not any(tid in r["tasks"] for r in rows):
+            continue
+        vals = [(r["name"], r["tasks"].get(tid, {}).get("score")) for r in rows]
+        vals = [(n, -1 if s is None else s) for n, s in vals]
         top = max(s for _, s in vals)
         winners = [n for n, s in vals if s == top]
         best[tid] = (winners, top)

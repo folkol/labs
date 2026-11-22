@@ -2,7 +2,7 @@
 # requires-python = ">=3.10"
 # dependencies = ["huggingface_hub", "requests", "pyyaml"]
 # ///
-"""End-to-end eval: deps -> llama.cpp -> model weights -> run -> judge -> report.
+"""End-to-end eval: deps -> llama.cpp -> model weights -> run -> judge -> external -> report.
 
 Usage:  uv run e2e.py        (deps auto-installed by uv)
 Requires: Python 3.10+, NVIDIA GPU + CUDA 12 runtime.
@@ -344,7 +344,14 @@ def main():
             except subprocess.TimeoutExpired:
                 proc.kill()
 
-    log(f"done in {(time.time()-t0)/60:.0f} min — see {HERE/'results.json'}")
+    log("phase 3: IFEval, GSM8K, HumanEval (20 samples each)")
+    from external_evals import run_external
+    run_external()
+
+    log("writing REPORT.md")
+    subprocess.run([sys.executable, str(HERE / "report.py")], cwd=HERE, check=True)
+
+    log(f"done in {(time.time()-t0)/60:.0f} min — see {HERE/'REPORT.md'}")
 
 
 if __name__ == "__main__":
