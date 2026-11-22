@@ -8,24 +8,24 @@ Speed and quality of local models against a qwen3.8-27b baseline. `uv run e2e.py
 
 | | qwen3.8-27b | ornith-1.5-35b-a3b | inkling-2-mini |
 |---|---|---|---|
-| TTFT | 2212 ms | 2156 ms | 219 ms |
-| tok/s | 92.5 | 246.4 (2.7× faster) | 30.9 (3.0× slower) |
-| turn, thinking off | 2.3 s | 2.2 s | 2.9 s |
-| turn, medium | 2.6 s | 2.4 s | 2.5 s |
+| TTFT | 1446 ms | 156 ms | 235 ms |
+| tok/s | 66.3 | 201.6 (3.0× faster) | 34.3 (1.9× slower) |
+| turn, thinking off | 0.3 s | 0.2 s | 2.2 s |
+| turn, medium | 1.0 s | 0.3 s | 2.1 s |
 | json, constraints, math, coding, reasoning, fix_it, triage | 100 | 100 | 100 |
-| summarize | 67* | 67* | 83* |
-| rewrite_tone | 67* | 100* | 67* |
-| ifeval | 85† | 85† | 70† |
-| gsm8k | 95† | 95† | 85† |
+| summarize | 67* | 83* | 83* |
+| rewrite_tone | 100* | 100* | 100* |
+| ifeval | 85† | 80† | 70† |
+| gsm8k | 95† | 90† | 85† |
 | humaneval | 100† | 100† | 95† |
 
 TTFT is milliseconds to the first token. tok/s is decode speed on a fixed 512-token generation. Both are measured with thinking off. The two turn rows are seconds to finish a short edit, thinking off and again at medium effort. A lower turn time is faster.
 
 An unmarked 100 means every exact check passed. A star means qwen3.8 judged the answer on three 0/1/2 criteria: 100 is 6/6, 83 is 5/6, and 67 is 4/6. A dagger is percent correct on 20 samples with thinking off. IFEval uses the strict prompt score.
 
-Ornith matched qwen on every exact-check task and on the three 20-sample tasks, and it was the only one of the three to drop the sarcastic $50, so its rewrite is 6/6. Its summary is the same 4/6 as qwen. It decodes at 2.7× qwen's rate. Time to first token stays about 2.2 s for both, because both run through Ollama.
+This run served every candidate with llama-server. Ornith matched qwen on the exact-check tasks and on the rewrite (6/6), and scored higher on the summary (5/6 vs 4/6). It decodes at 3.0× qwen's rate, answers in 156 ms, and finishes the short edit in 0.2–0.3 s. On the 20-sample tasks it is close: 80, 90, and 100 against qwen's 85, 95, and 100.
 
-Inkling also matched the exact-check tasks, and its summary is the high one at 5/6. It kept the $50, and it trails the 20-sample tasks: 70, 85, and 95. It reaches a first token in about 0.2 s and decodes at about a third of qwen's rate. The short edit takes about the same time for all three.
+Inkling matched the exact-check tasks and the rewrite, and tied Ornith on the summary. It trails the 20-sample tasks at 70, 85, and 95. Its first token is 235 ms, in the same range as Ornith, and it decodes at 34 tok/s, so the short edit takes about 2 s.
 
 Inkling 2 Mini is a 26B looped mixture-of-experts model (about 3B active per token) from Thinking Machines Lab, released 2026-11-20. The weights are `thinkingmachines/Inkling-2-Mini`. This eval runs ggml-org's `Inkling-2-Mini-IQ4_NL.gguf`: Pedro Cuenca's conversion, with the NVFP4 experts in layers 0–19 at 4-bit and the other matrices at Q8_0.
 
@@ -37,7 +37,7 @@ The report dated 2026-11-22 was measured on this PC:
 - Intel Core Ultra 9 285K, 24 cores
 - 32 GB Corsair DDR5-4800 (2×16 GB)
 - NVIDIA GeForce RTX 5090, 32 GB VRAM
-- Ollama 0.40.16 for every model except Inkling, which runs on llama-server
+- llama-server for every candidate; the qwen3.8 judge stays on Ollama 0.40.16
 - Context 16384, 12 threads, one model loaded at a time
 
 ## Reading the report
