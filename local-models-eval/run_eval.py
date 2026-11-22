@@ -1,0 +1,347 @@
+r"""Run speed + quality eval across models, via llama.cpp servers.
+
+Usage:
+  python run_eval.py                 # all models in config.yaml
+  python run_eval.py --models minimax-h3 gemma-4-26b-a4b
+  python run_eval.py --no-judge      # skip rubric tasks (deterministic only)
+  python run_eval.py --llama C:\tools\llama.cpp\build\bin\llama-server.exe
+"""
+import argparse
+import json
+import shutil
+import statistics
+import subprocess
+import time
+from pathlib import Path
+
+import requests
+import yaml
+
+from tasks import TASKS
+
+HERE = Path(__file__).parent
+
+SPEED_PROMPT = (
+    "Write a short story about a lighthouse keeper who receives a message "
+    "bottled from the future. Aim for about 350 words, written as a single "
+    "continuous narrative without headings."
+)
+
+
+# ---------- server management ----------
+
+def start_server(llama, gguf, port, ctx, threads):
+    log = HERE / "logs" / f"server_{port}.log"
+    log.parent.mkdir(exist_ok=True)
+    logf = open(log, "ab")
+    proc = subprocess.Popen(
+        [llama, "-m", gguf, "-ngl", "99", "-c", str(ctx), "-t", str(threads),
+         "--port", str(port), "--no-webui", "--metrics", "--reasoning-effort", "low"],
+        stdout=logf, stderr=subprocess.STDOUT,
+    )
+    url = f"http://127.0.0.1:{port}/v1"
+    for _ in range(120):
+        if proc.poll() is not None:
+            raise RuntimeError(f"server died on startup; see {log}")
+        try:
+            if requests.get(f"{url}/models", timeout=1).status_code == 200:
+                return proc, url
+        except requests.RequestException:
+            pass
+        time.sleep(1)
+    proc.kill()
+    raise RuntimeError(f"server on port {port} did not become ready; see {log}")
+
+
+def model_name(url):
+    """llama.cpp serves models by GGUF filename; use what the server reports."""
+    ids = requests.get(f"{url}/models", timeout=5).json()["data"]
+    return ids[0]["id"] if ids else None
+
+
+def stop_server(proc):
+    proc.terminate()
+    try:
+        proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
+def ollama_host(cfg):
+    """Native Ollama API root. config stores the OpenAI-compatible /v1 URL."""
+    base = ((cfg.get("ollama") or {}).get("base_url") or "").rstrip("/")
+    if base.endswith("/v1"):
+        base = base[:-3]
+    return base
+
+
+def unload_ollama(cfg):
+    """Unload every model Ollama is holding.
+
+    Ollama keeps a model resident for keep_alive (default 5 minutes) after the
+    last request. A later llama-server model never talks to Ollama, so the
+    previous model stays in VRAM and the two page over the bus. Stopping here
+    gives the next model the GPU to itself.
+    """
+    host = ollama_host(cfg)
+    if not host:
+        return
+    try:
+        loaded = requests.get(f"{host}/api/ps", timeout=5).json().get("models") or []
+    except requests.RequestException as e:
+        print(f"  ollama ps failed ({e}); VRAM may still be occupied")
+        return
+    names = [m.get("name") or m.get("model") for m in loaded]
+    names = [n for n in names if n]
+    for name in names:
+        print(f"  unloading {name}")
+        try:
+            requests.post(f"{host}/api/generate",
+                          json={"model": name, "keep_alive": 0}, timeout=60)
+        except requests.RequestException as e:
+            print(f"  unload {name} failed ({e})")
+    if not names:
+        return
+    deadline = time.time() + 30
+    still = loaded
+    while time.time() < deadline:
+        try:
+            still = requests.get(f"{host}/api/ps", timeout=5).json().get("models") or []
+        except requests.RequestException:
+            return
+        if not still:
+            time.sleep(1)  # let the CUDA context actually release
+            return
+        time.sleep(0.5)
+    left = ", ".join((m.get("name") or m.get("model") or "?") for m in still)
+    raise RuntimeError(f"ollama still holding {left}")
+
+
+# ---------- inference ----------
+
+def chat_stream(url, model, prompt, max_tokens, keep_alive=None):
+    """Returns (text, ttft_s, tokens_per_s, n_tokens)."""
+    t0 = time.perf_counter()
+    ttft = None
+    n = 0
+    parts, rparts = [], []
+    body = {"model": model, "max_tokens": max_tokens,
+            "temperature": 0.2, "stream": True, "thinking": False,
+            "reasoning_effort": "low",
+            "messages": [{"role": "user", "content": prompt}]}
+    # -1 keeps an Ollama model loaded for this model run. The runner unloads
+    # it explicitly afterwards. Only sent for Ollama.
+    if keep_alive is not None:
+        body["keep_alive"] = keep_alive
+    with requests.post(
+        f"{url}/chat/completions",
+        json=body,
+        stream=True, timeout=600,
+    ) as resp:
+        resp.raise_for_status()
+        for line in resp.iter_lines():
+            if not line:
+                continue
+            line = line.decode().removeprefix("data: ").strip()
+            if line == "[DONE]":
+                break
+            d = json.loads(line)["choices"][0]["delta"]
+            # thinking models may emit `reasoning` deltas; count all tokens,
+            # but prefer real content for the response text
+            tok = d.get("content") or d.get("reasoning") or d.get("reasoning_content") or ""
+            if tok:
+                if ttft is None:
+                    ttft = time.perf_counter() - t0
+                n += 1
+                if d.get("content"):
+                    parts.append(tok)
+                else:
+                    # some models think into the reasoning stream even with
+                    # thinking:False; if content ends up empty, the answer
+                    # (e.g. "ANSWER: …") lives in the reasoning text
+                    rparts.append(tok)
+        if ttft is None:
+            raise RuntimeError(f"model streamed no tokens: {model}")
+    gen_t = time.perf_counter() - t0 - ttft
+    tps = n / gen_t if gen_t > 0.01 else float("inf")
+    text = "".join(parts) or "".join(rparts)
+    return text, ttft, tps, n
+
+
+# ---------- scoring ----------
+
+def score_deterministic(task, response):
+    results = [(name, fn(response)) for name, fn in task["checks"]]
+    passed = sum(1 for _, ok in results if ok)
+    score = passed / len(results) * 100
+    return score, results
+
+
+JUDGE_SYS = (
+    "You are a strict evaluator. Score each criterion 0 (fail), 1 (partial), "
+    "or 2 (full). Respond with ONLY a JSON object: "
+    '{"scores": {"<criterion>": <int>}}'
+)
+
+
+def score_judged(cfg, task, response):
+    base = cfg["judge"]["base_url"].rstrip("/")
+    jmodel = (cfg["judge"].get("model") or "").split("/")[0]
+    body = {
+        "model": jmodel or model_name(base),
+        "thinking": False,
+        "reasoning_effort": "medium",
+        "temperature": 0,
+        # judge is a thinking model: it emits ~300+ reasoning tokens before
+        # the JSON even with thinking:False — budget must cover both
+        "max_tokens": 2000,
+        "messages": [
+            {"role": "system", "content": JUDGE_SYS},
+            {"role": "user", "content":
+                "Task prompt:\n" + task["prompt"] + "\n\n"
+                "Candidate response:\n" + response + "\n\n"
+                "Criteria:\n" + "\n".join(f"- {n}: {d}" for n, d in task["criteria"])
+                + "\n\nReturn the JSON scores."},
+        ],
+    }
+    r = requests.post(f"{base}/chat/completions", json=body, timeout=120)
+    r.raise_for_status()
+    m = r.json()["choices"][0]["message"]
+    txt = m.get("content") or m.get("reasoning") or ""
+    if "{" not in txt:
+        raise RuntimeError(f"judge returned no scores: {txt[:200]!r}")
+    scores = json.loads(txt[txt.index("{"):txt.rindex("}") + 1])["scores"]
+    total = sum(int(scores.get(n, 0)) for n, _ in task["criteria"])
+    score = total / (2 * len(task["criteria"])) * 100
+    return score, [(n, int(scores.get(n, 0))) for n, _ in task["criteria"]]
+
+
+# ---------- per-model pipeline ----------
+
+def eval_model(m, cfg, llama, no_judge):
+    max_tok = cfg["max_tokens"]
+    runs = cfg["runs"]
+    # Free the GPU before this model allocates. Ollama will not do it on its
+    # own when the next runner is llama-server.
+    unload_ollama(cfg)
+    ollama = bool(m.get("base_url") and m.get("id"))
+    if ollama:
+        url, name, proc = m["base_url"].rstrip("/"), m["id"], None
+        print(f"\n=== {m['name']} ({name} @ {url}) ===")
+    else:
+        port = cfg["server"]["port_base"] + m["_idx"]
+        print(f"\n=== {m['name']} (port {port}) ===")
+        proc, url = start_server(llama, m["gguf"], port, cfg["server"]["ctx"], cfg["server"]["threads"])
+        name = model_name(url)
+    # Hold an Ollama model until this run finishes; default keep_alive is 5m
+    # and a long task list would otherwise reload mid-run.
+    hold = -1 if ollama else None
+    out = {"name": m["name"], "gguf": m.get("gguf"), "tasks": {}, "speed": {}}
+    try:
+        # warmup (compiles hot loop, loads weights)
+        chat_stream(url, name, "Say OK.", 8, keep_alive=hold)
+
+        # speed probe
+        ttps, tss = [], []
+        for i in range(runs):
+            _, ttft, tps, _ = chat_stream(url, name, SPEED_PROMPT, cfg["speed_max_tokens"], keep_alive=hold)
+            ttps.append(ttft)
+            tss.append(tps)
+        out["speed"] = {
+            "ttft_ms_mean": round(statistics.mean(ttps) * 1000),
+            "tok_per_s_mean": round(statistics.mean(tss), 1),
+        }
+        print(f"  speed: ttft={out['speed']['ttft_ms_mean']}ms  {out['speed']['tok_per_s_mean']} tok/s")
+
+        # quality tasks
+        for t in TASKS:
+            best, details, first_resp = -1, None, None
+            for i in range(runs):
+                resp, ttft, tps, _ = chat_stream(url, name, t["prompt"], max_tok, keep_alive=hold)
+                if first_resp is None:
+                    first_resp = resp
+                if "checks" in t:
+                    score, details = score_deterministic(t, resp)
+                else:
+                    score, details = (None, None) if no_judge else score_judged(cfg, t, resp)
+                if score is not None and score > best:
+                    best, details = score, details
+            td = {
+                "score": round(best) if best >= 0 else None,
+                "details": {k: v for k, v in (details or [])},
+            }
+            if "checks" not in t:
+                td["response"] = first_resp  # for --judge-only later
+            out["tasks"][t["id"]] = td
+            print(f"  {t['id']}: " + (f"{best:.0f}" if best >= 0 else "pending judge"))
+    finally:
+        if proc:
+            stop_server(proc)
+        unload_ollama(cfg)
+    return out
+
+
+# ---------- main ----------
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--config", default=str(HERE / "config.yaml"))
+    ap.add_argument("--models", nargs="*", help="subset of model names")
+    ap.add_argument("--llama", default=shutil.which("llama-server") or "llama-server")
+    ap.add_argument("--no-judge", action="store_true",
+                    help="generate judged-task responses but defer scoring")
+    ap.add_argument("--judge-only", action="store_true",
+                    help="score saved responses in --out using the judge, then re-report")
+    ap.add_argument("--out", default=str(HERE / "results.json"))
+    args = ap.parse_args()
+
+    cfg = yaml.safe_load(open(args.config, encoding="utf-8"))
+    if args.judge_only:
+        results = json.loads(Path(args.out).read_text(encoding="utf-8"))
+        for r in results:
+            for tid, td in r["tasks"].items():
+                if td.get("score") is None and td.get("response"):
+                    t = next(x for x in TASKS if x["id"] == tid)
+                    s, det = score_judged(cfg, t, td["response"])
+                    td["score"] = round(s)
+                    td["details"] = {k: v for k, v in det}
+                    print(f"  {r['name']}/{tid}: {s:.0f}")
+        Path(args.out).write_text(json.dumps(results, indent=2), encoding="utf-8")
+        print_report(results)
+        return
+
+    models = cfg["models"]
+    if args.models:
+        models = [m for m in models if m["name"] in args.models]
+    if not models:
+        raise SystemExit("no models matched; check --models names against config.yaml")
+    for m in models:
+        m["_idx"] = cfg["models"].index(m)
+        if m.get("base_url") and m.get("id"):
+            continue
+        if "gguf" not in m:
+            raise SystemExit(f"{m['name']}: no gguf path — run e2e.py first (it downloads and fills this in)")
+        m["gguf"] = str((HERE / m["gguf"]).resolve())
+        if not Path(m["gguf"]).exists():
+            raise SystemExit(f"missing gguf: {m['gguf']}")
+
+    results = [eval_model(m, cfg, args.llama, args.no_judge) for m in models]
+    Path(args.out).write_text(json.dumps(results, indent=2), encoding="utf-8")
+    print_report(results)
+
+
+def print_report(results):
+    print("\n" + "=" * 78)
+    print(f"{'model':<20}{'ttft ms':>9}{'tok/s':>8}" + "".join(f"{t['id'][:9]:>10}" for t in TASKS))
+    for r in results:
+        cells = []
+        for t in TASKS:
+            v = r["tasks"].get(t["id"], {}).get("score")
+            cells.append(f"{'-':>6}" if v is None else f"{v:>5}")
+        q = "  ".join(cells)
+        print(f"{r['name']:<20}{r['speed']['ttft_ms_mean']:>9}{r['speed']['tok_per_s_mean']:>8}{q}")
+    print(f"\nresults: {HERE / 'results.json'}")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,342 @@
+[
+  {
+    "name": "qwen3.8-27b",
+    "gguf": null,
+    "tasks": {
+      "json_extract": {
+        "score": 100,
+        "details": {
+          "json_parses": true,
+          "vendor": true,
+          "due_date": true,
+          "amount": true
+        }
+      },
+      "constraints": {
+        "score": 100,
+        "details": {
+          "sentence_count": true,
+          "no_utilize": true,
+          "no_exclaim": true,
+          "starts_solar": true,
+          "all_periods": true
+        }
+      },
+      "math_word": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "coding": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "reasoning": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "summarize": {
+        "score": 100,
+        "details": {
+          "accuracy": 2,
+          "coverage": 2,
+          "concision": 2
+        },
+        "response": "A city's switch to smart-dimming LED streetlights cut lighting electricity use by 34% but caused a 9% rise in nighttime traffic incidents on three corridors where dimming was set well below standard. After those corridors were brightened, incident rates returned to baseline within a quarter. The city now treats dimming level as a safety parameter rather than a cost-saving lever."
+      },
+      "rewrite_tone": {
+        "score": 100,
+        "details": {
+          "facts_preserved": 2,
+          "tone": 2,
+          "action_clarity": 2
+        },
+        "response": "Subject: Outstanding Delivery \u2013 Item #A-118\n\nHi [Name],\n\nI'm reaching out regarding item #A-118 ($2,140), which was due yesterday and has not yet been received.\n\nWe need this delivered by Thursday. If it cannot be received by then, we will have no choice but to cancel the entire contract.\n\nI also want to note that this is the second late delivery this quarter, so I'd appreciate your attention to this matter.\n\nPlease let me know the expected delivery date.\n\nBest regards,\n[Your name]"
+      }
+    },
+    "speed": {
+      "ttft_ms_mean": 2199,
+      "tok_per_s_mean": 103.1
+    }
+  },
+  {
+    "name": "ornith-1.5-35b-a3b",
+    "gguf": "models/ornith-1.5-35b-a3b/Ornith-1.5-35B-Q4_K_M.gguf",
+    "tasks": {
+      "json_extract": {
+        "score": 100,
+        "details": {
+          "json_parses": true,
+          "vendor": true,
+          "due_date": true,
+          "amount": true
+        }
+      },
+      "constraints": {
+        "score": 100,
+        "details": {
+          "sentence_count": true,
+          "no_utilize": true,
+          "no_exclaim": true,
+          "starts_solar": true,
+          "all_periods": true
+        }
+      },
+      "math_word": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "coding": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "reasoning": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "summarize": {
+        "score": 83,
+        "details": {
+          "accuracy": 1,
+          "coverage": 2,
+          "concision": 2
+        },
+        "response": "A city's switch to smart-dimming LEDs and a night-work curfew cut lighting electricity use by 34% but raised nighttime traffic incidents by 9%. The rise was concentrated on three streets dimmed 40% below standard, and brightening them returned incident rates to baseline within a quarter. As a result, the city now treats dimming level as a safety parameter rather than a cost-saving measure."
+      },
+      "rewrite_tone": {
+        "score": 100,
+        "details": {
+          "facts_preserved": 2,
+          "tone": 2,
+          "action_clarity": 2
+        },
+        "response": "Subject: Follow-Up on Outstanding Order for Item #A-118\n\nHi [Vendor Name],\n\nI'm writing to follow up on our order for item #A-118, valued at $2,140. The delivery was scheduled for yesterday, and we have not yet received it.\n\nCould you please provide an update on the status and an estimated delivery date? We are hoping to have the item by Thursday. Please note that if we are unable to receive it by then, we will need to review our options, which could include cancelling the contract.\n\nI also want to flag that this is the second late delivery we've experienced this quarter, and I'd appreciate your help in ensuring this is resolved.\n\nThanks for your attention to this. I look forward to your reply.\n\nBest regards,\n[Your Name]"
+      }
+    },
+    "speed": {
+      "ttft_ms_mean": 2180,
+      "tok_per_s_mean": 274.1
+    }
+  },
+  {
+    "name": "gemma-4-26b-a4b",
+    "gguf": "models/gemma-4-26b-a4b/gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf",
+    "tasks": {
+      "json_extract": {
+        "score": 100,
+        "details": {
+          "json_parses": true,
+          "vendor": true,
+          "due_date": true,
+          "amount": true
+        }
+      },
+      "constraints": {
+        "score": 100,
+        "details": {
+          "sentence_count": false,
+          "no_utilize": false,
+          "no_exclaim": false,
+          "starts_solar": false,
+          "all_periods": false
+        }
+      },
+      "math_word": {
+        "score": 100,
+        "details": {
+          "answer_present": false,
+          "answer_correct": false
+        }
+      },
+      "coding": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "reasoning": {
+        "score": 0,
+        "details": {
+          "answer_present": false,
+          "answer_correct": false
+        }
+      },
+      "summarize": {
+        "score": 100,
+        "details": {
+          "accuracy": 2,
+          "coverage": 2,
+          "concision": 2
+        },
+        "response": "While smart-dimming LEDs reduced a city's electricity use by 34%, excessive dimming on major roads initially caused a 9% spike in nighttime traffic incidents. After brightening these specific corridors, incident rates returned to baseline, leading the city to prioritize safety over cost when setting dimming levels."
+      },
+      "rewrite_tone": {
+        "score": 100,
+        "details": {
+          "facts_preserved": 2,
+          "tone": 2,
+          "action_clarity": 2
+        },
+        "response": "Since different business relationships require different levels of \"firmness,\" here are three ways to rewrite this. All of them retain every factual detail while removing the aggression.\n\n### Option 1: Firm and Direct (Best for a serious warning)\n**Subject:** Urgent: Delivery Status for Item #A-118\n\nDear [Vendor Name],\n\nI am writing to follow up on the delivery of Item #A-118 ($2,140), which was scheduled to arrive yesterday. \n\nAs this is the second delayed delivery we have experienced this quarter, we need to ensure this is resolved immediately. We require this item to be delivered no later than Thursday. Please be advised that if this deadline is not met, we will have to move forward with cancelling our contract.\n\nI look forward to your prompt update regarding the shipment status.\n\nBest regards,\n\n[Your Name]\n\n***\n\n### Option 2: Professional and Collaborative (Best if you want to maintain the relationship)\n**Subject:** Follow-up regarding Item #A-118\n\nHi [Vendor Name],\n\nWe noticed that the delivery for Item #A-118 ($2,140) has not yet arrived, despite the deadline being yesterday. \n\nBecause this is the second instance of a late delivery this quarter, we are becoming concerned about our project timelines. We need to receive this item by Thursday to avoid a formal review and potential cancellation of our contract. \n\nCould you please provide an updated delivery window as soon as possible?\n\nBest,\n\n[Your Name]\n\n***\n\n### Option 3: Short and Formal (Best for a strictly transactional relationship)\n**Subject:** Outstanding Delivery: Item #A-118\n\nTo the [Vendor Name] Team,\n\nOur records indicate that Item #A-118 ($2,140) was due for delivery yesterday and is currently outstanding. \n\nThis is the second late delivery we have recorded this quarter. Please ensure this item arrives by Thursday; otherwise, we will be forced to cancel the contract. \n\nPlease confirm receipt of this message and provide a status update.\n\nRegards,\n\n[Your Name]"
+      }
+    },
+    "speed": {
+      "ttft_ms_mean": 2304,
+      "tok_per_s_mean": 189.4
+    }
+  },
+  {
+    "name": "tiel-coder-35b-a3b",
+    "gguf": "models/tiel-coder-35b-a3b/Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+    "tasks": {
+      "json_extract": {
+        "score": 100,
+        "details": {
+          "json_parses": true,
+          "vendor": true,
+          "due_date": true,
+          "amount": true
+        }
+      },
+      "constraints": {
+        "score": 100,
+        "details": {
+          "sentence_count": true,
+          "no_utilize": true,
+          "no_exclaim": true,
+          "starts_solar": true,
+          "all_periods": true
+        }
+      },
+      "math_word": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "coding": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "reasoning": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "summarize": {
+        "score": 100,
+        "details": {
+          "accuracy": 2,
+          "coverage": 2,
+          "concision": 2
+        },
+        "response": "A city cut lighting electricity use 34% by switching 12% of streetlights to smart-dimming LEDs and adding a night-work curfew, but nighttime traffic incidents rose 9%. The increase was concentrated on three arterials dimmed 40% below standard, and brightening them returned incident rates to baseline within a quarter. The city now treats dimming level as a safety parameter rather than a cost lever."
+      },
+      "rewrite_tone": {
+        "score": 100,
+        "details": {
+          "facts_preserved": 2,
+          "tone": 2,
+          "action_clarity": 2
+        },
+        "response": "Subject: Update on Order for Item #A-118\n\nHi,\n\nI'm writing to follow up on our order for item #A-118, valued at $2,140. The delivery was scheduled for yesterday, and we have not yet received it.\n\nCould you please confirm the current status and expected delivery date? We would like to have this delivered by Thursday. Unfortunately, if we do not receive it by then, we will need to cancel the entire contract.\n\nFor context, this is the second late delivery we've experienced this quarter, and we would appreciate your help in resolving this promptly.\n\nThank you for your attention to this matter.\n\nBest regards,\n[Your name]"
+      }
+    },
+    "speed": {
+      "ttft_ms_mean": 2136,
+      "tok_per_s_mean": 238.8
+    }
+  },
+  {
+    "name": "inkling-2-mini",
+    "gguf": "C:\\Users\\folkol\\ClaudeProjects\\eval-local-models\\eval\\models\\inkling-2-mini\\Inkling-2-Mini-IQ4_NL.gguf",
+    "tasks": {
+      "json_extract": {
+        "score": 100,
+        "details": {
+          "json_parses": true,
+          "vendor": true,
+          "due_date": true,
+          "amount": true
+        }
+      },
+      "constraints": {
+        "score": 100,
+        "details": {
+          "sentence_count": true,
+          "no_utilize": true,
+          "no_exclaim": true,
+          "starts_solar": true,
+          "all_periods": true
+        }
+      },
+      "math_word": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "coding": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "reasoning": {
+        "score": 50,
+        "details": {
+          "answer_present": true,
+          "answer_correct": false
+        }
+      },
+      "summarize": {
+        "score": 100,
+        "details": {
+          "accuracy": 2,
+          "coverage": 2,
+          "concision": 2
+        },
+        "response": "The city cut lighting electricity by 34% after replacing 12% of streetlights with smart-dimming LEDs and imposing a night-work curfew, but nighttime traffic incidents rose 9%. The increase was concentrated on three arterials with dimming set 40% below standard; after brightening them, incidents returned to baseline within a quarter. The city now treats dimming level as a safety parameter rather than a cost lever."
+      },
+      "rewrite_tone": {
+        "score": 100,
+        "details": {
+          "facts_preserved": 2,
+          "tone": 2,
+          "action_clarity": 2
+        },
+        "response": "Subject: Outstanding delivery \u2014 Item #A-118\n\nHi,\n\nThe deadline for Item #A-118 ($2,140) was yesterday, and the delivery is still outstanding. We need it by Thursday. If it is not received by then, we will need to consider cancellation of the entire contract. This would be the second late delivery this quarter.\n\nPlease let us know the expected delivery date and any updates as soon as possible.\n\nBest regards,"
+      }
+    },
+    "speed": {
+      "ttft_ms_mean": 2370,
+      "tok_per_s_mean": 13.7
+    }
+  }
+]
