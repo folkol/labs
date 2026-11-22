@@ -14,6 +14,7 @@ import fnmatch
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -50,6 +51,10 @@ def step_llama():
     if exe:
         log(f"llama.cpp present: {exe}")
         return exe
+    found = shutil.which("llama-server")
+    if found:
+        log(f"llama-server on PATH: {found}")
+        return Path(found)
     log("fetching latest llama.cpp (Windows CUDA build, from nightly releases)")
     req = urllib.request.Request(
         "https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=15",
@@ -210,7 +215,7 @@ def resolve_gguf(m, cfg):
 
 def step_models(cfg):
     for m in cfg["models"]:
-        if m.get("ollama_name"):
+        if m.get("ollama_name") and m.get("runner") != "llama_server":
             log(f"{m['name']}: using Ollama's {m['ollama_name']} — no download")
             continue
         path, where = resolve_gguf(m, cfg)
@@ -247,6 +252,8 @@ def step_ollama(cfg):
     have = {t["id"].split(":")[0] for t in tags}
     for m in cfg["models"]:
         if m.get("runner") == "llama_server":
+            m.pop("base_url", None)
+            m.pop("id", None)
             log(f"{m['name']}: llama-server runner — skipping Ollama")
             continue
         if m.get("ollama_name"):
@@ -316,17 +323,17 @@ def main():
     cfg = yaml.safe_load(CFG.read_text(encoding="utf-8"))
     step_deps()
     step_models(cfg)
+    # The judge stays on Ollama. Every candidate is llama-server, so the
+    # binary is required either way.
+    exe = step_llama()
     ollama = bool((cfg.get("ollama") or {}).get("base_url"))
-    exe = None if ollama else step_llama()
     if ollama:
         step_ollama(cfg)
     else:
         cfg = yaml.safe_load(CFG.read_text(encoding="utf-8"))
 
     def py(*args):
-        cmd = [sys.executable, "run_eval.py", "--config", str(CFG), *args]
-        if exe:
-            cmd += ["--llama", str(exe)]
+        cmd = [sys.executable, "run_eval.py", "--config", str(CFG), "--llama", str(exe), *args]
         subprocess.run(cmd, cwd=HERE, check=True)
 
     log("phase 1: speed + deterministic tasks (all candidates)")
@@ -346,7 +353,7 @@ def main():
 
     log("phase 3: IFEval, GSM8K, HumanEval (20 samples each)")
     from external_evals import run_external
-    run_external()
+    run_external(["--llama", str(exe)])
 
     log("writing REPORT.md")
     subprocess.run([sys.executable, str(HERE / "report.py")], cwd=HERE, check=True)

@@ -3,26 +3,22 @@ ollama:
 models:
 - name: qwen3.8-27b
   ollama_name: qwen3.8
-  base_url: http://localhost:11434/v1
-  id: qwen3.8
+  runner: llama_server
 - name: ornith-1.5-35b-a3b
   repo: ornith-ai/Ornith-1.5-35B-A3B-GGUF
   include: '*Q4_K_M*'
   gguf: models/ornith-1.5-35b-a3b/Ornith-1.5-35B-Q4_K_M.gguf
-  base_url: http://localhost:11434/v1
-  id: ornith-1.5-35b-a3b:latest
+  runner: llama_server
 - name: gemma-4-26b-a4b
   repo: unsloth/gemma-4-26B-A4B-it-GGUF
   include: '*Q6_K*'
   gguf: models/gemma-4-26b-a4b/gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf
-  base_url: http://localhost:11434/v1
-  id: gemma-4-26b-a4b:latest
+  runner: llama_server
 - name: tiel-coder-35b-a3b
   repo: peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF-MTP
   include: '*Q4_K_XL*'
   gguf: models/tiel-coder-35b-a3b/Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf
-  base_url: http://localhost:11434/v1
-  id: tiel-coder-35b-a3b:latest
+  runner: llama_server
 - name: inkling-2-mini
   repo: ggml-org/Inkling-2-Mini-GGUF
   include: '*IQ4_NL*'

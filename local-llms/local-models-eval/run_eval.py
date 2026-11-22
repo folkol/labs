@@ -246,13 +246,27 @@ def score_judged(cfg, task, response):
 
 # ---------- per-model pipeline ----------
 
+def uses_ollama(m):
+    """Ollama only when the model is not explicitly on llama-server."""
+    if m.get("runner") == "llama_server":
+        return False
+    return bool(m.get("base_url") and m.get("id"))
+
+
+def gguf_path(m):
+    path = Path(m["gguf"])
+    if not path.is_absolute():
+        path = HERE / path
+    return str(path.resolve())
+
+
 def eval_model(m, cfg, llama, no_judge):
     max_tok = cfg["max_tokens"]
     runs = cfg["runs"]
     # Free the GPU before this model allocates. Ollama will not do it on its
     # own when the next runner is llama-server.
     unload_ollama(cfg)
-    ollama = bool(m.get("base_url") and m.get("id"))
+    ollama = uses_ollama(m)
     if ollama:
         url, name, proc = m["base_url"].rstrip("/"), m["id"], None
         print(f"\n=== {m['name']} ({name} @ {url}) ===")
@@ -400,11 +414,11 @@ def main():
         raise SystemExit("no models matched; check --models names against config.yaml")
     for m in models:
         m["_idx"] = cfg["models"].index(m)
-        if m.get("base_url") and m.get("id"):
+        if uses_ollama(m):
             continue
         if "gguf" not in m:
             raise SystemExit(f"{m['name']}: no gguf path — run e2e.py first (it downloads and fills this in)")
-        m["gguf"] = str((HERE / m["gguf"]).resolve())
+        m["gguf"] = gguf_path(m)
         if not Path(m["gguf"]).exists():
             raise SystemExit(f"missing gguf: {m['gguf']}")
 

@@ -89,3 +89,5 @@ uv run e2e.py
 ```
 
 Phase 1 is speed and deterministic tasks. Phase 2 is the qwen3.8 judge on the three rubric tasks. Phase 3 is IFEval, GSM8K, and HumanEval, 20 samples each, folded into the same `results.json`. `REPORT.md` is written after that. Re-runs skip finished downloads.
+
+Every candidate is served by llama-server, including qwen, whose GGUF is the large blob already in Ollama's store. The judge stays on Ollama. One run writes `results.json` and `REPORT.md`; nothing is pasted in by hand.
