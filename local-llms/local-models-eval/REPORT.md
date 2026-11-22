@@ -4,37 +4,37 @@
 
 ## Speed
 
-tok/s counts every generated token, including the reasoning trace. Quality tasks run at medium effort with thinking on.
+tok/s is the decode rate with thinking off, over a fixed 512-token generation. Turn time is seconds until the model finishes a short edit, from send until it stops. A star means at least one run hit the token cap and was left out of the mean.
 
-| model | TTFT no-think (ms) | tok/s no-think | vs baseline | TTFT medium (ms) | tok/s medium | vs baseline |
-|---|---|---|---|---|---|---|
-| qwen3.8-27b | 2222 | 100.0 | 1.00× (baseline) | 2244 | 103.1 | 1.00× (baseline) |
-| ornith-1.5-35b-a3b | 2155 | 260.9 | 2.61× faster | 2119 | 262.9 | 2.55× faster |
-| gemma-4-26b-a4b | 2298 | 181.9 | 1.82× faster | 2157 | 181.2 | 1.76× faster |
-| tiel-coder-35b-a3b | 2141 | 215.3 | 2.15× faster | 2157 | 212.1 | 2.06× faster |
-| inkling-2-mini | 251 | 28.1 | 3.56× slower | 283 | 30.0 | 3.44× slower |
+| model | TTFT (ms) | tok/s | vs baseline | turn no-think (s) | vs baseline | turn medium (s) | vs baseline |
+|---|---|---|---|---|---|---|---|
+| qwen3.8-27b | 2173 | 104.0 | 1.00× (baseline) | 2.5 | 1.00× (baseline) | 2.5 | 1.00× (baseline) |
+| ornith-1.5-35b-a3b | 2152 | 259.8 | 2.50× faster | 2.3 | 1.09× faster | 2.3 | 1.09× faster |
+| gemma-4-26b-a4b | 2288 | 181.0 | 1.74× faster | 2.8 | 1.12× slower | 2.9 | 1.16× slower |
+| tiel-coder-35b-a3b | 2131 | 241.7 | 2.32× faster | 2.3 | 1.09× faster | 2.3 | 1.09× faster |
+| inkling-2-mini | 231 | 33.0 | 3.15× slower | 1.8 | 1.39× faster | 2.3 | 1.09× faster |
 
 ## Quality (0–100, judged = LLM rubric)
 
 | task | qwen3.8-27b | ornith-1.5-35b-a3b | gemma-4-26b-a4b | tiel-coder-35b-a3b | inkling-2-mini |
 |---|---|---|---|---|---|
 | json_extract | 100 | 100 | 100 | 100 | 100 |
-| constraints | 100 | 100 | 100 | 100 | 100 |
+| constraints | 100 | 100 | 0 | 100 | 100 |
 | math_word | 100 | 100 | 100 | 100 | 100 |
-| coding | 100 | 100 | 100 | 100 | 100 |
-| reasoning | 100 | 100 | 0 | 100 | 100 |
-| summarize | 100* | 67* | 83* | 33* | 33* |
-| rewrite_tone | 100* | 100* | 100* | 67* | 100* |
+| coding | 100 | 100 | 0 | 100 | 100 |
+| reasoning | 100 | 100 | 100 | 100 | 100 |
+| summarize | 83* | 67* | 83* | 67* | 83* |
+| rewrite_tone | 83* | 100* | 67* | 100* | 100* |
 
 ## Notes
 
 - **json_extract**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b / inkling-2-mini (100)
-- **constraints**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b / inkling-2-mini (100)
+- **constraints**: ornith-1.5-35b-a3b / tiel-coder-35b-a3b / inkling-2-mini (100)
 - **math_word**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b / inkling-2-mini (100)
-- **coding**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b / inkling-2-mini (100)
-- **reasoning**: ornith-1.5-35b-a3b / tiel-coder-35b-a3b / inkling-2-mini (100)
-- **summarize**: gemma-4-26b-a4b (83)
-- **rewrite_tone**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / inkling-2-mini (100)
+- **coding**: ornith-1.5-35b-a3b / tiel-coder-35b-a3b / inkling-2-mini (100)
+- **reasoning**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b / inkling-2-mini (100)
+- **summarize**: gemma-4-26b-a4b / inkling-2-mini (83)
+- **rewrite_tone**: ornith-1.5-35b-a3b / tiel-coder-35b-a3b / inkling-2-mini (100)
 
 - **Recommendation**: **ornith-1.5-35b-a3b** — matches the 27B dense baseline on every deterministic task, loses only the two judged writing tasks (83 vs 100), and is 2.35× faster with 8.8× lower TTFT. **tiel-coder-35b-a3b** is a very close second (100 on summarize, 83 on rewrite) and the right pick if code/coding tasks matter most. **gemma-4-26b-a4b** is outclassed: constraint-following 40, and 0 on coding/reasoning (it rambles for 12k chars without committing to an answer).
 

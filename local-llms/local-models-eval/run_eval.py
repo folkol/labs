@@ -140,16 +140,18 @@ def chat_stream(url, model, prompt, max_tokens, keep_alive=None,
     n = 0
     finish = None
     parts, rparts = [], []
+    # Ollama's OpenAI endpoint treats reasoning_effort "low"/"medium"/"high"
+    # as thinking on. "none" is what disables it. `think` is ignored there.
+    effort = reasoning_effort if thinking else "none"
     body = {"model": model, "max_tokens": max_tokens,
             "temperature": 0.2, "stream": True, "thinking": thinking,
-            "reasoning_effort": reasoning_effort,
+            "reasoning_effort": effort,
             "messages": [{"role": "user", "content": prompt}]}
     # -1 keeps an Ollama model loaded for this model run. The runner unloads
-    # it explicitly afterwards. Only sent for Ollama. `think` is Ollama's
-    # own switch; llama-server uses `thinking` and `reasoning_effort`.
+    # it explicitly afterwards. Only sent for Ollama.
     if keep_alive is not None:
         body["keep_alive"] = keep_alive
-        body["think"] = reasoning_effort if thinking else False
+        body["think"] = effort if thinking else False
         if num_ctx:
             body["options"] = {"num_ctx": num_ctx}
     # Slow models still have to be allowed to finish a long trace.
@@ -307,7 +309,7 @@ def eval_model(m, cfg, llama, no_judge):
             "turn_no_thinking_low": turn_off,
             "turn_medium": turn_med,
         }
-        print(f"  tok/s (no thinking): ttft={out['speed']['ttft_ms_mean']}ms  "
+        print(f"  tok/s (thinking off): ttft={out['speed']['ttft_ms_mean']}ms  "
               f"{out['speed']['tok_per_s_mean']} tok/s")
 
         def fmt_turn(block):
@@ -316,7 +318,7 @@ def eval_model(m, cfg, llama, no_judge):
             note = "" if block["finished"] == block["runs"] else f" ({block['finished']}/{block['runs']} finished)"
             return f"{block['seconds_mean']}s, {block['tokens_mean']} tok{note}"
 
-        print(f"  turn no-think/low: {fmt_turn(turn_off)}")
+        print(f"  turn thinking off: {fmt_turn(turn_off)}")
         print(f"  turn medium:       {fmt_turn(turn_med)}")
 
         # quality tasks
