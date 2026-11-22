@@ -1,0 +1,852 @@
+[
+  {
+    "name": "qwen3.8-27b",
+    "gguf": "/media/folkol/St\u00e5rage/.ollama/models/blobs/sha256-f5f1dd8920d417aac2718b0bda3403da274301efdd6760b4f0f4b864ff2ad57d",
+    "tasks": {
+      "json_extract": {
+        "score": 100,
+        "details": {
+          "json_parses": true,
+          "vendor": true,
+          "due_date": true,
+          "amount": true
+        }
+      },
+      "constraints": {
+        "score": 100,
+        "details": {
+          "sentence_count": true,
+          "word_limit": true,
+          "numbers_split": true,
+          "no_and": true,
+          "no_solar": true,
+          "no_comma": true,
+          "diesel_first": true,
+          "all_periods": true
+        }
+      },
+      "math_word": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "coding": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "reasoning": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "summarize": {
+        "score": 83,
+        "details": {
+          "accuracy": 2,
+          "coverage": 2,
+          "selection": 1
+        },
+        "response": "A city's smart-dimming LED rollout cut lighting electricity use by 34% but caused a 9% spike in nighttime incidents on three over-dimmed arterials; after those corridors were brightened, incidents returned to baseline and the city reclassified dimming level as a safety parameter rather than a cost lever. A separate curfew proposal was rejected, and citywide nighttime incidents had already run 2% above the prior year before any dimming occurred."
+      },
+      "rewrite_tone": {
+        "score": 67,
+        "details": {
+          "facts_preserved": 2,
+          "no_decoy": 0,
+          "tone": 2
+        },
+        "response": "Dear [Vendor],\n\nI am writing regarding the outstanding delivery of ITEM #A-118 (value: $2,140), which has not yet been received. I note that this is the second late delivery this quarter under our agreement, which carries a delivery charge of $50.\n\nPlease confirm that ITEM #A-118 will be delivered by Thursday. Should the item not be received by that date, the entire contract will be cancelled in accordance with our agreement.\n\nI would appreciate a brief confirmation of the expected delivery date at your earliest convenience.\n\nRegards,\n[Name]"
+      },
+      "fix_it": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "triage": {
+        "score": 100,
+        "details": {
+          "accuracy": 2,
+          "selection": 2,
+          "no_hallucination": 2
+        },
+        "response": "A\n\nThe passage explicitly states that the incident increase was concentrated on \"three arterials where dimming had been set 40% lower than the city standard\" and that after those corridors were brightened, the rate returned to baseline, which matches Answer A exactly, while \"Main Street\" is never mentioned in the passage."
+      },
+      "ifeval": {
+        "score": 90,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "gsm8k": {
+        "score": 95,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "humaneval": {
+        "score": 100,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      }
+    },
+    "speed": {
+      "ttft_ms_mean": 102,
+      "tok_per_s_mean": 79.8,
+      "turn_no_thinking_low": {
+        "seconds_mean": 0.2,
+        "tokens_mean": 12,
+        "finished": 3,
+        "runs": 3
+      },
+      "turn_medium": {
+        "seconds_mean": 0.8,
+        "tokens_mean": 54,
+        "finished": 3,
+        "runs": 3
+      }
+    },
+    "vram": {
+      "tok/s": {
+        "spill": false,
+        "sm_pct": 97,
+        "bus_mbs": 84,
+        "active_samples": 4
+      },
+      "constraints": {
+        "spill": false,
+        "sm_pct": 97,
+        "bus_mbs": 110,
+        "active_samples": 14
+      },
+      "math_word": {
+        "spill": false,
+        "sm_pct": 97,
+        "bus_mbs": 110,
+        "active_samples": 6
+      },
+      "coding": {
+        "spill": false,
+        "sm_pct": 97,
+        "bus_mbs": 109,
+        "active_samples": 21
+      },
+      "reasoning": {
+        "spill": false,
+        "sm_pct": 97,
+        "bus_mbs": 110,
+        "active_samples": 12
+      },
+      "summarize": {
+        "spill": false,
+        "sm_pct": 97,
+        "bus_mbs": 89,
+        "active_samples": 3
+      },
+      "rewrite_tone": {
+        "spill": false,
+        "sm_pct": 97,
+        "bus_mbs": 111,
+        "active_samples": 12
+      },
+      "fix_it": {
+        "spill": false,
+        "sm_pct": 97,
+        "bus_mbs": 110,
+        "active_samples": 10
+      },
+      "ifeval": {
+        "spill": false,
+        "sm_pct": 97,
+        "bus_mbs": 109,
+        "active_samples": 63
+      },
+      "gsm8k": {
+        "spill": false,
+        "sm_pct": 97,
+        "bus_mbs": 109,
+        "active_samples": 95
+      },
+      "humaneval": {
+        "spill": false,
+        "sm_pct": 97,
+        "bus_mbs": 108,
+        "active_samples": 39
+      }
+    }
+  },
+  {
+    "name": "ornith-1.5-35b-a3b",
+    "gguf": "/media/folkol/30168F8C168F51B0/Users/folkol/code/labs/local-llms/local-models-eval/models/ornith-1.5-35b-a3b/Ornith-1.5-35B-Q4_K_M.gguf",
+    "tasks": {
+      "json_extract": {
+        "score": 100,
+        "details": {
+          "json_parses": true,
+          "vendor": true,
+          "due_date": true,
+          "amount": true
+        }
+      },
+      "constraints": {
+        "score": 100,
+        "details": {
+          "sentence_count": true,
+          "word_limit": true,
+          "numbers_split": true,
+          "no_and": true,
+          "no_solar": true,
+          "no_comma": true,
+          "diesel_first": true,
+          "all_periods": true
+        }
+      },
+      "math_word": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "coding": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "reasoning": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "summarize": {
+        "score": 67,
+        "details": {
+          "accuracy": 2,
+          "coverage": 2,
+          "selection": 0
+        },
+        "response": "After replacing 12% of its streetlights with smart-dimming LEDs, a city cut lighting electricity use 34% but saw a 9% rise in nighttime traffic incidents, which was traced to three arterials dimmed 40% below standard and resolved once those corridors were brightened. Consequently, the city now treats dimming level as a safety parameter rather than a cost lever, and a separate proposal for a curfew on non-emergency night work was discussed but not adopted."
+      },
+      "rewrite_tone": {
+        "score": 100,
+        "details": {
+          "facts_preserved": 2,
+          "no_decoy": 2,
+          "tone": 2
+        },
+        "response": "Subject: Late delivery \u2014 ITEM #A-118\n\nWe are writing regarding ITEM #A-118, which has not yet been delivered. As of now, the $2,140 for this order remains outstanding.\n\nThis is the second late delivery this quarter. We would appreciate delivery by Thursday. Please note that if the item is not received by that date, we will need to cancel the entire contract.\n\nWe look forward to resolving this promptly."
+      },
+      "fix_it": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "triage": {
+        "score": 100,
+        "details": {
+          "accuracy": 2,
+          "selection": 2,
+          "no_hallucination": 2
+        },
+        "response": "A\n\nThe passage explicitly states that the incident increase was concentrated on three arterials where dimming was set 40% below standard, and that after those corridors were brightened, incident rates returned to baseline\u2014directly supporting Answer A, while Main Street is never mentioned."
+      },
+      "ifeval": {
+        "score": 80,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "gsm8k": {
+        "score": 90,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "humaneval": {
+        "score": 100,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      }
+    },
+    "speed": {
+      "ttft_ms_mean": 62,
+      "tok_per_s_mean": 288.6,
+      "turn_no_thinking_low": {
+        "seconds_mean": 0.1,
+        "tokens_mean": 15,
+        "finished": 3,
+        "runs": 3
+      },
+      "turn_medium": {
+        "seconds_mean": 0.2,
+        "tokens_mean": 43,
+        "finished": 3,
+        "runs": 3
+      }
+    },
+    "vram": {
+      "constraints": {
+        "spill": false,
+        "sm_pct": 91,
+        "bus_mbs": 374,
+        "active_samples": 3
+      },
+      "coding": {
+        "spill": false,
+        "sm_pct": 88,
+        "bus_mbs": 332,
+        "active_samples": 24
+      },
+      "ifeval": {
+        "spill": false,
+        "sm_pct": 89,
+        "bus_mbs": 323,
+        "active_samples": 20
+      },
+      "gsm8k": {
+        "spill": false,
+        "sm_pct": 88,
+        "bus_mbs": 327,
+        "active_samples": 7
+      },
+      "humaneval": {
+        "spill": false,
+        "sm_pct": 88,
+        "bus_mbs": 322,
+        "active_samples": 7
+      }
+    }
+  },
+  {
+    "name": "gemma-4-26b-a4b",
+    "gguf": "/media/folkol/30168F8C168F51B0/Users/folkol/code/labs/local-llms/local-models-eval/models/gemma-4-26b-a4b/gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf",
+    "tasks": {
+      "json_extract": {
+        "score": 100,
+        "details": {
+          "json_parses": true,
+          "vendor": true,
+          "due_date": true,
+          "amount": true
+        }
+      },
+      "constraints": {
+        "score": 0,
+        "details": {
+          "sentence_count": false,
+          "word_limit": false,
+          "numbers_split": false,
+          "no_and": false,
+          "no_solar": false,
+          "no_comma": false,
+          "diesel_first": false,
+          "all_periods": false
+        }
+      },
+      "math_word": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "coding": {
+        "score": 100,
+        "details": {
+          "code_present": false,
+          "tests_pass": false
+        }
+      },
+      "reasoning": {
+        "score": 100,
+        "details": {
+          "answer_present": false,
+          "answer_correct": false
+        }
+      },
+      "summarize": {
+        "score": 83,
+        "details": {
+          "accuracy": 2,
+          "coverage": 1,
+          "selection": 2
+        },
+        "response": "A city's transition to smart-dimming LEDs reduced electricity use but initially caused a spike in traffic incidents due to excessive dimming on three major roads. After adjusting these brightness levels to restore safety, the city began treating dimming as a safety parameter rather than a cost-saving tool."
+      },
+      "rewrite_tone": {
+        "score": 67,
+        "details": {
+          "facts_preserved": 2,
+          "no_decoy": 0,
+          "tone": 2
+        },
+        "response": "Item #A-118, valued at $2,140, has not yet been delivered. This is the second late delivery we have experienced this quarter. Please ensure the item arrives by Thursday; failure to meet this deadline will result in the cancellation of our contract. This is in reference to the $50 service fee."
+      },
+      "fix_it": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "triage": {
+        "score": 100,
+        "details": {
+          "accuracy": 2,
+          "selection": 2,
+          "no_hallucination": 2
+        },
+        "response": "A. The passage specifies that the incident rate returned to baseline after brightening the three arterials where dimming was 40% lower, while Main Street is never mentioned."
+      },
+      "ifeval": {
+        "score": 90,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "gsm8k": {
+        "score": 90,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "humaneval": {
+        "score": 100,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      }
+    },
+    "speed": {
+      "ttft_ms_mean": 104,
+      "tok_per_s_mean": 204.8,
+      "turn_no_thinking_low": {
+        "seconds_mean": 0.1,
+        "tokens_mean": 18,
+        "finished": 3,
+        "runs": 3
+      },
+      "turn_medium": {
+        "seconds_mean": 0.8,
+        "tokens_mean": 147,
+        "finished": 3,
+        "runs": 3
+      }
+    },
+    "vram": {
+      "constraints": {
+        "spill": false,
+        "sm_pct": 91,
+        "bus_mbs": 236,
+        "active_samples": 37
+      },
+      "math_word": {
+        "spill": false,
+        "sm_pct": 91,
+        "bus_mbs": 232,
+        "active_samples": 3
+      },
+      "coding": {
+        "spill": false,
+        "sm_pct": 91,
+        "bus_mbs": 237,
+        "active_samples": 37
+      },
+      "reasoning": {
+        "spill": false,
+        "sm_pct": 91,
+        "bus_mbs": 236,
+        "active_samples": 37
+      },
+      "summarize": {
+        "spill": false,
+        "sm_pct": 91,
+        "bus_mbs": 233,
+        "active_samples": 12
+      },
+      "rewrite_tone": {
+        "spill": false,
+        "sm_pct": 91,
+        "bus_mbs": 232,
+        "active_samples": 6
+      },
+      "fix_it": {
+        "spill": false,
+        "sm_pct": 91,
+        "bus_mbs": 234,
+        "active_samples": 17
+      },
+      "ifeval": {
+        "spill": false,
+        "sm_pct": 92,
+        "bus_mbs": 228,
+        "active_samples": 27
+      },
+      "gsm8k": {
+        "spill": false,
+        "sm_pct": 92,
+        "bus_mbs": 233,
+        "active_samples": 29
+      },
+      "humaneval": {
+        "spill": false,
+        "sm_pct": 91,
+        "bus_mbs": 228,
+        "active_samples": 13
+      }
+    }
+  },
+  {
+    "name": "tiel-coder-35b-a3b",
+    "gguf": "/media/folkol/30168F8C168F51B0/Users/folkol/code/labs/local-llms/local-models-eval/models/tiel-coder-35b-a3b/Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+    "tasks": {
+      "json_extract": {
+        "score": 100,
+        "details": {
+          "json_parses": true,
+          "vendor": true,
+          "due_date": true,
+          "amount": true
+        }
+      },
+      "constraints": {
+        "score": 100,
+        "details": {
+          "sentence_count": true,
+          "word_limit": true,
+          "numbers_split": true,
+          "no_and": true,
+          "no_solar": true,
+          "no_comma": true,
+          "diesel_first": true,
+          "all_periods": true
+        }
+      },
+      "math_word": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "coding": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "reasoning": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "summarize": {
+        "score": 83,
+        "details": {
+          "accuracy": 2,
+          "coverage": 2,
+          "selection": 1
+        },
+        "response": "After replacing 12% of its streetlights with smart-dimming LEDs\u2014cutting lighting electricity use 34% but raising nighttime traffic incidents 9%\u2014the city found the spike concentrated on three arterials dimmed 40% below standard, and brightening them returned incidents to baseline. The city now treats dimming level as a safety parameter rather than a cost lever, and a separate curfew on non-emergency night work was discussed but not adopted."
+      },
+      "rewrite_tone": {
+        "score": 100,
+        "details": {
+          "facts_preserved": 2,
+          "no_decoy": 2,
+          "tone": 2
+        },
+        "response": "Subject: Outstanding delivery of ITEM #A-118\n\nWe have not yet received ITEM #A-118, which remains undelivered. This is the second late delivery this quarter. The outstanding balance for this order is $2,140.\n\nPlease deliver ITEM #A-118 by Thursday. If we do not receive it by then, we will cancel the entire contract."
+      },
+      "fix_it": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "triage": {
+        "score": 100,
+        "details": {
+          "accuracy": 2,
+          "selection": 2,
+          "no_hallucination": 2
+        },
+        "response": "A\n\nThe passage explicitly states the incident increase was concentrated on three arterials where dimming was set 40% below city standard, and that after those corridors were brightened, incident rates returned to baseline; Main Street is never mentioned."
+      },
+      "ifeval": {
+        "score": 85,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "gsm8k": {
+        "score": 95,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "humaneval": {
+        "score": 95,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      }
+    },
+    "speed": {
+      "ttft_ms_mean": 49,
+      "tok_per_s_mean": 263.4,
+      "turn_no_thinking_low": {
+        "seconds_mean": 0.1,
+        "tokens_mean": 15,
+        "finished": 3,
+        "runs": 3
+      },
+      "turn_medium": {
+        "seconds_mean": 0.2,
+        "tokens_mean": 37,
+        "finished": 3,
+        "runs": 3
+      }
+    },
+    "vram": {
+      "coding": {
+        "spill": false,
+        "sm_pct": 92,
+        "bus_mbs": 302,
+        "active_samples": 12
+      },
+      "ifeval": {
+        "spill": false,
+        "sm_pct": 90,
+        "bus_mbs": 271,
+        "active_samples": 17
+      },
+      "gsm8k": {
+        "spill": false,
+        "sm_pct": 90,
+        "bus_mbs": 299,
+        "active_samples": 6
+      },
+      "humaneval": {
+        "spill": false,
+        "sm_pct": 89,
+        "bus_mbs": 270,
+        "active_samples": 9
+      }
+    }
+  },
+  {
+    "name": "inkling-2-mini",
+    "gguf": "/media/folkol/30168F8C168F51B0/Users/folkol/code/labs/local-llms/local-models-eval/models/inkling-2-mini/Inkling-2-Mini-IQ4_NL.gguf",
+    "tasks": {
+      "json_extract": {
+        "score": 100,
+        "details": {
+          "json_parses": true,
+          "vendor": true,
+          "due_date": true,
+          "amount": true
+        }
+      },
+      "constraints": {
+        "score": 100,
+        "details": {
+          "sentence_count": true,
+          "word_limit": true,
+          "numbers_split": true,
+          "no_and": true,
+          "no_solar": true,
+          "no_comma": true,
+          "diesel_first": true,
+          "all_periods": true
+        }
+      },
+      "math_word": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "coding": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "reasoning": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "summarize": {
+        "score": 83,
+        "details": {
+          "accuracy": 2,
+          "coverage": 2,
+          "selection": 1
+        },
+        "response": "After 12% of streetlights were replaced with smart-dimming LEDs, lighting electricity fell 34% while reported nighttime incidents rose 9%, but the increase was concentrated on three arterials dimmed 40% below standard; brightening those corridors restored baseline within a quarter, so the city now treats dimming as a safety parameter rather than a cost lever. A separate proposal to curfew non-emergency night work was not adopted, even though citywide nighttime incidents were already 2% above the prior year before dimming."
+      },
+      "rewrite_tone": {
+        "score": 100,
+        "details": {
+          "facts_preserved": 2,
+          "no_decoy": 2,
+          "tone": 2
+        },
+        "response": "Subject: ITEM #A-118 \u2014 delivery status\n\nHello,\n\nITEM #A-118 ($2,140) remains undelivered. This is the second late delivery this quarter.\n\nPlease deliver ITEM #A-118 by Thursday. If delivery is not made by Thursday, the entire contract will be cancelled.\n\nPlease confirm the delivery date and provide an update on the item\u2019s status.\n\nRegards,\n[Your name]"
+      },
+      "fix_it": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "triage": {
+        "score": 100,
+        "details": {
+          "accuracy": 2,
+          "selection": 2,
+          "no_hallucination": 2
+        },
+        "response": "A \u2014 The passage says the incident increase was concentrated on three arterials with dimming 40% below standard, and brightening them brought incident rates back to baseline."
+      },
+      "ifeval": {
+        "score": 70,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "gsm8k": {
+        "score": 90,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "humaneval": {
+        "score": 100,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      }
+    },
+    "speed": {
+      "ttft_ms_mean": 93,
+      "tok_per_s_mean": 95.1,
+      "turn_no_thinking_low": {
+        "seconds_mean": 0.6,
+        "tokens_mean": 49,
+        "finished": 3,
+        "runs": 3
+      },
+      "turn_medium": {
+        "seconds_mean": 1.1,
+        "tokens_mean": 89,
+        "finished": 3,
+        "runs": 3
+      }
+    },
+    "vram": {
+      "json_extract": {
+        "spill": false,
+        "sm_pct": 96,
+        "bus_mbs": 92,
+        "active_samples": 5
+      },
+      "constraints": {
+        "spill": false,
+        "sm_pct": 96,
+        "bus_mbs": 92,
+        "active_samples": 9
+      },
+      "math_word": {
+        "spill": false,
+        "sm_pct": 96,
+        "bus_mbs": 92,
+        "active_samples": 7
+      },
+      "coding": {
+        "spill": false,
+        "sm_pct": 96,
+        "bus_mbs": 92,
+        "active_samples": 22
+      },
+      "reasoning": {
+        "spill": false,
+        "sm_pct": 97,
+        "bus_mbs": 91,
+        "active_samples": 6
+      },
+      "rewrite_tone": {
+        "spill": false,
+        "sm_pct": 97,
+        "bus_mbs": 92,
+        "active_samples": 8
+      },
+      "fix_it": {
+        "spill": false,
+        "sm_pct": 96,
+        "bus_mbs": 93,
+        "active_samples": 23
+      },
+      "ifeval": {
+        "spill": false,
+        "sm_pct": 96,
+        "bus_mbs": 90,
+        "active_samples": 154
+      },
+      "gsm8k": {
+        "spill": false,
+        "sm_pct": 96,
+        "bus_mbs": 92,
+        "active_samples": 84
+      },
+      "humaneval": {
+        "spill": false,
+        "sm_pct": 96,
+        "bus_mbs": 90,
+        "active_samples": 93
+      }
+    }
+  }
+]

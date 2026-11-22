@@ -1,39 +1,32 @@
-# Linux run. e2e-linux.py fills absolute GGUF paths and the judge, then
-# writes results-linux.json. It does not modify config.yaml.
-#
-# inkling-2-mini is the official thinkingmachines checkpoint, served by
-# SGLang. The other models stay on llama-server and these GGUF files.
-# The qwen file lives on the Windows E: drive; mount that disk so Linux
-# can see it (often /mnt/e/.ollama/...).
-ollama:
-  base_url: http://localhost:11434/v1
 models:
 - name: qwen3.8-27b
   ollama_name: qwen3.8
   runner: llama_server
-  gguf: E:/.ollama/models/blobs/sha256-f5f1dd8920d417aac2718b0bda3403da274301efdd6760b4f0f4b864ff2ad57d
+  gguf: "/media/folkol/St\xE5rage/.ollama/models/blobs/sha256-f5f1dd8920d417aac2718b0bda3403da274301efdd6760b4f0f4b864ff2ad57d"
 - name: ornith-1.5-35b-a3b
   repo: ornith-ai/Ornith-1.5-35B-A3B-GGUF
   include: '*Q4_K_M*'
-  gguf: models/ornith-1.5-35b-a3b/Ornith-1.5-35B-Q4_K_M.gguf
+  gguf: /media/folkol/30168F8C168F51B0/Users/folkol/code/labs/local-llms/local-models-eval/models/ornith-1.5-35b-a3b/Ornith-1.5-35B-Q4_K_M.gguf
   runner: llama_server
 - name: gemma-4-26b-a4b
   repo: unsloth/gemma-4-26B-A4B-it-GGUF
   include: '*Q6_K*'
-  gguf: models/gemma-4-26b-a4b/gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf
+  gguf: /media/folkol/30168F8C168F51B0/Users/folkol/code/labs/local-llms/local-models-eval/models/gemma-4-26b-a4b/gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf
   runner: llama_server
 - name: tiel-coder-35b-a3b
   repo: peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF-MTP
   include: '*Q4_K_XL*'
-  gguf: models/tiel-coder-35b-a3b/Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf
+  gguf: /media/folkol/30168F8C168F51B0/Users/folkol/code/labs/local-llms/local-models-eval/models/tiel-coder-35b-a3b/Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf
   runner: llama_server
 - name: inkling-2-mini
-  runner: sglang
-  repo: thinkingmachines/Inkling-2-Mini
-  id: inkling
+  repo: ggml-org/Inkling-2-Mini-GGUF
+  include: '*IQ4_NL*'
+  runner: llama_server
+  gguf: /media/folkol/30168F8C168F51B0/Users/folkol/code/labs/local-llms/local-models-eval/models/inkling-2-mini/Inkling-2-Mini-IQ4_NL.gguf
 judge:
-  base_url: http://localhost:11434/v1
-  model: qwen3.8:latest
+  base_url: http://127.0.0.1:8099/v1
+  gguf: "/media/folkol/St\xE5rage/.ollama/models/blobs/sha256-f5f1dd8920d417aac2718b0bda3403da274301efdd6760b4f0f4b864ff2ad57d"
+  model: qwen3.8-27b
 server:
   ctx: 16384
   threads: 12

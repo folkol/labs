@@ -2,21 +2,14 @@
 # requires-python = ">=3.10"
 # dependencies = ["huggingface_hub", "requests", "pyyaml"]
 # ///
-"""Linux run of the same eval, with Inkling on the official checkpoint.
-
-Boot the Linux install on this machine, then from this directory:
+"""Linux variant of e2e.py. Same models, same phases, separate results.
 
     uv run e2e-linux.py
 
-Inkling is thinkingmachines/Inkling-2-Mini (NVFP4/MXFP8) served by SGLang.
-The other models stay on llama-server and the GGUF files in config-linux.yaml.
-Writes results-linux.json and REPORT-linux.md.
-Leaves config.yaml, results.json, and REPORT.md alone.
-
-Needs nvidia-smi, and either Docker with the NVIDIA container toolkit or
-SGLANG_PYTHON pointing at an environment that can import sglang. The first
-run pulls lmsysorg/sglang:inkling-2-mini and the 20 GB checkpoint.
-The qwen GGUF is the blob on the Windows E: drive; mount that disk first.
+Reads config.yaml but works on a copy (config-linux.yaml, regenerated every
+run), so config.yaml keeps the Windows paths. Writes results-linux.json and
+REPORT-linux.md; results.json and REPORT.md are untouched. Everything except
+fetching the Linux llama.cpp build is reused from e2e.py.
 """
 import json
 import os
@@ -29,32 +22,17 @@ import time
 import urllib.request
 from pathlib import Path
 
-try:
-    import yaml
-except ImportError:
-    raise SystemExit("missing 'yaml' — run with: uv run e2e-linux.py") from None
+import yaml
 
-HERE = Path(__file__).resolve().parent
+import e2e
+
+HERE = e2e.HERE
+SRC_CFG = HERE / "config.yaml"
 CFG = HERE / "config-linux.yaml"
 RESULTS = HERE / "results-linux.json"
 REPORT = HERE / "REPORT-linux.md"
 BIN = HERE / ".bin" / "linux"
-LOGS = HERE / "logs"
-IMAGE = "lmsysorg/sglang:inkling-2-mini"
-
-
-def log(msg):
-    print(f"\n[e2e-linux] {msg}", flush=True)
-
-
-def require_linux():
-    if sys.platform == "linux":
-        return
-    raise SystemExit(
-        "This is the Linux run. Boot the Linux install on this machine and run:\n"
-        "  uv run e2e-linux.py\n"
-        "It writes results-linux.json and REPORT-linux.md."
-    )
+log = e2e.log
 
 
 def step_llama():
@@ -115,159 +93,112 @@ def step_llama():
     return exe
 
 
-def translate_windows(path_str):
-    """A Windows path as seen from a dual-boot Linux mount, if the file is there."""
-    match = re.match(r"^([A-Za-z]):[\\/](.*)$", path_str)
-    if not match:
-        return None
-    drive, rest = match.group(1).lower(), match.group(2).replace("\\", "/").lstrip("/")
-    roots = [Path(f"/mnt/{drive}"), Path(f"/mnt/{drive.upper()}")]
-    for base in (Path("/mnt"), Path("/media"), Path("/run/media")):
-        if not base.is_dir():
-            continue
-        for child in base.iterdir():
-            roots.append(child)
-            if child.is_dir():
-                for sub in child.iterdir():
-                    if sub.is_dir():
-                        roots.append(sub)
-    name = Path(rest).name
-    seen = set()
-    for root in roots:
-        key = str(root)
-        if key in seen or not root.is_dir():
-            continue
-        seen.add(key)
-        direct = root / rest
-        if direct.is_file():
-            return direct.resolve()
-        blob = root / ".ollama" / "models" / "blobs" / name
-        if blob.is_file():
-            return blob.resolve()
-    return None
+def step_cuda_libs():
+    """The llama.cpp CUDA build needs CUDA 13 runtime libs; without them it silently runs on CPU."""
+    target = HERE / ".bin" / "cuda13"
+    lib = next(target.rglob("libcudart.so.13"), None) if target.exists() else None
+    if not lib and subprocess.run("ldconfig -p | grep -q libcudart.so.13", shell=True).returncode != 0:
+        log("installing CUDA 13 runtime + cuBLAS (pip wheels) into .bin/cuda13")
+        subprocess.run(["uv", "pip", "install", "--target", str(target),
+                        "nvidia-cuda-runtime", "nvidia-cublas"], check=True)
+        lib = next(target.rglob("libcudart.so.13"), None)
+    if lib:
+        os.environ["LD_LIBRARY_PATH"] = os.pathsep.join(
+            [str(lib.parent), os.environ.get("LD_LIBRARY_PATH", "")]).rstrip(os.pathsep)
+        log(f"CUDA libs: {lib.parent}")
 
 
-def existing_file(path_str):
-    raw = Path(path_str)
-    if raw.is_file():
-        return raw.resolve()
-    if not raw.is_absolute():
-        local = HERE / raw
-        if local.is_file():
-            return local.resolve()
-    return translate_windows(path_str)
+def mount_windows_disks():
+    """Mount unmounted NTFS partitions read-only (no root needed via udisks)."""
+    out = subprocess.run(["lsblk", "-J", "-o", "NAME,FSTYPE,MOUNTPOINT"],
+                         capture_output=True, text=True).stdout
+    def walk(nodes):
+        for n in nodes:
+            yield n
+            yield from walk(n.get("children") or [])
+    for n in walk(json.loads(out or "{}").get("blockdevices", [])):
+        if n.get("fstype") == "ntfs" and not n.get("mountpoint"):
+            subprocess.run(["udisksctl", "mount", "-b", f"/dev/{n['name']}", "-o", "ro"],
+                           capture_output=True)
 
 
-def resolve_models(cfg):
-    import e2e
-    for m in cfg["models"]:
-        if m.get("runner") == "sglang":
-            log(f"{m['name']}: official checkpoint {m['repo']} via SGLang")
-            continue
-        found = existing_file(m["gguf"]) if m.get("gguf") else None
-        if found:
-            m["gguf"] = str(found)
-            log(f"{m['name']}: {found.name} ({found.stat().st_size/1e9:.1f} GB)")
-            continue
-        path, where = e2e.resolve_gguf(m, cfg)
-        if not path:
-            hint = ""
-            if m.get("gguf") and re.match(r"^[A-Za-z]:", m["gguf"]):
-                hint = f"\nMount the Windows drive that holds {m['gguf']} (often /mnt/e/...)."
-            raise SystemExit(f"no gguf for {m['name']} visible from Linux.{hint}")
-        m["gguf"] = str(Path(path).resolve())
-        log(f"{m['name']}: {Path(path).name} from {where}")
+def windows_weight(m):
+    """A GGUF already on a Windows disk: its Ollama store or HF hub cache. Read-only use."""
+    user = Path("/media") / os.environ.get("USER", "")
+    for disk in user.glob("*"):
+        names = {m["name"], m.get("ollama_name") or m["name"]}
+        for mf in (disk / ".ollama/models/manifests").rglob("*") if (disk / ".ollama/models/manifests").is_dir() else []:
+            if mf.is_file() and any(f"/{n}/" in mf.as_posix() for n in names):
+                for layer in json.loads(mf.read_text()).get("layers", []):
+                    if layer.get("mediaType", "").endswith("image.model"):
+                        blob = disk / ".ollama/models/blobs" / layer["digest"].replace(":", "-")
+                        if blob.is_file():
+                            return blob, f"Windows Ollama store ({disk.name})"
+        rel = m.get("gguf") or ""
+        if rel and not re.match(r"^[A-Za-z]:|/", rel):  # project-relative, e.g. models/x/y.gguf
+            for proj in disk.glob("Users/*/code/labs/local-llms/local-models-eval"):
+                if (proj / rel).is_file():
+                    return proj / rel, f"Windows checkout ({disk.name})"
+        if m.get("repo"):
+            for hub in disk.glob("Users/*/.cache/huggingface/hub"):
+                snaps = hub / ("models--" + m["repo"].replace("/", "--")) / "snapshots"
+                hits = [p for p in snaps.glob("*/" + (m.get("include") or "*.gguf"))
+                        if p.is_file() and "mmproj" not in p.name] if snaps.is_dir() else []
+                if hits:
+                    return max(hits, key=lambda p: p.stat().st_size), f"Windows HF cache ({disk.name})"
+    return None, ""
 
 
-def ollama_tags():
-    try:
-        with urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=3) as r:
-            return json.load(r).get("models") or []
-    except Exception:
-        return None
+_resolve_gguf = e2e.resolve_gguf
 
 
-def configure_judge(cfg):
-    """Prefer the same Ollama qwen3.8 judge as the Windows run."""
-    tags = ollama_tags()
-    if tags is not None:
-        cfg["ollama"] = {"base_url": "http://127.0.0.1:11434/v1"}
-    else:
-        cfg.pop("ollama", None)
-    names = [t.get("name") or "" for t in (tags or [])]
-    if any(n == "qwen3.8" or n.startswith("qwen3.8:") for n in names):
-        cfg["judge"] = {"base_url": "http://127.0.0.1:11434/v1", "model": "qwen3.8:latest"}
-        log("judge: Ollama qwen3.8:latest")
-        return "Ollama"
-    qwen = next(m for m in cfg["models"] if m["name"] == "qwen3.8-27b")
-    cfg["judge"] = {
-        "base_url": "http://127.0.0.1:8099/v1",
-        "gguf": qwen["gguf"],
-        "model": "qwen3.8-27b",
-    }
-    log("judge: llama-server on the qwen GGUF (Ollama has no qwen3.8)")
-    return "llama-server"
-
-
-def prefetch_checkpoint(repo):
-    from huggingface_hub import snapshot_download
-    log(f"resolving {repo} in the Hugging Face cache")
-    snapshot_download(repo_id=repo)
-
-
-def preflight_sglang():
-    if os.environ.get("SGLANG_PYTHON"):
-        log(f"SGLang python: {os.environ['SGLANG_PYTHON']}")
-        return
-    if shutil.which("docker") is None:
-        raise SystemExit(
-            "Docker is not on PATH. Install Docker and the NVIDIA container toolkit,\n"
-            f"or set SGLANG_PYTHON to a python that can import sglang.\n"
-            f"The verified image is {IMAGE}."
-        )
-    info = subprocess.run(["docker", "info"], capture_output=True, text=True)
-    if info.returncode != 0:
-        raise SystemExit("docker is installed but the daemon is not usable:\n" + (info.stderr or info.stdout))
-    have = subprocess.run(["docker", "image", "inspect", IMAGE],
-                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if have.returncode != 0:
-        log(f"pulling {IMAGE}")
-        subprocess.run(["docker", "pull", IMAGE], check=True)
-    else:
-        log(f"image present: {IMAGE}")
+def resolve_gguf(m, cfg):
+    found = windows_weight(m)
+    return found if found[0] else _resolve_gguf(m, cfg)
 
 
 def main():
     t0 = time.time()
-    require_linux()
-    if shutil.which("nvidia-smi") is None:
-        raise SystemExit("nvidia-smi is not on PATH. The 5090 driver is not available in this boot.")
-    cfg = yaml.safe_load(CFG.read_text(encoding="utf-8"))
-    resolve_models(cfg)
-    judge_how = configure_judge(cfg)
+    if sys.platform != "linux":
+        raise SystemExit("This is the Linux variant; on Windows use: uv run e2e.py")
+    # e2e's steps read and rewrite e2e.CFG; point them at the Linux copy.
+    cfg = yaml.safe_load(SRC_CFG.read_text(encoding="utf-8"))
     CFG.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
+    e2e.CFG = CFG
+
+    e2e.step_deps()
+    mount_windows_disks()
+    e2e.resolve_gguf = resolve_gguf
+    e2e.step_models(cfg)
     exe = step_llama()
-    inkling = next(m for m in cfg["models"] if m.get("runner") == "sglang")
-    prefetch_checkpoint(inkling["repo"])
-    preflight_sglang()
+    step_cuda_libs()
+    # Judge: the Ollama qwen3.8 if this machine has it, else llama-server on the
+    # same qwen GGUF the baseline uses.
+    tags = [t.get("name", "") for t in e2e.ollama_tags(cfg)]
+    ollama = any(n == "qwen3.8" or n.startswith("qwen3.8:") for n in tags)
+    if ollama:
+        e2e.step_ollama(cfg)
+    else:
+        qwen = next(m for m in cfg["models"] if m["name"] == "qwen3.8-27b")
+        cfg.pop("ollama", None)
+        cfg["judge"] = {"base_url": "http://127.0.0.1:8099/v1", "gguf": qwen["gguf"],
+                        "model": "qwen3.8-27b"}
+        for m in cfg["models"]:
+            m.pop("base_url", None)
+        CFG.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
+        log("judge: llama-server on the qwen GGUF (no qwen3.8 in local Ollama)")
 
     def py(*args):
         cmd = [sys.executable, "run_eval.py", "--config", str(CFG), "--llama", str(exe),
                "--out", str(RESULTS), *args]
         subprocess.run(cmd, cwd=HERE, check=True)
 
-    log("phase 1: speed + deterministic tasks")
+    log("phase 1: speed + deterministic tasks (all candidates)")
     py("--no-judge")
 
-    proc = None
-    if judge_how == "llama-server":
-        import e2e
-        proc = e2e.step_judge(cfg, exe)
-        with urllib.request.urlopen(cfg["judge"]["base_url"].rstrip("/") + "/models", timeout=5) as r:
-            cfg["judge"]["model"] = json.load(r)["data"][0]["id"]
-        CFG.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
+    proc = None if ollama else e2e.step_judge(cfg, exe)
     try:
-        log("phase 2: judging rubric tasks")
+        log("phase 2: judging rubric tasks (judge in VRAM alone)")
         py("--judge-only")
     finally:
         if proc:
@@ -277,26 +208,14 @@ def main():
             except subprocess.TimeoutExpired:
                 proc.kill()
 
-    log("phase 3: IFEval, GSM8K, HumanEval")
+    log("phase 3: IFEval, GSM8K, HumanEval (20 samples each)")
     from external_evals import run_external
-    run_external([
-        "--config", str(CFG),
-        "--out", str(RESULTS),
-        "--logs", str(HERE / "external_logs_linux"),
-        "--llama", str(exe),
-    ])
+    run_external(["--config", str(CFG), "--llama", str(exe), "--out", str(RESULTS),
+                  "--logs", str(HERE / "external_logs_linux")])
 
-    note = (
-        "RTX 5090 32 GB, Linux, llama-server for the GGUF models, "
-        "SGLang serving thinkingmachines/Inkling-2-Mini (NVFP4/MXFP8, plain decode), "
-        f"3 runs, best-of-3, judge: qwen3.8 via {judge_how}"
-    )
     log("writing REPORT-linux.md")
-    subprocess.run(
-        [sys.executable, str(HERE / "report.py"),
-         "--results", str(RESULTS), "--out", str(REPORT), "--note", note],
-        cwd=HERE, check=True,
-    )
+    subprocess.run([sys.executable, str(HERE / "report.py"), "--results", str(RESULTS),
+                    "--out", str(REPORT), "--note", "Linux run"], cwd=HERE, check=True)
     log(f"done in {(time.time()-t0)/60:.0f} min — see {REPORT}")
 
 
