@@ -27,6 +27,8 @@ Ornith matched qwen on every exact-check task and on the three 20-sample tasks, 
 
 Inkling also matched the exact-check tasks, and its summary is the high one at 5/6. It kept the $50, and it trails the 20-sample tasks: 70, 85, and 95. It reaches a first token in about 0.2 s and decodes at about a third of qwen's rate. The short edit takes about the same time for all three.
 
+Inkling 2 Mini is a 26B looped mixture-of-experts model (about 3B active per token) from Thinking Machines Lab, released 2026-11-20. The weights are `thinkingmachines/Inkling-2-Mini`. This eval runs ggml-org's `Inkling-2-Mini-IQ4_NL.gguf`: Pedro Cuenca's conversion, with the NVFP4 experts in layers 0–19 at 4-bit and the other matrices at Q8_0.
+
 ## Machine
 
 The report dated 2026-11-22 was measured on this PC:

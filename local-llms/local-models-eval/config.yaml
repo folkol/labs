@@ -4,6 +4,7 @@ models:
 - name: qwen3.8-27b
   ollama_name: qwen3.8
   runner: llama_server
+  gguf: E:/.ollama/models/blobs/sha256-f5f1dd8920d417aac2718b0bda3403da274301efdd6760b4f0f4b864ff2ad57d
 - name: ornith-1.5-35b-a3b
   repo: ornith-ai/Ornith-1.5-35B-A3B-GGUF
   include: '*Q4_K_M*'

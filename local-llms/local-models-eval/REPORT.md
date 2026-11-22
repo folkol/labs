@@ -10,11 +10,11 @@ tok/s is the decode rate with thinking off, over a fixed 512-token generation. T
 
 | model | TTFT (ms) | tok/s | vs baseline | turn no-think (s) | vs baseline | turn medium (s) | vs baseline |
 |---|---|---|---|---|---|---|---|
-| qwen3.8-27b | 2212 | 92.5 | 1.00× (baseline) | 2.3 | 1.00× (baseline) | 2.6 | 1.00× (baseline) |
-| ornith-1.5-35b-a3b | 2156 | 246.4 | 2.66× faster | 2.2 | 1.05× faster | 2.4 | 1.08× faster |
-| gemma-4-26b-a4b | 2244 | 177.5 | 1.92× faster | 2.2 | 1.05× faster | 2.9 | 1.12× slower |
-| tiel-coder-35b-a3b | 2132 | 225.8 | 2.44× faster | 2.2 | 1.05× faster | 2.3 | 1.13× faster |
-| inkling-2-mini | 219 | 30.9 | 2.99× slower | 2.9 | 1.26× slower | 2.5 | 1.04× faster |
+| qwen3.8-27b | 1446 | 66.3 | 1.00× (baseline) | 0.3 | 1.00× (baseline) | 1.0 | 1.00× (baseline) |
+| ornith-1.5-35b-a3b | 156 | 201.6 | 3.04× faster | 0.2 | 1.50× faster | 0.3 | 3.33× faster |
+| gemma-4-26b-a4b | 1547 | 129.6 | 1.95× faster | 0.2 | 1.50× faster | 1.2 | 1.20× slower |
+| tiel-coder-35b-a3b | 103 | 211.9 | 3.20× faster | 0.2 | 1.50× faster | 0.3 | 3.33× faster |
+| inkling-2-mini | 235 | 34.3 | 1.93× slower | 2.2 | 7.33× slower | 2.1 | 2.10× slower |
 
 ## Quality (0–100, judged = LLM rubric)
 
@@ -23,17 +23,17 @@ Rows marked † are percent correct on 20 samples of an off-the-shelf task (IFEv
 | task | qwen3.8-27b | ornith-1.5-35b-a3b | gemma-4-26b-a4b | tiel-coder-35b-a3b | inkling-2-mini |
 |---|---|---|---|---|---|
 | json_extract | 100 | 100 | 100 | 100 | 100 |
-| constraints | 100 | 100 | 12 | 100 | 100 |
+| constraints | 100 | 100 | 0 | 100 | 100 |
 | math_word | 100 | 100 | 100 | 100 | 100 |
-| coding | 100 | 100 | 0 | 100 | 100 |
+| coding | 100 | 100 | 100 | 100 | 100 |
 | reasoning | 100 | 100 | 100 | 100 | 100 |
 | fix_it | 100 | 100 | 100 | 100 | 100 |
-| summarize | 67* | 67* | 83* | 83* | 83* |
-| rewrite_tone | 67* | 100* | 67* | 100* | 67* |
+| summarize | 67* | 83* | 83* | 83* | 83* |
+| rewrite_tone | 100* | 100* | 67* | 100* | 100* |
 | triage | 100* | 100* | 100* | 100* | 100* |
-| ifeval | 85† | 85† | 85† | 85† | 70† |
-| gsm8k | 95† | 95† | 90† | 90† | 85† |
-| humaneval | 100† | 100† | 100† | 95† | 95† |
+| ifeval | 85† | 80† | 90† | 90† | 70† |
+| gsm8k | 95† | 90† | 90† | 90† | 85† |
+| humaneval | 100† | 100† | 100† | 90† | 95† |
 
 ## VRAM
 
@@ -44,14 +44,14 @@ No trial that ran long enough showed the low-GPU, high-bus pattern.
 - **json_extract**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b / inkling-2-mini (100)
 - **constraints**: ornith-1.5-35b-a3b / tiel-coder-35b-a3b / inkling-2-mini (100)
 - **math_word**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b / inkling-2-mini (100)
-- **coding**: ornith-1.5-35b-a3b / tiel-coder-35b-a3b / inkling-2-mini (100)
+- **coding**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b / inkling-2-mini (100)
 - **reasoning**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b / inkling-2-mini (100)
 - **fix_it**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b / inkling-2-mini (100)
-- **summarize**: gemma-4-26b-a4b / tiel-coder-35b-a3b / inkling-2-mini (83)
-- **rewrite_tone**: ornith-1.5-35b-a3b / tiel-coder-35b-a3b (100)
+- **summarize**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b / inkling-2-mini (83)
+- **rewrite_tone**: ornith-1.5-35b-a3b / tiel-coder-35b-a3b / inkling-2-mini (100)
 - **triage**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b / inkling-2-mini (100)
-- **ifeval**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b (85)
-- **gsm8k**: ornith-1.5-35b-a3b (95)
+- **ifeval**: gemma-4-26b-a4b / tiel-coder-35b-a3b (90)
+- **gsm8k**: ornith-1.5-35b-a3b / gemma-4-26b-a4b / tiel-coder-35b-a3b (90)
 - **humaneval**: ornith-1.5-35b-a3b / gemma-4-26b-a4b (100)
 
 - **Recommendation**: **ornith-1.5-35b-a3b** — matches the 27B dense baseline on every deterministic task, loses only the two judged writing tasks (83 vs 100), and is 2.35× faster with 8.8× lower TTFT. **tiel-coder-35b-a3b** is a very close second (100 on summarize, 83 on rewrite) and the right pick if code/coding tasks matter most. **gemma-4-26b-a4b** is outclassed: constraint-following 40, and 0 on coding/reasoning (it rambles for 12k chars without committing to an answer).

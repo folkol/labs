@@ -1,7 +1,7 @@
 [
   {
     "name": "qwen3.8-27b",
-    "gguf": null,
+    "gguf": "E:\\.ollama\\models\\blobs\\sha256-f5f1dd8920d417aac2718b0bda3403da274301efdd6760b4f0f4b864ff2ad57d",
     "tasks": {
       "json_extract": {
         "score": 100,
@@ -50,153 +50,10 @@
         "score": 67,
         "details": {
           "accuracy": 2,
-          "coverage": 2,
-          "selection": 0
+          "coverage": 1,
+          "selection": 1
         },
-        "response": "A city's replacement of 12% of its streetlights with smart-dimming LEDs cut lighting electricity use by 34% but caused a 9% spike in nighttime traffic incidents, which was traced to three over-dimmed arterials and resolved once those corridors were brightened. The city now treats dimming level as a safety parameter rather than a cost lever, while a proposed curfew on non-emergency night work was not adopted, and citywide incidents had already run 2% above the prior year before any dimming occurred."
-      },
-      "rewrite_tone": {
-        "score": 67,
-        "details": {
-          "facts_preserved": 2,
-          "no_decoy": 0,
-          "tone": 2
-        },
-        "response": "Subject: Item #A-118 \u2013 Outstanding Delivery and Contract Terms\n\nDear [Vendor Contact],\n\nI am writing to follow up on Item #A-118 (contract value: $2,140), which remains undelivered and is currently in transit. The contracted delivery fee for this shipment is $50. I note that this is the second late delivery under our agreement this quarter.\n\nPlease confirm that Item #A-118 will be delivered no later than Thursday. If delivery is not completed by that date, the contract will be cancelled in accordance with its terms.\n\nI would appreciate a prompt confirmation of the expected delivery time.\n\nSincerely,\n[Your Name]\n[Title / Company]"
-      },
-      "fix_it": {
-        "score": 100,
-        "details": {
-          "code_present": true,
-          "tests_pass": true
-        }
-      },
-      "triage": {
-        "score": 100,
-        "details": {
-          "accuracy": 2,
-          "selection": 2,
-          "no_hallucination": 2
-        },
-        "response": "A\n\nThe passage explicitly states that the incident increase was concentrated on \"three arterials where dimming had been set 40% lower than the city standard\" and that after those three corridors were brightened, the incident rate returned to baseline, which matches Answer A exactly, while Answer B invents a specific street name (\"Main Street\") never mentioned in the passage."
-      },
-      "ifeval": {
-        "score": 85,
-        "details": {
-          "samples": 20,
-          "error": null,
-          "metric": "prompt_strict_acc"
-        }
-      },
-      "gsm8k": {
-        "score": 95,
-        "details": {
-          "samples": 20,
-          "error": null,
-          "metric": "accuracy"
-        }
-      },
-      "humaneval": {
-        "score": 100,
-        "details": {
-          "samples": 20,
-          "error": null,
-          "metric": "accuracy"
-        }
-      }
-    },
-    "speed": {
-      "ttft_ms_mean": 2212,
-      "tok_per_s_mean": 92.5,
-      "turn_no_thinking_low": {
-        "seconds_mean": 2.3,
-        "tokens_mean": 10,
-        "finished": 3,
-        "runs": 3
-      },
-      "turn_medium": {
-        "seconds_mean": 2.6,
-        "tokens_mean": 51,
-        "finished": 3,
-        "runs": 3
-      }
-    },
-    "vram": {
-      "ifeval": {
-        "spill": false,
-        "sm_pct": 87,
-        "bus_mbs": 1282,
-        "active_samples": 60
-      },
-      "gsm8k": {
-        "spill": false,
-        "sm_pct": 86,
-        "bus_mbs": 1260,
-        "active_samples": 44
-      },
-      "humaneval": {
-        "spill": false,
-        "sm_pct": 81,
-        "bus_mbs": 1200,
-        "active_samples": 19
-      }
-    }
-  },
-  {
-    "name": "ornith-1.5-35b-a3b",
-    "gguf": "models/ornith-1.5-35b-a3b/Ornith-1.5-35B-Q4_K_M.gguf",
-    "tasks": {
-      "json_extract": {
-        "score": 100,
-        "details": {
-          "json_parses": true,
-          "vendor": true,
-          "due_date": true,
-          "amount": true
-        }
-      },
-      "constraints": {
-        "score": 100,
-        "details": {
-          "sentence_count": true,
-          "word_limit": true,
-          "numbers_split": true,
-          "no_and": true,
-          "no_solar": true,
-          "no_comma": true,
-          "diesel_first": true,
-          "all_periods": true
-        }
-      },
-      "math_word": {
-        "score": 100,
-        "details": {
-          "answer_present": true,
-          "answer_correct": true
-        }
-      },
-      "coding": {
-        "score": 100,
-        "details": {
-          "code_present": true,
-          "tests_pass": true
-        }
-      },
-      "reasoning": {
-        "score": 100,
-        "details": {
-          "answer_present": true,
-          "answer_correct": true
-        }
-      },
-      "summarize": {
-        "score": 67,
-        "details": {
-          "accuracy": 2,
-          "coverage": 2,
-          "selection": 0
-        },
-        "response": "After replacing 12% of its streetlights with smart-dimming LEDs\u2014which cut lighting electricity use 34% but initially raised nighttime traffic incidents 9%\u2014the city discovered the surge was concentrated on three arterials dimmed 40% below standard, and brightening them returned incident rates to baseline. As a result, the city now treats dimming level as a safety parameter rather than a cost lever, and a separate proposal for a curfew on non-emergency night work was discussed but not adopted."
+        "response": "A city's replacement of 12% of its streetlights with smart-dimming LEDs cut lighting electricity use by 34%, but a temporary 9% rise in nighttime incidents\u2014traced to three arterials dimmed 40% below standard\u2014prompted the city to reclassify dimming level as a safety parameter rather than a cost lever. A separate proposal to impose a curfew on non-emergency night work was discussed but not adopted, and citywide nighttime incidents had already run 2% above the prior year before any dimming occurred."
       },
       "rewrite_tone": {
         "score": 100,
@@ -205,7 +62,7 @@
           "no_decoy": 2,
           "tone": 2
         },
-        "response": "Subject: Outstanding Delivery for ITEM #A-118\n\nWe are writing regarding ITEM #A-118, which has not yet been delivered. The outstanding amount for this order is $2,140.\n\nThis is the second late delivery this quarter, and we would like to resolve the matter promptly. If delivery is not completed by Thursday, we will need to cancel the entire contract.\n\nPlease confirm the expected delivery date at your earliest convenience."
+        "response": "Subject: Overdue Delivery \u2013 Item #A-118\n\nDear [Vendor Contact],\n\nI am writing regarding Item #A-118 (contract value: $2,140), which has not yet been delivered. Please confirm that the item will be in hand by Thursday.\n\nI also note that this is the second late delivery this quarter.\n\nPer the terms of our agreement, failure to deliver Item #A-118 by Thursday will result in cancellation of the entire contract.\n\nI would appreciate a prompt confirmation of the delivery timeline.\n\nSincerely,\n[Name]"
       },
       "fix_it": {
         "score": 100,
@@ -221,216 +78,124 @@
           "selection": 2,
           "no_hallucination": 2
         },
-        "response": "A\n\nAnswer A is directly supported by the passage, which states that the incident increase was concentrated on three arterials where dimming was set 40% below standard, and that after those corridors were brightened, incident rates returned to baseline; Answer B references \"Main Street,\" which is never mentioned in the passage."
+        "response": "A\n\nThe passage explicitly states that the incident increase was concentrated on \"three arterials where dimming had been set 40% lower than the city standard\" and that after those three corridors were brightened, the incident rate returned to baseline, which matches Answer A exactly, while Answer B's \"Main Street\" is never mentioned in the passage."
       },
       "ifeval": {
         "score": 85,
         "details": {
           "samples": 20,
-          "error": null,
-          "metric": "prompt_strict_acc"
+          "error": null
         }
       },
       "gsm8k": {
         "score": 95,
         "details": {
           "samples": 20,
-          "error": null,
-          "metric": "accuracy"
+          "error": null
         }
       },
       "humaneval": {
         "score": 100,
         "details": {
           "samples": 20,
-          "error": null,
-          "metric": "accuracy"
+          "error": null
         }
       }
     },
     "speed": {
-      "ttft_ms_mean": 2156,
-      "tok_per_s_mean": 246.4,
+      "ttft_ms_mean": 1446,
+      "tok_per_s_mean": 66.3,
       "turn_no_thinking_low": {
-        "seconds_mean": 2.2,
-        "tokens_mean": 17,
+        "seconds_mean": 0.3,
+        "tokens_mean": 12,
         "finished": 3,
         "runs": 3
       },
       "turn_medium": {
-        "seconds_mean": 2.4,
-        "tokens_mean": 45,
+        "seconds_mean": 1.0,
+        "tokens_mean": 54,
         "finished": 3,
         "runs": 3
       }
     },
     "vram": {
-      "ifeval": {
+      "tok/s": {
         "spill": false,
-        "sm_pct": 85,
-        "bus_mbs": 1338,
-        "active_samples": 32
+        "sm_pct": 92,
+        "bus_mbs": 955,
+        "active_samples": 7
       },
-      "gsm8k": {
-        "spill": false,
-        "sm_pct": 86,
-        "bus_mbs": 1470,
-        "active_samples": 10
-      },
-      "humaneval": {
-        "spill": false,
-        "sm_pct": 84,
-        "bus_mbs": 1345,
-        "active_samples": 10
-      }
-    }
-  },
-  {
-    "name": "gemma-4-26b-a4b",
-    "gguf": "models/gemma-4-26b-a4b/gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf",
-    "tasks": {
       "json_extract": {
-        "score": 100,
-        "details": {
-          "json_parses": true,
-          "vendor": true,
-          "due_date": true,
-          "amount": true
-        }
+        "spill": false,
+        "sm_pct": 92,
+        "bus_mbs": 1026,
+        "active_samples": 6
       },
       "constraints": {
-        "score": 12,
-        "details": {
-          "sentence_count": false,
-          "word_limit": false,
-          "numbers_split": true,
-          "no_and": false,
-          "no_solar": false,
-          "no_comma": false,
-          "diesel_first": false,
-          "all_periods": false
-        }
+        "spill": false,
+        "sm_pct": 93,
+        "bus_mbs": 938,
+        "active_samples": 19
       },
       "math_word": {
-        "score": 100,
-        "details": {
-          "answer_present": false,
-          "answer_correct": false
-        }
+        "spill": false,
+        "sm_pct": 92,
+        "bus_mbs": 982,
+        "active_samples": 7
       },
       "coding": {
-        "score": 0,
-        "details": {
-          "code_present": false,
-          "tests_pass": false
-        }
+        "spill": false,
+        "sm_pct": 92,
+        "bus_mbs": 972,
+        "active_samples": 30
       },
       "reasoning": {
-        "score": 100,
-        "details": {
-          "answer_present": false,
-          "answer_correct": false
-        }
+        "spill": false,
+        "sm_pct": 93,
+        "bus_mbs": 944,
+        "active_samples": 10
       },
       "summarize": {
-        "score": 83,
-        "details": {
-          "accuracy": 2,
-          "coverage": 1,
-          "selection": 2
-        },
-        "response": "Replacing streetlights with smart-dimming LEDs reduced electricity use but initially caused a spike in traffic incidents due to excessive dimming on three major arterials. After correcting these brightness levels, the city returned incident rates to baseline and now manages dimming as a safety parameter rather than a cost-saving lever."
+        "spill": false,
+        "sm_pct": 93,
+        "bus_mbs": 945,
+        "active_samples": 5
       },
       "rewrite_tone": {
-        "score": 67,
-        "details": {
-          "facts_preserved": 2,
-          "no_decoy": 0,
-          "tone": 2
-        },
-        "response": "Regarding the delivery of ITEM #A-118, valued at $2,140: This item has not yet been received. This is the second late delivery we have experienced this quarter. Given the $50 service fee, we require delivery to be completed by Thursday. Please be advised that failure to meet this deadline will result in the cancellation of our entire contract."
+        "spill": false,
+        "sm_pct": 92,
+        "bus_mbs": 962,
+        "active_samples": 17
       },
       "fix_it": {
-        "score": 100,
-        "details": {
-          "code_present": true,
-          "tests_pass": true
-        }
+        "spill": false,
+        "sm_pct": 93,
+        "bus_mbs": 965,
+        "active_samples": 11
       },
-      "triage": {
-        "score": 100,
-        "details": {
-          "accuracy": 2,
-          "selection": 2,
-          "no_hallucination": 2
-        },
-        "response": "A The passage identifies the three arterials with 40% lower dimming as the location where incident rates returned to baseline, whereas Main Street is never mentioned."
-      },
-      "ifeval": {
-        "score": 85,
-        "details": {
-          "samples": 20,
-          "error": null,
-          "metric": "prompt_strict_acc"
-        }
-      },
-      "gsm8k": {
-        "score": 90,
-        "details": {
-          "samples": 20,
-          "error": null,
-          "metric": "accuracy"
-        }
-      },
-      "humaneval": {
-        "score": 100,
-        "details": {
-          "samples": 20,
-          "error": null,
-          "metric": "accuracy"
-        }
-      }
-    },
-    "speed": {
-      "ttft_ms_mean": 2244,
-      "tok_per_s_mean": 177.5,
-      "turn_no_thinking_low": {
-        "seconds_mean": 2.2,
-        "tokens_mean": 18,
-        "finished": 3,
-        "runs": 3
-      },
-      "turn_medium": {
-        "seconds_mean": 2.9,
-        "tokens_mean": 119,
-        "finished": 3,
-        "runs": 3
-      }
-    },
-    "vram": {
       "ifeval": {
         "spill": false,
-        "sm_pct": 87,
-        "bus_mbs": 1274,
-        "active_samples": 38
+        "sm_pct": 94,
+        "bus_mbs": 346,
+        "active_samples": 68
       },
       "gsm8k": {
         "spill": false,
-        "sm_pct": 86,
-        "bus_mbs": 1283,
-        "active_samples": 33
+        "sm_pct": 94,
+        "bus_mbs": 342,
+        "active_samples": 102
       },
       "humaneval": {
         "spill": false,
-        "sm_pct": 80,
-        "bus_mbs": 1308,
-        "active_samples": 17
+        "sm_pct": 93,
+        "bus_mbs": 344,
+        "active_samples": 43
       }
     }
   },
   {
-    "name": "tiel-coder-35b-a3b",
-    "gguf": "models/tiel-coder-35b-a3b/Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+    "name": "ornith-1.5-35b-a3b",
+    "gguf": "C:\\Users\\folkol\\code\\labs\\local-llms\\local-models-eval\\models\\ornith-1.5-35b-a3b\\Ornith-1.5-35B-Q4_K_M.gguf",
     "tasks": {
       "json_extract": {
         "score": 100,
@@ -482,7 +247,7 @@
           "coverage": 2,
           "selection": 1
         },
-        "response": "After replacing 12% of its streetlights with smart-dimming LEDs\u2014cutting lighting electricity use 34% but raising nighttime traffic incidents 9%\u2014the city found the spike was confined to three arterials dimmed 40% below standard, and brightening them returned incidents to baseline, leading the city to treat dimming as a safety parameter rather than a cost lever. A separate curfew on non-emergency night work was discussed but not adopted, and citywide nighttime incidents had already been 2% above the prior year before any lights were dimmed."
+        "response": "After replacing 12% of its streetlights with smart-dimming LEDs\u2014cutting lighting electricity use 34% but raising nighttime traffic incidents 9%\u2014the city found the spike was concentrated on three arterials dimmed 40% below standard, and brightening them restored baseline rates within a quarter, leading the city to treat dimming as a safety parameter rather than a cost lever. Meanwhile, a separate proposal for a curfew on non-emergency night work was discussed but not adopted."
       },
       "rewrite_tone": {
         "score": 100,
@@ -491,7 +256,7 @@
           "no_decoy": 2,
           "tone": 2
         },
-        "response": "ITEM #A-118 has not yet been delivered, and the $2,140 contract value remains outstanding. This is the second late delivery this quarter. If delivery is not received by Thursday, we will proceed to cancel the entire contract."
+        "response": "Subject: Outstanding delivery for ITEM #A-118\n\nHi [Vendor Name],\n\nI'm writing regarding ITEM #A-118, which has not yet been delivered. The order value of $2,140 remains outstanding while we await shipment.\n\nThis is the second late delivery this quarter, and we'd like to resolve it promptly. Please confirm that delivery can be made by Thursday. If the item is not received by then, we will need to cancel the contract.\n\nThanks for your help getting this sorted.\n\nBest regards,\n[Your Name]"
       },
       "fix_it": {
         "score": 100,
@@ -507,66 +272,415 @@
           "selection": 2,
           "no_hallucination": 2
         },
-        "response": "A\n\nThe passage states the incident rise was concentrated on three arterials dimmed 40% below standard, and that after those three corridors were brightened, incident rates returned to baseline\u2014matching Answer A exactly, while Main Street is never mentioned."
+        "response": "A\n\nAnswer A is directly supported by the passage, which states that the incident increase was concentrated on three arterials where dimming was set 40% below city standard and that brightening them returned incident rates to baseline; Answer B references \"Main Street,\" which is never mentioned in the passage."
       },
       "ifeval": {
-        "score": 85,
+        "score": 80,
         "details": {
           "samples": 20,
-          "error": null,
-          "metric": "prompt_strict_acc"
+          "error": null
         }
       },
       "gsm8k": {
         "score": 90,
         "details": {
           "samples": 20,
-          "error": null,
-          "metric": "accuracy"
+          "error": null
         }
       },
       "humaneval": {
-        "score": 95,
+        "score": 100,
         "details": {
           "samples": 20,
-          "error": null,
-          "metric": "accuracy"
+          "error": null
         }
       }
     },
     "speed": {
-      "ttft_ms_mean": 2132,
-      "tok_per_s_mean": 225.8,
+      "ttft_ms_mean": 156,
+      "tok_per_s_mean": 201.6,
       "turn_no_thinking_low": {
-        "seconds_mean": 2.2,
+        "seconds_mean": 0.2,
         "tokens_mean": 17,
         "finished": 3,
         "runs": 3
       },
       "turn_medium": {
-        "seconds_mean": 2.3,
+        "seconds_mean": 0.3,
+        "tokens_mean": 42,
+        "finished": 3,
+        "runs": 3
+      }
+    },
+    "vram": {
+      "coding": {
+        "spill": false,
+        "sm_pct": 83,
+        "bus_mbs": 1517,
+        "active_samples": 34
+      },
+      "ifeval": {
+        "spill": false,
+        "sm_pct": 80,
+        "bus_mbs": 984,
+        "active_samples": 25
+      },
+      "gsm8k": {
+        "spill": false,
+        "sm_pct": 82,
+        "bus_mbs": 986,
+        "active_samples": 14
+      },
+      "humaneval": {
+        "spill": false,
+        "sm_pct": 83,
+        "bus_mbs": 929,
+        "active_samples": 11
+      }
+    }
+  },
+  {
+    "name": "gemma-4-26b-a4b",
+    "gguf": "C:\\Users\\folkol\\code\\labs\\local-llms\\local-models-eval\\models\\gemma-4-26b-a4b\\gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf",
+    "tasks": {
+      "json_extract": {
+        "score": 100,
+        "details": {
+          "json_parses": true,
+          "vendor": true,
+          "due_date": true,
+          "amount": true
+        }
+      },
+      "constraints": {
+        "score": 0,
+        "details": {
+          "sentence_count": false,
+          "word_limit": false,
+          "numbers_split": false,
+          "no_and": false,
+          "no_solar": false,
+          "no_comma": false,
+          "diesel_first": false,
+          "all_periods": false
+        }
+      },
+      "math_word": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "coding": {
+        "score": 100,
+        "details": {
+          "code_present": false,
+          "tests_pass": false
+        }
+      },
+      "reasoning": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "summarize": {
+        "score": 83,
+        "details": {
+          "accuracy": 2,
+          "coverage": 1,
+          "selection": 2
+        },
+        "response": "Replacing streetlights with smart-dimming LEDs saved energy but caused a temporary rise in traffic incidents due to excessive dimming on specific roads. After adjusting brightness levels to return incident rates to baseline, the city began treating dimming as a safety parameter rather than a cost-saving measure."
+      },
+      "rewrite_tone": {
+        "score": 67,
+        "details": {
+          "facts_preserved": 2,
+          "no_decoy": 0,
+          "tone": 2
+        },
+        "response": "We are writing regarding the outstanding delivery of ITEM #A-118, valued at $2,140. This is the second late delivery we have experienced this quarter. Please ensure the item is delivered by Thursday. Given the $50 delivery fee, failure to meet this deadline will result in the cancellation of our contract."
+      },
+      "fix_it": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "triage": {
+        "score": 100,
+        "details": {
+          "accuracy": 2,
+          "selection": 2,
+          "no_hallucination": 2
+        },
+        "response": "A. The passage specifies that the incident rate returned to baseline after brightening the three arterials where dimming was 40% lower than the standard, whereas Main Street is never mentioned."
+      },
+      "ifeval": {
+        "score": 90,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "gsm8k": {
+        "score": 90,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "humaneval": {
+        "score": 100,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      }
+    },
+    "speed": {
+      "ttft_ms_mean": 1547,
+      "tok_per_s_mean": 129.6,
+      "turn_no_thinking_low": {
+        "seconds_mean": 0.2,
+        "tokens_mean": 18,
+        "finished": 3,
+        "runs": 3
+      },
+      "turn_medium": {
+        "seconds_mean": 1.2,
+        "tokens_mean": 148,
+        "finished": 3,
+        "runs": 3
+      }
+    },
+    "vram": {
+      "tok/s": {
+        "spill": false,
+        "sm_pct": 89,
+        "bus_mbs": 18808,
+        "active_samples": 3
+      },
+      "json_extract": {
+        "spill": false,
+        "sm_pct": 92,
+        "bus_mbs": 33627,
+        "active_samples": 9
+      },
+      "constraints": {
+        "spill": false,
+        "sm_pct": 93,
+        "bus_mbs": 36237,
+        "active_samples": 95
+      },
+      "math_word": {
+        "spill": false,
+        "sm_pct": 93,
+        "bus_mbs": 36384,
+        "active_samples": 94
+      },
+      "coding": {
+        "spill": false,
+        "sm_pct": 93,
+        "bus_mbs": 36420,
+        "active_samples": 94
+      },
+      "reasoning": {
+        "spill": false,
+        "sm_pct": 93,
+        "bus_mbs": 38658,
+        "active_samples": 28
+      },
+      "summarize": {
+        "spill": false,
+        "sm_pct": 93,
+        "bus_mbs": 38060,
+        "active_samples": 18
+      },
+      "rewrite_tone": {
+        "spill": false,
+        "sm_pct": 93,
+        "bus_mbs": 37894,
+        "active_samples": 22
+      },
+      "fix_it": {
+        "spill": false,
+        "sm_pct": 93,
+        "bus_mbs": 38102,
+        "active_samples": 42
+      },
+      "ifeval": {
+        "spill": false,
+        "sm_pct": 87,
+        "bus_mbs": 686,
+        "active_samples": 29
+      },
+      "gsm8k": {
+        "spill": false,
+        "sm_pct": 86,
+        "bus_mbs": 1216,
+        "active_samples": 38
+      },
+      "humaneval": {
+        "spill": false,
+        "sm_pct": 85,
+        "bus_mbs": 1286,
+        "active_samples": 19
+      }
+    }
+  },
+  {
+    "name": "tiel-coder-35b-a3b",
+    "gguf": "C:\\Users\\folkol\\code\\labs\\local-llms\\local-models-eval\\models\\tiel-coder-35b-a3b\\Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+    "tasks": {
+      "json_extract": {
+        "score": 100,
+        "details": {
+          "json_parses": true,
+          "vendor": true,
+          "due_date": true,
+          "amount": true
+        }
+      },
+      "constraints": {
+        "score": 100,
+        "details": {
+          "sentence_count": true,
+          "word_limit": true,
+          "numbers_split": true,
+          "no_and": true,
+          "no_solar": true,
+          "no_comma": true,
+          "diesel_first": true,
+          "all_periods": true
+        }
+      },
+      "math_word": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "coding": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "reasoning": {
+        "score": 100,
+        "details": {
+          "answer_present": true,
+          "answer_correct": true
+        }
+      },
+      "summarize": {
+        "score": 83,
+        "details": {
+          "accuracy": 2,
+          "coverage": 2,
+          "selection": 1
+        },
+        "response": "After replacing 12% of its streetlights with smart-dimming LEDs\u2014cutting lighting electricity use 34% but raising nighttime traffic incidents 9%\u2014the city found the spike concentrated on three corridors dimmed 40% below standard, and once those were brightened, incidents returned to baseline, so dimming is now treated as a safety parameter. A separate proposal for a curfew on non-emergency night work was discussed but not adopted."
+      },
+      "rewrite_tone": {
+        "score": 100,
+        "details": {
+          "facts_preserved": 2,
+          "no_decoy": 2,
+          "tone": 2
+        },
+        "response": "ITEM #A-118 has not yet been delivered, leaving the contract value of $2,140 outstanding. This is the second late delivery this quarter. We ask that delivery be completed by Thursday. Should it not be, we will proceed to cancel the entire contract."
+      },
+      "fix_it": {
+        "score": 100,
+        "details": {
+          "code_present": true,
+          "tests_pass": true
+        }
+      },
+      "triage": {
+        "score": 100,
+        "details": {
+          "accuracy": 2,
+          "selection": 2,
+          "no_hallucination": 2
+        },
+        "response": "A\n\nThe passage states the incident increase was concentrated on three arterials where dimming was set 40% below city standard, and those corridors' incident rates returned to baseline after being brightened\u2014matching Answer A, while Main Street is never mentioned."
+      },
+      "ifeval": {
+        "score": 90,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "gsm8k": {
+        "score": 90,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      },
+      "humaneval": {
+        "score": 90,
+        "details": {
+          "samples": 20,
+          "error": null
+        }
+      }
+    },
+    "speed": {
+      "ttft_ms_mean": 103,
+      "tok_per_s_mean": 211.9,
+      "turn_no_thinking_low": {
+        "seconds_mean": 0.2,
+        "tokens_mean": 15,
+        "finished": 3,
+        "runs": 3
+      },
+      "turn_medium": {
+        "seconds_mean": 0.3,
         "tokens_mean": 28,
         "finished": 3,
         "runs": 3
       }
     },
     "vram": {
-      "ifeval": {
+      "constraints": {
         "spill": false,
         "sm_pct": 84,
-        "bus_mbs": 1343,
-        "active_samples": 32
+        "bus_mbs": 914,
+        "active_samples": 4
+      },
+      "coding": {
+        "spill": false,
+        "sm_pct": 84,
+        "bus_mbs": 905,
+        "active_samples": 19
+      },
+      "ifeval": {
+        "spill": false,
+        "sm_pct": 82,
+        "bus_mbs": 1496,
+        "active_samples": 26
       },
       "gsm8k": {
         "spill": false,
-        "sm_pct": 84,
-        "bus_mbs": 1242,
-        "active_samples": 9
+        "sm_pct": 81,
+        "bus_mbs": 1396,
+        "active_samples": 10
       },
       "humaneval": {
         "spill": false,
-        "sm_pct": 86,
-        "bus_mbs": 1161,
+        "sm_pct": 84,
+        "bus_mbs": 1493,
         "active_samples": 14
       }
     }
@@ -625,16 +739,16 @@
           "coverage": 2,
           "selection": 1
         },
-        "response": "After 12% of streetlights were replaced with smart-dimming LEDs, lighting electricity fell 34%, but reported nighttime traffic incidents rose 9% in the first two quarters; an audit traced the increase to three arterials dimmed 40% below standard, and after they were brightened incidents returned to baseline within one quarter, leading the city to treat dimming as a safety parameter rather than a cost lever. A separate curfew on non-emergency night work was discussed but not adopted, and citywide nighttime incidents were already 2% above the prior year before any dimming."
+        "response": "After 12% of streetlights were replaced with smart-dimming LEDs, lighting electricity fell 34% while reported nighttime incidents rose 9%, but the increase was concentrated on three arterials with dimming set 40% below standard; brightening them restored baseline within a quarter, leading the city to treat dimming as a safety parameter rather than a cost lever. A proposed curfew on non-emergency night work was not adopted, and citywide nighttime incidents were already 2% above the prior year before dimming began."
       },
       "rewrite_tone": {
-        "score": 67,
+        "score": 100,
         "details": {
           "facts_preserved": 2,
-          "no_decoy": 0,
+          "no_decoy": 2,
           "tone": 2
         },
-        "response": "Hello,\n\nPlease deliver ITEM #A-118 by Thursday. This is the second late delivery this quarter. The $2,140 amount referenced for ITEM #A-118 and the $50 amount referenced in the original message are noted for reference. If delivery is not made by Thursday, the entire contract will be cancelled.\n\nPlease confirm receipt and the delivery date.\n\nRegards,"
+        "response": "Subject: ITEM #A-118 \u2014 Delivery Required by Thursday\n\nHello,\n\nITEM #A-118 has not been delivered. The outstanding amount is $2,140. This is the second late delivery this quarter.\n\nPlease deliver ITEM #A-118 by Thursday. If delivery is not made by Thursday, the entire contract will be cancelled.\n\nRegards,\n[Your name]"
       },
       "fix_it": {
         "score": 100,
@@ -650,67 +764,124 @@
           "selection": 2,
           "no_hallucination": 2
         },
-        "response": "A \u2014 The passage identifies the three arterials with dimming set 40% below standard as where incidents rose and then returned to baseline after brightening; Main Street is not mentioned."
+        "response": "A \u2014 The passage says the incident increase was concentrated on three arterials with dimming 40% below city standard, and brightening them returned incident rates to baseline."
       },
       "ifeval": {
         "score": 70,
         "details": {
           "samples": 20,
-          "error": null,
-          "metric": "prompt_strict_acc"
+          "error": null
         }
       },
       "gsm8k": {
         "score": 85,
         "details": {
           "samples": 20,
-          "error": null,
-          "metric": "accuracy"
+          "error": null
         }
       },
       "humaneval": {
         "score": 95,
         "details": {
           "samples": 20,
-          "error": null,
-          "metric": "accuracy"
+          "error": null
         }
       }
     },
     "speed": {
-      "ttft_ms_mean": 219,
-      "tok_per_s_mean": 30.9,
+      "ttft_ms_mean": 235,
+      "tok_per_s_mean": 34.3,
       "turn_no_thinking_low": {
-        "seconds_mean": 2.9,
-        "tokens_mean": 77,
+        "seconds_mean": 2.2,
+        "tokens_mean": 66,
         "finished": 3,
         "runs": 3
       },
       "turn_medium": {
-        "seconds_mean": 2.5,
+        "seconds_mean": 2.1,
         "tokens_mean": 65,
         "finished": 3,
         "runs": 3
       }
     },
     "vram": {
+      "tok/s": {
+        "spill": false,
+        "sm_pct": 42,
+        "bus_mbs": 1266,
+        "active_samples": 12
+      },
+      "json_extract": {
+        "spill": false,
+        "sm_pct": 42,
+        "bus_mbs": 1292,
+        "active_samples": 23
+      },
+      "constraints": {
+        "spill": false,
+        "sm_pct": 42,
+        "bus_mbs": 1277,
+        "active_samples": 23
+      },
+      "math_word": {
+        "spill": false,
+        "sm_pct": 42,
+        "bus_mbs": 1331,
+        "active_samples": 23
+      },
+      "coding": {
+        "spill": false,
+        "sm_pct": 42,
+        "bus_mbs": 1292,
+        "active_samples": 57
+      },
+      "reasoning": {
+        "spill": false,
+        "sm_pct": 42,
+        "bus_mbs": 1295,
+        "active_samples": 21
+      },
+      "summarize": {
+        "spill": false,
+        "sm_pct": 41,
+        "bus_mbs": 1318,
+        "active_samples": 9
+      },
+      "rewrite_tone": {
+        "spill": false,
+        "sm_pct": 42,
+        "bus_mbs": 1299,
+        "active_samples": 23
+      },
+      "fix_it": {
+        "spill": false,
+        "sm_pct": 42,
+        "bus_mbs": 1309,
+        "active_samples": 21
+      },
+      "triage": {
+        "spill": false,
+        "sm_pct": 43,
+        "bus_mbs": 1309,
+        "active_samples": 6
+      },
       "ifeval": {
         "spill": false,
         "sm_pct": 47,
-        "bus_mbs": 1778,
-        "active_samples": 681
+        "bus_mbs": 1744,
+        "active_samples": 694
       },
       "gsm8k": {
         "spill": false,
         "sm_pct": 47,
-        "bus_mbs": 1792,
-        "active_samples": 456
+        "bus_mbs": 1752,
+        "active_samples": 460
       },
       "humaneval": {
         "spill": false,
-        "sm_pct": 46,
-        "bus_mbs": 1785,
-        "active_samples": 456
+        "sm_pct": 47,
+        "bus_mbs": 1776,
+        "active_samples": 472
       }
     }
   }
