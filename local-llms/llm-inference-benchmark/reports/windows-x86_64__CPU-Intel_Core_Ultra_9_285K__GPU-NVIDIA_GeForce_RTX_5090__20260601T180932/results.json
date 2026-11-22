@@ -1,0 +1,2147 @@
+{
+  "schema_version": 2,
+  "run_id": "20260601T180932",
+  "timestamp": "2026-06-01T18:09:32.582108500+00:00",
+  "hardware": {
+    "os": "windows",
+    "os_version": "11 (26200)",
+    "cpu_brand": "Intel(R) Core(TM) Ultra 9 285K",
+    "cpu_cores_physical": 24,
+    "cpu_cores_logical": 24,
+    "ram_total_gb": 31.379608154296875,
+    "gpu_info": [
+      {
+        "name": "NVIDIA GeForce RTX 5090",
+        "vendor": "NVIDIA",
+        "vram_mb": 32607
+      }
+    ],
+    "llama_cpp_version": null
+  },
+  "scenarios": [
+    {
+      "model_name": "Qwen3-0.6B-Q4_K_M",
+      "workload_id": "summarize",
+      "workload_label": "Summarization",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "?\n\nThe field of artificial intelligence has experienced a dramatic",
+          "wall_time_ms": 1909.0,
+          "load_time_ms": 1542.0,
+          "prompt_tokens": 393,
+          "prompt_eval_ms": 263.615,
+          "gen_tokens": 10,
+          "gen_eval_ms": 100.281,
+          "tokens_per_sec": 99.71978739741326,
+          "ttft_ms": 1805.615,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "_The rapid development of artificial intelligence over the past",
+          "wall_time_ms": 100.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 393,
+          "prompt_eval_ms": 9.943,
+          "gen_tokens": 10,
+          "gen_eval_ms": 89.262,
+          "tokens_per_sec": 112.02975510295532,
+          "ttft_ms": 9.943,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 99.71978739741326,
+        "tokens_per_sec_p50": 99.71978739741326,
+        "tokens_per_sec_p95": 99.71978739741326,
+        "load_time_ms_mean": 1542.0,
+        "ttft_ms_mean": 1805.615,
+        "ttft_ms_p95": 1805.615,
+        "wall_time_ms_mean": 1909.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 112.02975510295532,
+        "tokens_per_sec_p50": 112.02975510295532,
+        "tokens_per_sec_p95": 112.02975510295532,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 9.943,
+        "ttft_ms_p95": 9.943,
+        "wall_time_ms_mean": 100.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-0.6B-Q4_K_M",
+      "workload_id": "code",
+      "workload_label": "Code Generation",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "Include the final line of the code as a comment.\n\nYour answer should have exactly 100% Python syntax and no extra whitespace or comments. Only the code, not the explanation, should be included.\n\n**Note:** The first two lines of the code block must be the function definition and the comment, and the remaining lines must be the code.\n\n**Final line of the code must be a comment.**\n**Output:** no trailing newline.\n\n**Test Cases:**\n```\nTest 1\nTest 2\nTest 3\n```\n\n```\nInput 1:\n[2, 4, 6, 8, 10]\nInput 2:\n[1, 3, 5, 7, 9]\nOutput 1:\n[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\nTest 2\n[1, 3, 5, 7, 9]\nInput 3\n[1, 2, 3, 4, 5, 6, 7, 8, 9]\nOutput 2:\n[1, 2, 3, 4, 5, 6, 7, 8, 9]\n```\n\nSo, after the function, the output should be:\n```\n[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n```\n\nNow, with the final line of the code as a comment.\n\n```\n```\n```\n```\n```\n\nSo, after the function, the output should be:\n```\n[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n```\n```\n```\n```\n```\n\nThus, the code should be:\n\n```python\n# function to merge two sorted lists into one\ndef merge_sorted_arrays(A, B):\n    # some code here\n    # comments\n    # return a list\n    # ... etc.\n```\n```\n\n```python\n# function to merge two sorted lists into one\ndef merge_sorted_arrays(A, B):\n    # initializations\n    result = []\n    # code that adds elements to result\n    # comments\n    # return the result\n    # ... etc.\n```\n```\n```\n```\n```\n\nWait,",
+          "wall_time_ms": 5948.0,
+          "load_time_ms": 1011.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 82.13,
+          "gen_tokens": 512,
+          "gen_eval_ms": 4854.508,
+          "tokens_per_sec": 105.46897852470325,
+          "ttft_ms": 1093.13,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Use the `list` module and `sys` module for error checking.\n\n## Please only write the code in the box**\n**Please don't use `import`**\n**Please only use `sys`**\n**Please only use `list`**\n**Please don't use `print`**\n**Please don't use `for` or `while` loops**\n**Please use `if` statements**\n\n---\n\nHere is the skeleton code:\n\n```python\ndef merge_sorted_arrays(a, b):\n    pass\n```\n\n---\n\nThe function must have the following properties:\n- Accept two lists of comparable elements\n- Return a new sorted list containing all elements from both inputs\n- Run in O(n + m) time\n- Include a brief docstring\n```\n\n**Please only write the code in the box**\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n```\n``",
+          "wall_time_ms": 3954.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 6.646,
+          "gen_tokens": 512,
+          "gen_eval_ms": 3928.124,
+          "tokens_per_sec": 130.34211750952872,
+          "ttft_ms": 6.646,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 105.46897852470325,
+        "tokens_per_sec_p50": 105.46897852470325,
+        "tokens_per_sec_p95": 105.46897852470325,
+        "load_time_ms_mean": 1011.0,
+        "ttft_ms_mean": 1093.13,
+        "ttft_ms_p95": 1093.13,
+        "wall_time_ms_mean": 5948.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 130.34211750952872,
+        "tokens_per_sec_p50": 130.34211750952872,
+        "tokens_per_sec_p95": 130.34211750952872,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 6.646,
+        "ttft_ms_p95": 6.646,
+        "wall_time_ms_mean": 3954.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-0.6B-Q4_K_M",
+      "workload_id": "assistant",
+      "workload_label": "Generic Assistant",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "Let me know if there's anything else I need to know.\nAnswer:\n\nTo ensure a successful 7-day solo mountain hiking trip, here's a structured plan:\n\n1. **Organize the Trip**: Confirm the start and end times, route selection, and arrival/departure points. This sets the itinerary in motion.\n\n2. **Purchase Essential Gear**: Ensure you have a tent, food, water, and a first aid kit. These essentials are crucial for survival and safety.\n\n3. **Budget Planning**: Allocate funds for the trip, including the budget mentioned, transportation, and gear. This helps in managing costs effectively.\n\n4. **Research the Route**: Plan a route that offers both scenic beauty and accessibility, considering weather conditions.\n\n5. **Pack Smartly**: Prioritize the gear that will be most used, such as a durable backpack and a durable hiking boots.\n\nFor the specific gear overlooked, consider a durable backpack and hiking boots. These items are often overlooked due to their importance in the hiking experience. Let me know if there's anything else I need to know. \n\n**Answer:**\n\nTo plan a successful 7-day solo hiking trip through a mountainous region, here are the five most important things to organize or purchase:\n\n1. **Organize the",
+          "wall_time_ms": 2877.0,
+          "load_time_ms": 1039.0,
+          "prompt_tokens": 94,
+          "prompt_eval_ms": 59.335,
+          "gen_tokens": 256,
+          "gen_eval_ms": 1777.76,
+          "tokens_per_sec": 144.00144001440017,
+          "ttft_ms": 1098.335,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Let me know if you can help with anything else.\nOkay, so I need to plan a 7-day solo hike through a mountain area. The user has intermediate hiking experience, a tent, and a budget of around $500. They want me to list five key things to organize or purchase before departure, explain the reasons, and suggest a gear that's often overlooked. The response should be practical and focused.\n\nFirst, I should consider what's necessary for a solo trip. A tent is essential for shelter, so I need to confirm if the user has a tent. They mentioned they have a tent, so maybe that's covered. But maybe they don't have a tent, so maybe I need to suggest purchasing one? Wait, the user said they have a tent, so perhaps they already have it. But the question is about what to organize or purchase. So maybe check if they have a tent or not. If they do, then maybe not necessary. But since the user says they have a tent, perhaps they already have one. Therefore, the list should be based on what's needed.\n\nNext, the five most important things. Since the trip is 7 days, the first few days would be the most time-consuming. So things like food,",
+          "wall_time_ms": 1999.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 94,
+          "prompt_eval_ms": 8.776,
+          "gen_tokens": 256,
+          "gen_eval_ms": 1980.005,
+          "tokens_per_sec": 129.29260279645757,
+          "ttft_ms": 8.776,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 144.00144001440017,
+        "tokens_per_sec_p50": 144.00144001440017,
+        "tokens_per_sec_p95": 144.00144001440017,
+        "load_time_ms_mean": 1039.0,
+        "ttft_ms_mean": 1098.335,
+        "ttft_ms_p95": 1098.335,
+        "wall_time_ms_mean": 2877.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 129.29260279645757,
+        "tokens_per_sec_p50": 129.29260279645757,
+        "tokens_per_sec_p95": 129.29260279645757,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 8.776,
+        "ttft_ms_p95": 8.776,
+        "wall_time_ms_mean": 1999.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-0.6B-Q4_K_M",
+      "workload_id": "summarize",
+      "workload_label": "Summarization",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "?\n\nThe field of artificial intelligence has experienced a dramatic",
+          "wall_time_ms": 1152.0,
+          "load_time_ms": 1017.0,
+          "prompt_tokens": 393,
+          "prompt_eval_ms": 96.709,
+          "gen_tokens": 10,
+          "gen_eval_ms": 34.928,
+          "tokens_per_sec": 286.30325240494733,
+          "ttft_ms": 1113.709,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "_The transformation of artificial intelligence over the past decade",
+          "wall_time_ms": 17.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 393,
+          "prompt_eval_ms": 1.969,
+          "gen_tokens": 10,
+          "gen_eval_ms": 14.028,
+          "tokens_per_sec": 712.85999429712,
+          "ttft_ms": 1.969,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 286.30325240494733,
+        "tokens_per_sec_p50": 286.30325240494733,
+        "tokens_per_sec_p95": 286.30325240494733,
+        "load_time_ms_mean": 1017.0,
+        "ttft_ms_mean": 1113.709,
+        "ttft_ms_p95": 1113.709,
+        "wall_time_ms_mean": 1152.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 712.85999429712,
+        "tokens_per_sec_p50": 712.85999429712,
+        "tokens_per_sec_p95": 712.85999429712,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 1.969,
+        "ttft_ms_p95": 1.969,
+        "wall_time_ms_mean": 17.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-0.6B-Q4_K_M",
+      "workload_id": "code",
+      "workload_label": "Code Generation",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "Use the function as the main function.\n\nNow, write a separate test script that starts the main function and runs the test cases as described.\n\nSo, in the code block, write:\n\nif __name__ == \"__main__\":\n    main()\n    main()\n    main()\nelse:\n    print(\"Testing failed\")\n\nAlso, ensure that the code doesn't have any extra lines, like the import statement, except the main function.\n\nThe code must be written in a single code block.\n\nI think that I have written the code, but I need to make sure it works correctly.\n\nNow, write the code for the main function and the test script.\n\nSo, in the code block:\n\nif __name__ == \"__main__\":\n    main()\n    main()\n    main()\nelse:\n    print(\"Testing failed\")\nBut the code must be written as a single code block.\n\nSo, the code block should be:\n\n# Write the code for the main function and the test script\nif __name__ == \"__main__\":\n    main()\n    main()\n    main()\nelse:\n    print(\"Testing failed\")\n\nNow, write the code for the merge_sorted_arrays function. Also, write the three assert statements.\n\nMake sure that the function is called with two lists, like `merge_sorted_arrays([1,2,3], [4,5,6])` and the output is `[1,2,3,4,5,6]`.\n\nNow, write the code for the function. The function should take two lists, and merge them into a sorted array.\n\nI think that the code will be as follows:\n\n# Write the code for the main function and the test script\nif __name__ == \"__main__\":\n    main()\n    main()\n    main()\nelse:\n    print(\"Testing failed\")\n# Write the code for the merge_sorted_arrays function\ndef merge_sorted_arrays(a, b):\n    result = []\n    i = 0\n    j = 0\n    while i < len(a) or j < len(b):\n        if i < len(a) and j < len(b) and a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    return result\n\n# Add the assert statements\nassert merge_sorted_arrays([1,2,3], [4,5,6]) == [1,2,3,4,5,6]\nassert merge_sorted_arrays([1,3,5], [2,",
+          "wall_time_ms": 1863.0,
+          "load_time_ms": 1017.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 50.858,
+          "gen_tokens": 512,
+          "gen_eval_ms": 794.66,
+          "tokens_per_sec": 644.3007072206982,
+          "ttft_ms": 1067.858,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Use the function as the main function.\n\nNow, write a separate test script that starts the main function and runs the three assert statements with the inputs and outputs that match the test cases.\n\nInclude all the code in one file (with the main function and the test script).\n\nThe test script should have the following format:\n\n```python\n# Example usage:\n# main(merge_sorted_arrays([1, 3, 5], [2, 4, 6]), merge_sorted_arrays([1, 2, 3], [5, 6, 7]), merge_sorted_arrays([2, 3, 4], [1, 5, 6]))\n```\n```python\n# Your code here\n# ... your code ...\n# ...\n\n# Test script\n# ...\n\n# main function and the test script\n```\n\nNow, write all the code in one file. The code should be self-contained, no external modules, no comments, no extra text, only the Python code and the three assert statements inside the main function.\n\nThe code should be in the following format:\n\n```python\n# Your code here\n# ... your code ...\n# ...\n\n# Test script\n# ... your code ...\n```\n\nPlease put the code in a single file, as per the instructions. No markdown, only Python code.\n```\n```python\ndef merge_sorted_arrays(list1, list2):\n    \"\"\"\n    Merge two sorted lists into a single sorted list without using the built-in sorted() function or list.sort().\n\n    Parameters:\n    list1, list2: lists of comparable elements\n\n    Returns:\n    list of elements from both input lists, sorted in ascending order\n    \"\"\"\n    # Your code here\n    pass\n\n# Test script\n# ...\n# ...\n\n# main function and the test script\n# ...\n```\n```\n```python\ndef merge_sorted_arrays(list1, list2):\n    \"\"\"\n    Merge two sorted arrays into a single sorted array without using the built-in sorted() function or list.sort().\n\n    Parameters:\n    list1, list2: lists of comparable elements\n\n    Returns:\n    list of elements from both input lists, sorted in ascending order\n    \"\"\"\n    result = []\n    i, j = 0, 0\n    while i < len(list1) or j < len(list2):\n        if i < len(list1) and (list1[i] <= list2[j] or list2[j] <= list1[i]):\n            result.append(list1[i])\n            i",
+          "wall_time_ms": 809.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 7.563,
+          "gen_tokens": 512,
+          "gen_eval_ms": 780.525,
+          "tokens_per_sec": 655.9687389897825,
+          "ttft_ms": 7.563,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 644.3007072206982,
+        "tokens_per_sec_p50": 644.3007072206982,
+        "tokens_per_sec_p95": 644.3007072206982,
+        "load_time_ms_mean": 1017.0,
+        "ttft_ms_mean": 1067.858,
+        "ttft_ms_p95": 1067.858,
+        "wall_time_ms_mean": 1863.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 655.9687389897825,
+        "tokens_per_sec_p50": 655.9687389897825,
+        "tokens_per_sec_p95": 655.9687389897825,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 7.563,
+        "ttft_ms_p95": 7.563,
+        "wall_time_ms_mean": 809.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-0.6B-Q4_K_M",
+      "workload_id": "assistant",
+      "workload_label": "Generic Assistant",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "Make sure to list all the necessary gear, and also include the costs for the trip, including the tent, and a list of the most important places to visit in the region.\n\nAlright, let's break this down. First, I need to list the five most important things I should organize or purchase before departure. Each point needs a brief explanation. Then, the specific gear that's often overlooked by intermediate hikers. Also, include all the necessary gear, costs, and the places to visit. Keep it focused and practical. Okay, so maybe start by listing the essentials. Let's see... The first thing I think is the tent. That's a must. Then maybe a first aid kit. A water bottle, and maybe some snacks. Wait, but the budget is about $500 beyond transportation. So tent, tent cover, maybe a tent pad. But the user mentioned a budget of roughly $500 beyond transportation. So total trip cost should include all gear and transportation. Also, the places to visit. Let me think. The region has a trailhead. So maybe start and end at the same point. The five most important things would be: tent, tent cover, tent pad, first aid kit, water bottle. Then the overlooked gear",
+          "wall_time_ms": 1472.0,
+          "load_time_ms": 1020.0,
+          "prompt_tokens": 94,
+          "prompt_eval_ms": 52.462,
+          "gen_tokens": 256,
+          "gen_eval_ms": 398.411,
+          "tokens_per_sec": 642.552539965011,
+          "ttft_ms": 1072.462,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Make sure to list all the necessary gear, and also include the day-by-day schedule with a brief explanation of each day’s activities. Ensure that there is a conclusion at the end.\nNow, I need to write this in a formal academic tone, but in a way that's easy for a general audience. Avoid using markdown or any markdown. Please ensure that the response is in a formal academic tone, but in a way that's easy for a general audience. Use bullet points as requested.\nOkay, so I need to help this person plan a 7-day solo hiking trip through a mountainous region. They have intermediate hiking experience, a tent, and a budget of $500 beyond transportation. The trip starts and ends at the same trailhead. They want five important things to organize or purchase before departure, a reason for each, and then suggest a gear that's often overlooked. Also, include a day-by-day schedule with activities and a conclusion.\n\nFirst, I need to list five things to organize or purchase. Let me think. The first thing is probably a tent. Because they already have a tent, but maybe they need a sleeping bag. Then maybe a first aid kit. A toolkit for outdoor activities. A map. And maybe a backpack or a",
+          "wall_time_ms": 408.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 94,
+          "prompt_eval_ms": 6.865,
+          "gen_tokens": 256,
+          "gen_eval_ms": 389.859,
+          "tokens_per_sec": 656.6476597949516,
+          "ttft_ms": 6.865,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 642.552539965011,
+        "tokens_per_sec_p50": 642.552539965011,
+        "tokens_per_sec_p95": 642.552539965011,
+        "load_time_ms_mean": 1020.0,
+        "ttft_ms_mean": 1072.462,
+        "ttft_ms_p95": 1072.462,
+        "wall_time_ms_mean": 1472.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 656.6476597949516,
+        "tokens_per_sec_p50": 656.6476597949516,
+        "tokens_per_sec_p95": 656.6476597949516,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 6.865,
+        "ttft_ms_p95": 6.865,
+        "wall_time_ms_mean": 408.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "SmolLM3-3B-Q4_K_M",
+      "workload_id": "summarize",
+      "workload_label": "Summarization",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "Artificial intelligence has seen a significant transformation over the past",
+          "wall_time_ms": 3179.0,
+          "load_time_ms": 2036.0,
+          "prompt_tokens": 385,
+          "prompt_eval_ms": 923.028,
+          "gen_tokens": 10,
+          "gen_eval_ms": 218.43,
+          "tokens_per_sec": 45.78125715332143,
+          "ttft_ms": 2959.0280000000002,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Artificial intelligence has transformed over the past decade, driven",
+          "wall_time_ms": 251.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 385,
+          "prompt_eval_ms": 24.544,
+          "gen_tokens": 10,
+          "gen_eval_ms": 225.239,
+          "tokens_per_sec": 44.39728466207007,
+          "ttft_ms": 24.544,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 45.78125715332143,
+        "tokens_per_sec_p50": 45.78125715332143,
+        "tokens_per_sec_p95": 45.78125715332143,
+        "load_time_ms_mean": 2036.0,
+        "ttft_ms_mean": 2959.0280000000002,
+        "ttft_ms_p95": 2959.0280000000002,
+        "wall_time_ms_mean": 3179.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 44.39728466207007,
+        "tokens_per_sec_p50": 44.39728466207007,
+        "tokens_per_sec_p95": 44.39728466207007,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 24.544,
+        "ttft_ms_p95": 24.544,
+        "wall_time_ms_mean": 251.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "SmolLM3-3B-Q4_K_M",
+      "workload_id": "code",
+      "workload_label": "Code Generation",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "```python\ndef merge_sorted_arrays(arr1, arr2):\n    # Your code here\n    pass\n\n# Add assert statements here\nassert merge_sorted_arrays([], [1, 2, 3]) == [1, 2, 3]\nassert merge_sorted_arrays([1, 3, 5], []) == [1, 3, 5]\nassert merge_sorted_arrays([1, 2, 3], [4, 5, 6]) == [1, 2, 3, 4, 5, 6]\n```\n\n\n\n```python\ndef merge_sorted_arrays(arr1, arr2):\n    # Initialize result array\n    result = []\n    # Initialize indices for both arrays\n    i = j = 0\n    # Merge the arrays\n    while i < len(arr1) and j < len(arr2):\n        if arr1[i] < arr2[j]:\n            result.append(arr1[i])\n            i += 1\n        else:\n            result.append(arr2[j])\n            j += 1\n    # Append any remaining elements from arr1\n    result.extend(arr1[i:])\n    # Append any remaining elements from arr2\n    result.extend(arr2[j:])\n    return result\n\n# Add assert statements here\nassert merge_sorted_arrays([], [1, 2, 3]) == [1, 2, 3]\nassert merge_sorted_arrays([1, 3, 5], []) == [1, 3, 5]\nassert merge_sorted_arrays([1, 2, 3], [4, 5, 6]) == [1, 2, 3, 4, 5, 6]\n```\n\nI've updated my code to include the correct docstring and added the assert statements to test the function. The while loop compares elements from both arrays and appends the smaller one to the result. After the loop, the remaining elements are appended. The assert statements test the function with various inputs to verify its correctness. \n\nThe time complexity of the code is O(n + m) because each element from both arrays is processed exactly once. The space complexity is also O(n + m) because the result array stores all elements from both inputs. \n\nThe docstring explains the purpose of the function, its parameters, and its return value. It also mentions that the function assumes the inputs are sorted and comparable. \n\nThe assert statements check the function's correctness for various edge cases, including empty",
+          "wall_time_ms": 14644.0,
+          "load_time_ms": 1518.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 300.139,
+          "gen_tokens": 512,
+          "gen_eval_ms": 12825.554,
+          "tokens_per_sec": 39.92030285787265,
+          "ttft_ms": 1818.1390000000001,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "```python\ndef merge_sorted_arrays(arr1, arr2):\n    # Your code here\n    pass\n\n# Add assert statements here\nassert merge_sorted_arrays([], [1, 2, 3]) == [1, 2, 3]\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([1, 2, 3], [4, 5, 6]) == [1, 2, 3, 4, 5, 6]\n\n```\n\n\n\nHere is the implementation of the `merge_sorted_arrays` function:\n\n```python\ndef merge_sorted_arrays(arr1, arr2):\n    \"\"\"\n    Merge two sorted arrays into a single sorted array.\n\n    Args:\n    arr1 (list): The first sorted array.\n    arr2 (list): The second sorted array.\n\n    Returns:\n    list: A new sorted list containing all elements from both inputs.\n\n    Time Complexity: O(n + m), where n and m are the lengths of the inputs.\n    \"\"\"\n    result = []\n    i, j = 0, 0\n    while i < len(arr1) and j < len(arr2):\n        if arr1[i] <= arr2[j]:\n            result.append(arr1[i])\n            i += 1\n        else:\n            result.append(arr2[j])\n            j += 1\n    result.extend(arr1[i:])\n    result.extend(arr2[j:])\n    return result\n\n# Add assert statements here\nassert merge_sorted_arrays([], [1, 2, 3]) == [1, 2, 3]\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([1, 2, 3], [4, 5, 6]) == [1, 2, 3, 4, 5, 6]\n```\n\n\n\nThe provided implementation of the `merge_sorted_arrays` function uses a two-pointer technique to iterate through the two sorted arrays simultaneously. It compares the current elements of each array and adds the smaller one to the result list. Once one of the arrays is exhausted, the remaining elements from the other array are appended to the result list.\n\nThe assert statements verify that",
+          "wall_time_ms": 12535.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 25.184,
+          "gen_tokens": 512,
+          "gen_eval_ms": 12495.588,
+          "tokens_per_sec": 40.97446234622973,
+          "ttft_ms": 25.184,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 39.92030285787265,
+        "tokens_per_sec_p50": 39.92030285787265,
+        "tokens_per_sec_p95": 39.92030285787265,
+        "load_time_ms_mean": 1518.0,
+        "ttft_ms_mean": 1818.1390000000001,
+        "ttft_ms_p95": 1818.1390000000001,
+        "wall_time_ms_mean": 14644.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 40.97446234622973,
+        "tokens_per_sec_p50": 40.97446234622973,
+        "tokens_per_sec_p95": 40.97446234622973,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 25.184,
+        "ttft_ms_p95": 25.184,
+        "wall_time_ms_mean": 12535.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "SmolLM3-3B-Q4_K_M",
+      "workload_id": "assistant",
+      "workload_label": "Generic Assistant",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "Before departure, I should organize or purchase the following five items:\n\n1. **Maps and Compass:** Essential for navigation, especially in remote areas. Understanding how to read maps and use a compass allows for independent decision-making and safety.\n\n2. **First Aid Kit:** A comprehensive kit is crucial for managing minor injuries and illnesses. Knowing basic first aid can make a significant difference in an emergency.\n\n3. **Personal Locator Beacon (PLB) or Satellite Phone:** These devices increase safety, especially in situations where help is needed quickly. They can be life-saving in emergencies.\n\n4. **Durable Backpack and Hiking Boots:** Proper footwear and a sturdy backpack are vital for comfort, safety, and the ability to carry essential gear.\n\n5. **Water Filtration System:** Staying hydrated is critical, and having a reliable water purification method ensures access to safe drinking water throughout the trip.\n\nOne specific piece of gear that is often overlooked by intermediate hikers is the **water purification tablets**. While many hikers carry water bottles and purification filters, water purification tablets are lightweight, easy to use, and effective for treating water in emergency situations when a filter might be too bulky or inaccessible. They are a practical addition to any hiking pack, providing peace of mind and ensuring safe",
+          "wall_time_ms": 7968.0,
+          "load_time_ms": 1515.0,
+          "prompt_tokens": 92,
+          "prompt_eval_ms": 230.73,
+          "gen_tokens": 256,
+          "gen_eval_ms": 6221.25,
+          "tokens_per_sec": 41.14928671890697,
+          "ttft_ms": 1745.73,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Before departure, I should organize or purchase the following five items:\n\n1. **Maps and Compass:** Essential for navigation, especially in remote areas. Understanding how to use them can enhance safety and independence on the trail.\n\n2. **First Aid Kit:** An essential item for treating minor injuries and illnesses, ensuring you can handle unexpected situations without needing immediate medical help.\n\n3. **Personal Emergency Shelter:** A compact and lightweight emergency shelter, like a space blanket or a lightweight bivy sack, to provide warmth and protection if you're caught in poor weather or an emergency.\n\n4. **Water Filtration or Treatment:** Purchase a reliable water filter or treatment method to ensure access to safe drinking water throughout your trip.\n\n5. **Emergency Communication Device:** A satellite phone, two-way radio, or a portable charger for your phone, to stay connected in case of emergencies.\n\nOne specific piece of gear often overlooked by intermediate hikers is a **waterproof backpack cover**. This can protect your gear from rain, snow, and other weather conditions, maintaining the usability of your equipment during the trip. It can be a game-changer in preserving your clothing, shoes, and other essentials. \n\nPrioritize these items to ensure a safe and enjoyable hike. Consider how each item contributes to",
+          "wall_time_ms": 6250.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 92,
+          "prompt_eval_ms": 24.381,
+          "gen_tokens": 256,
+          "gen_eval_ms": 6218.553,
+          "tokens_per_sec": 41.167133254311736,
+          "ttft_ms": 24.381,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 41.14928671890697,
+        "tokens_per_sec_p50": 41.14928671890697,
+        "tokens_per_sec_p95": 41.14928671890697,
+        "load_time_ms_mean": 1515.0,
+        "ttft_ms_mean": 1745.73,
+        "ttft_ms_p95": 1745.73,
+        "wall_time_ms_mean": 7968.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 41.167133254311736,
+        "tokens_per_sec_p50": 41.167133254311736,
+        "tokens_per_sec_p95": 41.167133254311736,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 24.381,
+        "ttft_ms_p95": 24.381,
+        "wall_time_ms_mean": 6250.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "SmolLM3-3B-Q4_K_M",
+      "workload_id": "summarize",
+      "workload_label": "Summarization",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "The field of artificial intelligence has evolved from rule",
+          "wall_time_ms": 1649.0,
+          "load_time_ms": 1534.0,
+          "prompt_tokens": 385,
+          "prompt_eval_ms": 78.289,
+          "gen_tokens": 10,
+          "gen_eval_ms": 35.189,
+          "tokens_per_sec": 284.1797152519253,
+          "ttft_ms": 1612.289,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "The field of artificial intelligence has evolved from rule",
+          "wall_time_ms": 29.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 385,
+          "prompt_eval_ms": 3.224,
+          "gen_tokens": 10,
+          "gen_eval_ms": 24.602,
+          "tokens_per_sec": 406.4710186163727,
+          "ttft_ms": 3.224,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 284.1797152519253,
+        "tokens_per_sec_p50": 284.1797152519253,
+        "tokens_per_sec_p95": 284.1797152519253,
+        "load_time_ms_mean": 1534.0,
+        "ttft_ms_mean": 1612.289,
+        "ttft_ms_p95": 1612.289,
+        "wall_time_ms_mean": 1649.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 406.4710186163727,
+        "tokens_per_sec_p50": 406.4710186163727,
+        "tokens_per_sec_p95": 406.4710186163727,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 3.224,
+        "ttft_ms_p95": 3.224,
+        "wall_time_ms_mean": 29.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "SmolLM3-3B-Q4_K_M",
+      "workload_id": "code",
+      "workload_label": "Code Generation",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "```python\ndef merge_sorted_arrays(arr1, arr2):\n    # your code here\n    pass\n\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays(['a', 'b', 'd'], ['a', 'c', 'e']) == ['a', 'a', 'b', 'c', 'd', 'e']\nassert merge_sorted_arrays([1, 3, 5], ['a', 'b']) == ['a', '1', 'b', '3', '5']\n```",
+          "wall_time_ms": 1976.0,
+          "load_time_ms": 1533.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 59.23,
+          "gen_tokens": 142,
+          "gen_eval_ms": 382.317,
+          "tokens_per_sec": 371.4195288203245,
+          "ttft_ms": 1592.23,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "```python\ndef merge_sorted_arrays(arr1, arr2):\n    # your code here\n    pass\n\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([10, 20], [15, 25]) == [10, 15, 20, 25]\nassert merge_sorted_arrays([], [1, 2, 3]) == [1, 2, 3]\n```",
+          "wall_time_ms": 315.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 6.787,
+          "gen_tokens": 119,
+          "gen_eval_ms": 301.493,
+          "tokens_per_sec": 394.7023645656782,
+          "ttft_ms": 6.787,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 371.4195288203245,
+        "tokens_per_sec_p50": 371.4195288203245,
+        "tokens_per_sec_p95": 371.4195288203245,
+        "load_time_ms_mean": 1533.0,
+        "ttft_ms_mean": 1592.23,
+        "ttft_ms_p95": 1592.23,
+        "wall_time_ms_mean": 1976.0,
+        "gen_tokens_mean": 142.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 394.7023645656782,
+        "tokens_per_sec_p50": 394.7023645656782,
+        "tokens_per_sec_p95": 394.7023645656782,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 6.787,
+        "ttft_ms_p95": 6.787,
+        "wall_time_ms_mean": 315.0,
+        "gen_tokens_mean": 119.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "SmolLM3-3B-Q4_K_M",
+      "workload_id": "assistant",
+      "workload_label": "Generic Assistant",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "Before departure, I should organize or purchase the following five most important things: \n1) A detailed map of the trail and surrounding area.\n2) A reliable first aid kit for emergencies.\n3) A portable water filter or treatment method.\n4) A lightweight, reliable backpack.\n5) A headlamp or flashlight with extra batteries.\n\nThe reason for each of these is straightforward: a map ensures I navigate safely, a first aid kit helps with any injuries, a water filter ensures access to safe drinking water, a backpack with the right capacity and support will allow me to carry essential gear comfortably, and a headlamp ensures visibility in the evenings without the need for fire.\n\nFor the specific piece of gear often overlooked by intermediate hikers, consider a lightweight, compact umbrella or rain poncho. These items are crucial for unexpected rain showers, which are common in mountainous regions, and can protect gear and personal items from getting wet. They are lightweight, packable, and provide necessary protection without occupying much space in the backpack. A compact umbrella or rain poncho can make a significant difference in comfort and readiness for the trip. \n\nKeep your response concise, focusing on the essentials for a safe and enjoyable solo hiking trip.",
+          "wall_time_ms": 2255.0,
+          "load_time_ms": 1537.0,
+          "prompt_tokens": 92,
+          "prompt_eval_ms": 59.404,
+          "gen_tokens": 246,
+          "gen_eval_ms": 657.222,
+          "tokens_per_sec": 374.3027470169897,
+          "ttft_ms": 1596.404,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Before departure, I should organize or purchase the following five most important things: \n1) A detailed trail map and guidebook for the chosen route, as it is crucial to understand the terrain, elevation changes, and potential hazards.\n2) A reliable water filter or purification tablets to ensure access to safe drinking water throughout the trip.\n3) A first aid kit specifically tailored for wilderness adventures, including items like painkillers, bandages, and a splint.\n4) A portable stove and fuel for cooking meals, as this will be necessary for self-sufficiency and maintaining energy levels.\n5) A reliable GPS device or smartphone with a portable charger, as navigation is essential for safety and the ability to return to the trailhead.\n\nA specific piece of gear that is often overlooked by intermediate hikers is a good, lightweight backpack with adequate compartments for organizing gear and clothing, as it can make a significant difference in comfort and efficiency during the hike. A backpack with multiple pockets and a spacious, breathable design will help keep your gear organized and prevent weight from being unnecessarily distributed. A good choice could be the Osprey Elixir 35 backpack, which offers excellent versatility and support for long hiking days. \n\nThe Osprey Elixir 35 backpack is a high",
+          "wall_time_ms": 690.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 92,
+          "prompt_eval_ms": 7.077,
+          "gen_tokens": 256,
+          "gen_eval_ms": 673.631,
+          "tokens_per_sec": 380.0300164333293,
+          "ttft_ms": 7.077,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 374.3027470169897,
+        "tokens_per_sec_p50": 374.3027470169897,
+        "tokens_per_sec_p95": 374.3027470169897,
+        "load_time_ms_mean": 1537.0,
+        "ttft_ms_mean": 1596.404,
+        "ttft_ms_p95": 1596.404,
+        "wall_time_ms_mean": 2255.0,
+        "gen_tokens_mean": 246.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 380.0300164333293,
+        "tokens_per_sec_p50": 380.0300164333293,
+        "tokens_per_sec_p95": 380.0300164333293,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 7.077,
+        "ttft_ms_p95": 7.077,
+        "wall_time_ms_mean": 690.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-4B-Q4_K_M",
+      "workload_id": "summarize",
+      "workload_label": "Summarization",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "The past decade has seen a transformative shift in artificial",
+          "wall_time_ms": 4060.0,
+          "load_time_ms": 2524.0,
+          "prompt_tokens": 393,
+          "prompt_eval_ms": 1249.253,
+          "gen_tokens": 10,
+          "gen_eval_ms": 285.606,
+          "tokens_per_sec": 35.01327002934112,
+          "ttft_ms": 3773.2529999999997,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "The field of artificial intelligence has undergone a remarkable",
+          "wall_time_ms": 319.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 393,
+          "prompt_eval_ms": 32.435,
+          "gen_tokens": 10,
+          "gen_eval_ms": 284.999,
+          "tokens_per_sec": 35.08784241348215,
+          "ttft_ms": 32.435,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 35.01327002934112,
+        "tokens_per_sec_p50": 35.01327002934112,
+        "tokens_per_sec_p95": 35.01327002934112,
+        "load_time_ms_mean": 2524.0,
+        "ttft_ms_mean": 3773.2529999999997,
+        "ttft_ms_p95": 3773.2529999999997,
+        "wall_time_ms_mean": 4060.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 35.08784241348215,
+        "tokens_per_sec_p50": 35.08784241348215,
+        "tokens_per_sec_p95": 35.08784241348215,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 32.435,
+        "ttft_ms_p95": 32.435,
+        "wall_time_ms_mean": 319.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-4B-Q4_K_M",
+      "workload_id": "code",
+      "workload_label": "Code Generation",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "The function must not use the built-in `sorted()` function or `list.sort()`. So you can’t do something like `return sorted(a + b)`.\n\nThe function must not use the built-in `sorted()` function or `list.sort()`. So you can’t do something like `return sorted(a + b)`.\nTo solve this problem, we need to merge two sorted arrays into a single sorted array without using the built-in `sorted()` or `list.sort()` functions. The solution must run in O(n + m) time, where n and m are the lengths of the input arrays.\n\nThe approach to solve this problem efficiently is to use a two-pointer technique. We can iterate through both arrays simultaneously, comparing the elements at the current positions of each array and adding the smaller element to the result array. This ensures that we traverse each element exactly once, achieving the desired time complexity.\n\nHere's the step-by-step approach:\n1. Initialize two pointers, one for each of the input arrays.\n2. Compare the elements at the current positions of both arrays.\n3. Add the smaller element to the result array and move the corresponding pointer forward.\n4. Repeat this process until one of the arrays is exhausted.\n5. Append the remaining elements from the non-exhausted array to the result array.\n\nThis method ensures that we merge the two sorted arrays in linear time, which meets the requirement of O(n + m) time complexity.\n\nNow, let's implement this approach in Python and test it with some examples.\n```python\ndef merge_sorted_arrays(a, b):\n    \"\"\"\n    Merges two sorted arrays into a single sorted array.\n    \n    Args:\n        a: First sorted list of comparable elements\n        b: Second sorted list of comparable elements\n    \n    Returns:\n        A new sorted list containing all elements from both inputs\n    \"\"\"\n    result = []\n    i = 0  # Pointer for array a\n    j = 0  # Pointer for array b\n    \n    # Traverse both arrays until one is exhausted\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    \n    # Append remaining elements from array a\n    while i < len(a):\n        result.append(a[i])\n        i += 1\n    \n    # Append remaining elements from array b\n    while j < len(b):\n        result.append(b[j])",
+          "wall_time_ms": 19158.0,
+          "load_time_ms": 2009.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 370.584,
+          "gen_tokens": 512,
+          "gen_eval_ms": 16778.312,
+          "tokens_per_sec": 30.515584642841304,
+          "ttft_ms": 2379.584,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "The function must not use the built-in `sorted()` function or `list.sort()`.\n\nMake sure to include all necessary imports and that the code is valid.\nOkay, I need to write a Python function called merge_sorted_arrays that merges two sorted arrays into a single sorted array without using the built-in sorted() or list.sort() functions. Let me think about how to approach this.\n\nSo, the two input arrays are already sorted. The classic way to merge them efficiently is using a two-pointer technique. Like, have a pointer for each array, compare the current elements, take the smaller one, and move that pointer forward. Repeat until all elements are added.\n\nLet me outline the steps. Let's say the two arrays are called arr1 and arr2. We'll create a new result list. Initialize two pointers, i and j, starting at 0 for each array. Then, while i is less than len(arr1) and j is less than len(arr2), compare arr1[i] and arr2[j]. Add the smaller one to the result and increment the corresponding pointer. If one array is exhausted, append the rest of the other array to the result.\n\nWait, but what if one array is longer than the other? For example, if arr1 has more elements, after processing all elements of arr2, we need to add the remaining elements from arr1. Similarly for arr2.\n\nSo the function will need to handle that. Let me think about the code structure.\n\nThe function will take two arguments, arr1 and arr2. Then, initialize i and j to 0. Then create a new list, result. Then loop while i < len(arr1) and j < len(arr2). Compare elements, append the smaller one, increment the respective pointer. Then, after that loop, append the remaining elements from arr1 (if any) and arr2 (if any).\n\nBut wait, the problem says that the function must not use the built-in sorted or list.sort. But the code here is using list.append, which is allowed. So that's okay.\n\nNow, the code:\n\ndef merge_sorted_arrays(arr1, arr2):\n    \"\"\"\n    Merges two sorted arrays into a single sorted array.\n    \n    Args:\n        arr1: First sorted list of comparable elements.\n        arr2: Second sorted list of comparable elements.\n        \n    Returns:\n        A new list containing all elements from both inputs in sorted order.\n    \"\"\"\n    result = []\n    i = j = 0",
+          "wall_time_ms": 16404.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 31.2,
+          "gen_tokens": 512,
+          "gen_eval_ms": 16347.81,
+          "tokens_per_sec": 31.319179755575824,
+          "ttft_ms": 31.2,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 30.515584642841304,
+        "tokens_per_sec_p50": 30.515584642841304,
+        "tokens_per_sec_p95": 30.515584642841304,
+        "load_time_ms_mean": 2009.0,
+        "ttft_ms_mean": 2379.584,
+        "ttft_ms_p95": 2379.584,
+        "wall_time_ms_mean": 19158.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 31.319179755575824,
+        "tokens_per_sec_p50": 31.319179755575824,
+        "tokens_per_sec_p95": 31.319179755575824,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 31.2,
+        "ttft_ms_p95": 31.2,
+        "wall_time_ms_mean": 16404.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-4B-Q4_K_M",
+      "workload_id": "assistant",
+      "workload_label": "Generic Assistant",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "Please use markdown.\n- **5 Most Important Things to Organize or Purchase**\n  - **1.**\n  - **2.**\n  - **3.**\n  - **4.**\n  - **5.**\n- **One Overlooked Gear**\n  - **1.**\n- **Additional Tips**\n\nOkay, so I need to plan a 7-day solo hiking trip through a mountainous region. The person has intermediate hiking experience, a tent, and a $500 budget beyond transportation. The trip starts and ends at the same trailhead. They want the five most important things to organize or purchase, with brief explanations, and one overlooked gear. Plus, some additional tips.\n\nFirst, let me think about the key things. The user has a tent, so maybe that's already covered. But they need other gear. Let's break down the essentials.\n\n1. **Backpack and Proper Fit**: The user is solo, so a good backpack is essential. It should be lightweight, comfortable, and have the right capacity. The weight is important because carrying too much can be tiring, especially over 7 days. Also, a properly fitted backpack ensures comfort and prevents back pain.\n\n2. **Water and Hydration System**: Since it",
+          "wall_time_ms": 10376.0,
+          "load_time_ms": 2014.0,
+          "prompt_tokens": 94,
+          "prompt_eval_ms": 310.781,
+          "gen_tokens": 256,
+          "gen_eval_ms": 8050.752,
+          "tokens_per_sec": 31.79827176392963,
+          "ttft_ms": 2324.781,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Also, please list the five most important things I should organize or purchase before departure, briefly explain the reason for each, and then suggest one specific piece of gear that is often overlooked by intermediate hikers.\n\nOkay, the user is planning a 7-day solo hiking trip through a mountainous region. They have intermediate experience, a tent, and a $500 budget beyond transportation. The trip starts and ends at the same trailhead. Need to list five important things to organize or purchase, explain each, and then suggest an overlooked gear.\n\nFirst, I need to think about what's essential for a solo trip. Since it's solo, safety and self-sufficiency are key. The user has a tent, so maybe they don't need a sleeping bag? Wait, they have a tent, but they might need a sleeping bag. But maybe they already have one. Wait, the question is about things to purchase or organize. Let me think.\n\nFirst, the five most important things. Let's start with gear that's critical for survival. The user has a tent, but they might need a sleeping bag. But maybe they already have that. Alternatively, maybe they need a headlamp or flashlight. Also, food and water. Then, navigation tools.",
+          "wall_time_ms": 8159.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 94,
+          "prompt_eval_ms": 32.244,
+          "gen_tokens": 256,
+          "gen_eval_ms": 8114.519,
+          "tokens_per_sec": 31.54838875847108,
+          "ttft_ms": 32.244,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 31.79827176392963,
+        "tokens_per_sec_p50": 31.79827176392963,
+        "tokens_per_sec_p95": 31.79827176392963,
+        "load_time_ms_mean": 2014.0,
+        "ttft_ms_mean": 2324.781,
+        "ttft_ms_p95": 2324.781,
+        "wall_time_ms_mean": 10376.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 31.54838875847108,
+        "tokens_per_sec_p50": 31.54838875847108,
+        "tokens_per_sec_p95": 31.54838875847108,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 32.244,
+        "ttft_ms_p95": 32.244,
+        "wall_time_ms_mean": 8159.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-4B-Q4_K_M",
+      "workload_id": "summarize",
+      "workload_label": "Summarization",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "The field of artificial intelligence has evolved from rule",
+          "wall_time_ms": 2120.0,
+          "load_time_ms": 2009.0,
+          "prompt_tokens": 393,
+          "prompt_eval_ms": 68.575,
+          "gen_tokens": 10,
+          "gen_eval_ms": 40.666,
+          "tokens_per_sec": 245.9056705847637,
+          "ttft_ms": 2077.575,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "The field of artificial intelligence has undergone a remarkable",
+          "wall_time_ms": 36.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 393,
+          "prompt_eval_ms": 3.678,
+          "gen_tokens": 10,
+          "gen_eval_ms": 31.157,
+          "tokens_per_sec": 320.9551625637898,
+          "ttft_ms": 3.678,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 245.9056705847637,
+        "tokens_per_sec_p50": 245.9056705847637,
+        "tokens_per_sec_p95": 245.9056705847637,
+        "load_time_ms_mean": 2009.0,
+        "ttft_ms_mean": 2077.575,
+        "ttft_ms_p95": 2077.575,
+        "wall_time_ms_mean": 2120.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 320.9551625637898,
+        "tokens_per_sec_p50": 320.9551625637898,
+        "tokens_per_sec_p95": 320.9551625637898,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 3.678,
+        "ttft_ms_p95": 3.678,
+        "wall_time_ms_mean": 36.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-4B-Q4_K_M",
+      "workload_id": "code",
+      "workload_label": "Code Generation",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "The function must not use the built-in `sorted()` function or `list.sort()`. So the solution should use a two-pointer approach to merge the two sorted lists.\n\nThe function must also not use any additional data structures or libraries beyond what is allowed in Python.\n\nAlso, the function must not use any built-in functions other than those required for the input, such as len(), list(), etc.\n\nThe three assert statements should test the function with different scenarios, including:\n1. Two arrays of the same size, e.g., [1, 3, 5] and [2, 4, 6]\n2. One array is empty, e.g., [] and [1, 2, 3]\n3. One array is a single element, e.g., [5] and [1, 2, 3, 4]\n\nMake sure that the function is correctly implemented and that the assert statements are correctly written. Also, make sure that the function is not using any built-in functions that are not allowed.\n\nNow, write the Python code that includes the function and the three assert statements.\nOkay, I need to write a Python function called merge_sorted_arrays that merges two sorted arrays into a single sorted array without using sorted() or list.sort(). The function has to run in O(n + m) time, which suggests a two-pointer approach. Let me think about how to do that.\n\nSo, the two-pointer approach is where you have a pointer for each array. You compare the elements at each pointer, take the smaller one, and add it to the result. Then move the corresponding pointer forward. That way, you merge them in linear time.\n\nLet me outline the steps. The function takes two lists, let's say arr1 and arr2. Both are sorted. Initialize two pointers, i and j, starting at 0. Then create a new list to hold the merged result. Loop while i < len(arr1) and j < len(arr2). Compare arr1[i] and arr2[j]. If arr1[i] is smaller, add it to the result and increment i. Else, add arr2[j] and increment j. After one of the arrays is exhausted, append the remaining elements from the other array.\n\nWait, but what if one array is longer than the other? For example, after one array is done, we need to add all the remaining elements from the other array. So, after the loop, we need to check if there are elements left in arr1",
+          "wall_time_ms": 3777.0,
+          "load_time_ms": 2009.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 62.831,
+          "gen_tokens": 512,
+          "gen_eval_ms": 1703.929,
+          "tokens_per_sec": 300.4820036515606,
+          "ttft_ms": 2071.831,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "The function must not use the built-in `sorted()` function or `list.sort()`. So the solution should use a two-pointer approach to merge the two sorted lists.\n\nHere is an example of a correct assert statement: `assert merge_sorted_arrays([1,2,3], [4,5,6]) == [1,2,3,4,5,6]`\n\nHere is an example of a correct assert statement: `assert merge_sorted_arrays([1,3,5], [2,4,6]) == [1,2,3,4,5,6]`\n\nHere is an example of a correct assert statement: `assert merge_sorted_arrays([1,2,3], [1,2,3]) == [1,1,2,2,3,3]`\n\nMake sure that the code is correct, and that the function and tests pass.\n\nSo here's the plan:\n\n- Create a function that takes two lists, arr1 and arr2\n- Initialize two pointers, i and j, to 0\n- Create a new list to hold the merged result\n- While i < len(arr1) and j < len(arr2):\n   - Compare arr1[i] and arr2[j]\n   - Append the smaller one to the result\n   - Increment the respective pointer\n- After one of the lists is exhausted, append the remaining elements from the other list\n- Return the result\n\nNow, implement that in Python, and then write the test cases.\n\nLet me write the code:\n\ndef merge_sorted_arrays(arr1, arr2):\n    \"\"\"\n    Merges two sorted arrays into a single sorted array.\n    \n    Args:\n        arr1: First sorted list of comparable elements\n        arr2: Second sorted list of comparable elements\n        \n    Returns:\n        A new sorted list containing all elements from both inputs\n    \"\"\"\n    # Initialize pointers and result list\n    i = j = 0\n    result = []\n    \n    # Merge the two arrays\n    while i < len(arr1) and j < len(arr2):\n        if arr1[i] < arr2[j]:\n            result.append(arr1[i])\n            i += 1\n        else:\n            result.append(arr2[j])\n            j += 1\n    \n    # Append remaining elements from arr1 or arr2\n    while i < len(arr1):\n        result.append(arr1[i])\n        i += 1\n    while j < len(arr2):\n        result.append(arr2",
+          "wall_time_ms": 1724.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 8.067,
+          "gen_tokens": 512,
+          "gen_eval_ms": 1689.272,
+          "tokens_per_sec": 303.08914135793407,
+          "ttft_ms": 8.067,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 300.4820036515606,
+        "tokens_per_sec_p50": 300.4820036515606,
+        "tokens_per_sec_p95": 300.4820036515606,
+        "load_time_ms_mean": 2009.0,
+        "ttft_ms_mean": 2071.831,
+        "ttft_ms_p95": 2071.831,
+        "wall_time_ms_mean": 3777.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 303.08914135793407,
+        "tokens_per_sec_p50": 303.08914135793407,
+        "tokens_per_sec_p95": 303.08914135793407,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 8.067,
+        "ttft_ms_p95": 8.067,
+        "wall_time_ms_mean": 1724.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-4B-Q4_K_M",
+      "workload_id": "assistant",
+      "workload_label": "Generic Assistant",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "Also, please provide a sample daily itinerary for the first day (Day 1: Arrival and acclimatization). The itinerary should be in a format that includes time blocks, activities, and estimated costs for each. Include a note on what to do if the weather is colder than expected. \n\nAdditionally, please provide a list of 5 things I should know about the mountainous region, including a brief explanation for each. \n\nAlso, please provide a list of 5 specific places in the region that are worth visiting, with a brief description of each, and what makes them unique. \n\nAlso, please provide a list of 5 things to avoid during the trip. \n\nAlso, please provide a list of 5 essential items to carry with you on the trip, including what they are and why they are important. \n\nAlso, please provide a list of 5 things to do before the trip to prepare for the trip, including what you should do and why.\n\nOkay, let's tackle this query step by step. The user is planning a 7-day solo hiking trip through a mountainous region. They have intermediate experience, a tent, and a $500 budget beyond transportation. The trip starts and ends at the same trailhead.\n\nFirst,",
+          "wall_time_ms": 2920.0,
+          "load_time_ms": 2014.0,
+          "prompt_tokens": 94,
+          "prompt_eval_ms": 59.548,
+          "gen_tokens": 256,
+          "gen_eval_ms": 845.386,
+          "tokens_per_sec": 302.82025015791606,
+          "ttft_ms": 2073.548,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Also, please list the five most important things I should organize or purchase before departure, briefly explain the reason for each, and then suggest one specific piece of gear that is often overlooked by intermediate hikers. Keep the response focused and practical.\n\nFirst, I need to make sure I understand the task. The user is planning a 7-day solo hike in a mountainous area, with intermediate experience, a tent, and a $500 budget beyond transportation. They need a list of five important things to organize or purchase before departure, with brief explanations, and one overlooked gear.\n\nI should start by thinking about the key components of a solo hiking trip. Since it's solo, the user needs to be self-sufficient. The budget is $500, so they need to be cost-effective with purchases. The gear must be reliable and sufficient for a 7-day trip, especially in mountainous terrain.\n\nFirst, the five important things. Let me think. First, proper footwear is essential because mountain trails can be rocky, muddy, or snowy. Second, a reliable backpack with good capacity. Third, a tent and sleeping gear, but they already have a tent, so maybe a sleeping bag or a sleeping pad. Fourth, food and supplies. Since it",
+          "wall_time_ms": 867.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 94,
+          "prompt_eval_ms": 7.806,
+          "gen_tokens": 256,
+          "gen_eval_ms": 842.793,
+          "tokens_per_sec": 303.7519295959981,
+          "ttft_ms": 7.806,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 302.82025015791606,
+        "tokens_per_sec_p50": 302.82025015791606,
+        "tokens_per_sec_p95": 302.82025015791606,
+        "load_time_ms_mean": 2014.0,
+        "ttft_ms_mean": 2073.548,
+        "ttft_ms_p95": 2073.548,
+        "wall_time_ms_mean": 2920.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 303.7519295959981,
+        "tokens_per_sec_p50": 303.7519295959981,
+        "tokens_per_sec_p95": 303.7519295959981,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 7.806,
+        "ttft_ms_p95": 7.806,
+        "wall_time_ms_mean": 867.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Gemma-3-4B-IT-Q4_K_M",
+      "workload_id": "summarize",
+      "workload_label": "Summarization",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "Over the past decade, artificial intelligence has rapidly",
+          "wall_time_ms": 3948.0,
+          "load_time_ms": 2511.0,
+          "prompt_tokens": 398,
+          "prompt_eval_ms": 1146.622,
+          "gen_tokens": 10,
+          "gen_eval_ms": 286.367,
+          "tokens_per_sec": 34.92022474656647,
+          "ttft_ms": 3657.6220000000003,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Over the past decade, artificial intelligence has evolved",
+          "wall_time_ms": 357.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 398,
+          "prompt_eval_ms": 68.598,
+          "gen_tokens": 10,
+          "gen_eval_ms": 284.733,
+          "tokens_per_sec": 35.12062177548791,
+          "ttft_ms": 68.598,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 34.92022474656647,
+        "tokens_per_sec_p50": 34.92022474656647,
+        "tokens_per_sec_p95": 34.92022474656647,
+        "load_time_ms_mean": 2511.0,
+        "ttft_ms_mean": 3657.6220000000003,
+        "ttft_ms_p95": 3657.6220000000003,
+        "wall_time_ms_mean": 3948.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 35.12062177548791,
+        "tokens_per_sec_p50": 35.12062177548791,
+        "tokens_per_sec_p95": 35.12062177548791,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 68.598,
+        "ttft_ms_p95": 68.598,
+        "wall_time_ms_mean": 357.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Gemma-3-4B-IT-Q4_K_M",
+      "workload_id": "code",
+      "workload_label": "Code Generation",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "```python\ndef merge_sorted_arrays(arr1, arr2):\n    \"\"\"Merges two sorted arrays into a single sorted array.\n\n    Args:\n        arr1: The first sorted array.\n        arr2: The second sorted array.\n\n    Returns:\n        A new sorted list containing all elements from both inputs.\n    \"\"\"\n    merged = []\n    i = 0\n    j = 0\n\n    while i < len(arr1) and j < len(arr2):\n        if arr1[i] <= arr2[j]:\n            merged.append(arr1[i])\n            i += 1\n        else:\n            merged.append(arr2[j])\n            j += 1\n\n    while i < len(arr1):\n        merged.append(arr1[i])\n        i += 1\n\n    while j < len(arr2):\n        merged.append(arr2[j])\n        j += 1\n\n    return merged\n```\n\n```python\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([1, 2, 3], [4, 5, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([4, 5, 6], [1, 2, 3]) == [1, 2, 3, 4, 5, 6]\n```",
+          "wall_time_ms": 14014.0,
+          "load_time_ms": 2017.0,
+          "prompt_tokens": 123,
+          "prompt_eval_ms": 435.161,
+          "gen_tokens": 361,
+          "gen_eval_ms": 11560.246,
+          "tokens_per_sec": 31.227709168126697,
+          "ttft_ms": 2452.161,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "```python\ndef merge_sorted_arrays(arr1, arr2):\n  \"\"\"Merges two sorted arrays into a single sorted array.\n\n  Args:\n    arr1: The first sorted array.\n    arr2: The second sorted array.\n\n  Returns:\n    A new sorted list containing all elements from both inputs.\n  \"\"\"\n  merged_arr = []\n  i = 0\n  j = 0\n  while i < len(arr1) and j < len(arr2):\n    if arr1[i] <= arr2[j]:\n      merged_arr.append(arr1[i])\n      i += 1\n    else:\n      merged_arr.append(arr2[j])\n      j += 1\n  while i < len(arr1):\n    merged_arr.append(arr1[i])\n    i += 1\n  while j < len(arr2):\n    merged_arr.append(arr2[j])\n    j += 1\n  return merged_arr\n\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([1, 2, 3], [4, 5, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([4, 5, 6], [1, 2, 3]) == [1, 2, 3, 4, 5, 6]\n```",
+          "wall_time_ms": 11861.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 123,
+          "prompt_eval_ms": 62.61,
+          "gen_tokens": 368,
+          "gen_eval_ms": 11776.966,
+          "tokens_per_sec": 31.24743673370544,
+          "ttft_ms": 62.61,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 31.227709168126697,
+        "tokens_per_sec_p50": 31.227709168126697,
+        "tokens_per_sec_p95": 31.227709168126697,
+        "load_time_ms_mean": 2017.0,
+        "ttft_ms_mean": 2452.161,
+        "ttft_ms_p95": 2452.161,
+        "wall_time_ms_mean": 14014.0,
+        "gen_tokens_mean": 361.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 31.24743673370544,
+        "tokens_per_sec_p50": 31.24743673370544,
+        "tokens_per_sec_p95": 31.24743673370544,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 62.61,
+        "ttft_ms_p95": 62.61,
+        "wall_time_ms_mean": 11861.0,
+        "gen_tokens_mean": 368.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Gemma-3-4B-IT-Q4_K_M",
+      "workload_id": "assistant",
+      "workload_label": "Generic Assistant",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "Here are the five most important things to organize/purchase before departure:\n\n1.  **Navigation Tools (Map & Compass/GPS):**  Reliable navigation is crucial for a solo trip, especially in mountainous terrain. Getting lost can lead to serious consequences. A map and compass are a backup to digital devices, and knowing how to use them is vital.\n2.  **First-Aid Kit (Comprehensive):**  Minor injuries are common on hikes, and larger ones can happen. A comprehensive kit with supplies for cuts, burns, sprains, blisters, and insect bites is essential for self-sufficiency. \n3.  **Weather Forecast & Monitoring System:** Mountain weather can change rapidly.  Checking the forecast *before* you go and having a way to monitor it *during* the hike (weather radio, smartphone with weather app) is vital for safety. \n4.  **Food & Water (Sufficient Quantity):**  You need enough calories and hydration to sustain yourself for 7 days.  Plan meals and pack extra water or a water filter/purification tablets to ensure you don’t run out. \n5.  **Communication Device (Satellite Messenger/Personal Locator Beacon):**  Cell service is unlikely in",
+          "wall_time_ms": 10524.0,
+          "load_time_ms": 2036.0,
+          "prompt_tokens": 93,
+          "prompt_eval_ms": 307.364,
+          "gen_tokens": 256,
+          "gen_eval_ms": 8178.312,
+          "tokens_per_sec": 31.302302969121257,
+          "ttft_ms": 2343.364,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "**Top 5 Items to Organize/Purchase:**\n\n1.  **Navigation Tools (Map & Compass/GPS):**  Essential for safety in mountainous terrain. Relying solely on cell service can be unreliable. A map and compass, and the knowledge of how to use them, provide a backup and allow for route adjustments.\n2.  **Appropriate Footwear (Broken-in Hiking Boots):**  Blisters and foot pain can ruin a trip.  Properly fitted, broken-in boots prevent discomfort and reduce the risk of injury. \n3.  **First-Aid Kit (Comprehensive):** Accidents happen. A well-stocked kit with supplies for minor injuries, insect bites, and potential emergencies is crucial. \n4.  **Shelter (Tent & Repair Kit):**  Unexpected weather changes can occur.  A reliable tent and a small repair kit (patches, seam sealer) ensure you can stay dry and protected.\n5.  **Food & Water (High-Calorie, Lightweight Options):** Maintaining energy levels is key for a multi-day hike. Pack non-perishable, lightweight foods and ensure you have a reliable water source (hydration reservoir or bottles) and a method for purification.\n\n**Over",
+          "wall_time_ms": 8258.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 93,
+          "prompt_eval_ms": 60.528,
+          "gen_tokens": 256,
+          "gen_eval_ms": 8181.304,
+          "tokens_per_sec": 31.290855345309257,
+          "ttft_ms": 60.528,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 31.302302969121257,
+        "tokens_per_sec_p50": 31.302302969121257,
+        "tokens_per_sec_p95": 31.302302969121257,
+        "load_time_ms_mean": 2036.0,
+        "ttft_ms_mean": 2343.364,
+        "ttft_ms_p95": 2343.364,
+        "wall_time_ms_mean": 10524.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 31.290855345309257,
+        "tokens_per_sec_p50": 31.290855345309257,
+        "tokens_per_sec_p95": 31.290855345309257,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 60.528,
+        "ttft_ms_p95": 60.528,
+        "wall_time_ms_mean": 8258.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Gemma-3-4B-IT-Q4_K_M",
+      "workload_id": "summarize",
+      "workload_label": "Summarization",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "Over the past decade, artificial intelligence has rapidly",
+          "wall_time_ms": 2150.0,
+          "load_time_ms": 2018.0,
+          "prompt_tokens": 398,
+          "prompt_eval_ms": 77.942,
+          "gen_tokens": 10,
+          "gen_eval_ms": 47.394,
+          "tokens_per_sec": 210.99717263788665,
+          "ttft_ms": 2095.942,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Over the past decade, artificial intelligence has rapidly",
+          "wall_time_ms": 67.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 398,
+          "prompt_eval_ms": 22.828,
+          "gen_tokens": 10,
+          "gen_eval_ms": 41.321,
+          "tokens_per_sec": 242.0076958447279,
+          "ttft_ms": 22.828,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 210.99717263788665,
+        "tokens_per_sec_p50": 210.99717263788665,
+        "tokens_per_sec_p95": 210.99717263788665,
+        "load_time_ms_mean": 2018.0,
+        "ttft_ms_mean": 2095.942,
+        "ttft_ms_p95": 2095.942,
+        "wall_time_ms_mean": 2150.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 242.0076958447279,
+        "tokens_per_sec_p50": 242.0076958447279,
+        "tokens_per_sec_p95": 242.0076958447279,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 22.828,
+        "ttft_ms_p95": 22.828,
+        "wall_time_ms_mean": 67.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Gemma-3-4B-IT-Q4_K_M",
+      "workload_id": "code",
+      "workload_label": "Code Generation",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "```python\ndef merge_sorted_arrays(arr1, arr2):\n    \"\"\"\n    Merges two sorted arrays into a single sorted array.\n\n    Args:\n        arr1 (list): The first sorted array.\n        arr2 (list): The second sorted array.\n\n    Returns:\n        list: A new sorted list containing all elements from both inputs.\n    \"\"\"\n    merged_arr = []\n    i = 0\n    j = 0\n    while i < len(arr1) and j < len(arr2):\n        if arr1[i] <= arr2[j]:\n            merged_arr.append(arr1[i])\n            i += 1\n        else:\n            merged_arr.append(arr2[j])\n            j += 1\n\n    # Add any remaining elements from arr1\n    while i < len(arr1):\n        merged_arr.append(arr1[i])\n        i += 1\n\n    # Add any remaining elements from arr2\n    while j < len(arr2):\n        merged_arr.append(arr2[j])\n        j += 1\n\n    return merged_arr\n```\n\n```python\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([1, 2, 3], [4, 5, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([4, 5, 6], [1, 2, 3]) == [1, 2, 3, 4, 5, 6]\n```",
+          "wall_time_ms": 3613.0,
+          "load_time_ms": 2016.0,
+          "prompt_tokens": 123,
+          "prompt_eval_ms": 66.492,
+          "gen_tokens": 401,
+          "gen_eval_ms": 1529.233,
+          "tokens_per_sec": 262.22295752184266,
+          "ttft_ms": 2082.492,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "```python\ndef merge_sorted_arrays(arr1, arr2):\n    \"\"\"\n    Merges two sorted arrays into a single sorted array.\n\n    Args:\n        arr1 (list): The first sorted array.\n        arr2 (list): The second sorted array.\n\n    Returns:\n        list: A new sorted list containing all elements from both inputs.\n    \"\"\"\n    merged_arr = []\n    i = 0\n    j = 0\n    while i < len(arr1) and j < len(arr2):\n        if arr1[i] <= arr2[j]:\n            merged_arr.append(arr1[i])\n            i += 1\n        else:\n            merged_arr.append(arr2[j])\n            j += 1\n\n    # Add remaining elements from arr1, if any\n    while i < len(arr1):\n        merged_arr.append(arr1[i])\n        i += 1\n\n    # Add remaining elements from arr2, if any\n    while j < len(arr2):\n        merged_arr.append(arr2[j])\n        j += 1\n\n    return merged_arr\n```\n\n```python\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([1, 2, 3], [4, 5, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([4, 5, 6], [1, 2, 3]) == [1, 2, 3, 4, 5, 6]\n```",
+          "wall_time_ms": 1577.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 123,
+          "prompt_eval_ms": 19.662,
+          "gen_tokens": 405,
+          "gen_eval_ms": 1532.568,
+          "tokens_per_sec": 264.26233615735157,
+          "ttft_ms": 19.662,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 262.22295752184266,
+        "tokens_per_sec_p50": 262.22295752184266,
+        "tokens_per_sec_p95": 262.22295752184266,
+        "load_time_ms_mean": 2016.0,
+        "ttft_ms_mean": 2082.492,
+        "ttft_ms_p95": 2082.492,
+        "wall_time_ms_mean": 3613.0,
+        "gen_tokens_mean": 401.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 264.26233615735157,
+        "tokens_per_sec_p50": 264.26233615735157,
+        "tokens_per_sec_p95": 264.26233615735157,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 19.662,
+        "ttft_ms_p95": 19.662,
+        "wall_time_ms_mean": 1577.0,
+        "gen_tokens_mean": 405.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Gemma-3-4B-IT-Q4_K_M",
+      "workload_id": "assistant",
+      "workload_label": "Generic Assistant",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "**Top 5 Essentials & Justifications:**\n\n1.  **Navigation Tools (Map & Compass/GPS):** Knowing *where* you are is paramount for safety. A detailed topographic map and a reliable compass (and the skill to use them) are crucial backups if your GPS fails.\n2.  **First-Aid Kit (Comprehensive):**  Injuries happen. A well-stocked kit with supplies for cuts, sprains, blisters, insect bites, and potential emergencies is essential.\n3.  **Water Purification System (Filter/Tablets):** Carrying enough water for a 7-day trip is challenging. A reliable method to purify water from natural sources is vital for hydration and health.\n4.  **Appropriate Clothing (Layers):** Mountain weather is unpredictable. Layering allows you to adapt to changing temperatures and conditions. Moisture-wicking base layers, insulation, and a waterproof/windproof outer shell are key.\n5.  **Food (High-Calorie, Lightweight):** Hiking burns a lot of calories. Pack calorie-dense, lightweight food to maintain energy levels and prevent fatigue.\n\n**Overlooked Gear:**\n\n*   **Trekking Poles:** Often overlooked by intermediate hikers, trekking poles significantly reduce",
+          "wall_time_ms": 3050.0,
+          "load_time_ms": 2007.0,
+          "prompt_tokens": 93,
+          "prompt_eval_ms": 67.188,
+          "gen_tokens": 256,
+          "gen_eval_ms": 973.084,
+          "tokens_per_sec": 263.0810906355464,
+          "ttft_ms": 2074.188,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "**Top 5 Essentials:**\n\n1.  **Navigation Tools (Map & Compass/GPS):** Knowing where you are and how to get around is paramount, especially solo. A map and compass are reliable backups when electronics fail, and a GPS unit can provide current location and track your route.\n2.  **First-Aid Kit (Comprehensive):** Accidents happen. A well-stocked kit with supplies for cuts, burns, sprains, blisters, and potential emergencies is crucial for self-sufficiency.\n3.  **Shelter (Tent & Bivy):** A reliable tent offers protection from the elements, and a bivy sack can be a lightweight backup for unexpected situations.  Solo hiking increases the importance of a reliable shelter.\n4.  **Appropriate Clothing (Layers):** Mountain weather is unpredictable. Layering allows you to adjust to changing temperatures and conditions. Include moisture-wicking base layers, insulating layers, and a waterproof/windproof outer shell.\n5.  **Food & Water (Sufficient Supply):**  Plan your meals and snacks carefully, ensuring you have enough calories and hydration for the entire trip. Water sources may be unreliable, so carry a water filter or purification tablets.\n\n**Overlooked Gear:**",
+          "wall_time_ms": 1005.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 93,
+          "prompt_eval_ms": 20.48,
+          "gen_tokens": 256,
+          "gen_eval_ms": 965.554,
+          "tokens_per_sec": 265.13276315980255,
+          "ttft_ms": 20.48,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 263.0810906355464,
+        "tokens_per_sec_p50": 263.0810906355464,
+        "tokens_per_sec_p95": 263.0810906355464,
+        "load_time_ms_mean": 2007.0,
+        "ttft_ms_mean": 2074.188,
+        "ttft_ms_p95": 2074.188,
+        "wall_time_ms_mean": 3050.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 265.13276315980255,
+        "tokens_per_sec_p50": 265.13276315980255,
+        "tokens_per_sec_p95": 265.13276315980255,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 20.48,
+        "ttft_ms_p95": 20.48,
+        "wall_time_ms_mean": 1005.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Phi-4-mini-instruct-Q4_K_M",
+      "workload_id": "summarize",
+      "workload_label": "Summarization",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "Artificial intelligence, particularly in natural language processing, has",
+          "wall_time_ms": 4063.0,
+          "load_time_ms": 2537.0,
+          "prompt_tokens": 381,
+          "prompt_eval_ms": 1250.293,
+          "gen_tokens": 10,
+          "gen_eval_ms": 273.99,
+          "tokens_per_sec": 36.49768239716778,
+          "ttft_ms": 3787.2929999999997,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "The field of artificial intelligence, particularly in natural language",
+          "wall_time_ms": 306.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 381,
+          "prompt_eval_ms": 30.617,
+          "gen_tokens": 10,
+          "gen_eval_ms": 272.999,
+          "tokens_per_sec": 36.63017080648647,
+          "ttft_ms": 30.617,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 36.49768239716778,
+        "tokens_per_sec_p50": 36.49768239716778,
+        "tokens_per_sec_p95": 36.49768239716778,
+        "load_time_ms_mean": 2537.0,
+        "ttft_ms_mean": 3787.2929999999997,
+        "ttft_ms_p95": 3787.2929999999997,
+        "wall_time_ms_mean": 4063.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 36.63017080648647,
+        "tokens_per_sec_p50": 36.63017080648647,
+        "tokens_per_sec_p95": 36.63017080648647,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 30.617,
+        "ttft_ms_p95": 30.617,
+        "wall_time_ms_mean": 306.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Phi-4-mini-instruct-Q4_K_M",
+      "workload_id": "code",
+      "workload_label": "Code Generation",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "def merge_sorted_arrays(arr1, arr2):\n    \"\"\"\n    Merges two sorted arrays into a single sorted array.\n    \n    :param arr1: First sorted list of comparable elements\n    :param arr2: Second sorted list of comparable elements\n    :return: A new list containing all elements from both arr1 and arr2, sorted\n    \"\"\"\n    merged = []\n    i, j = 0, 0\n    while i < arr1.length and j < arr2.length:\n        if arr1[i] < arr2[j]:\n            merged.append(arr1[i])\n            i += 1\n        else:\n            merged.append(arr2[j])\n            j += 1\n    while i < arr1.length:\n        merged.append(arr1[i])\n        i += 1\n    while j < arr2.length:\n        merged.append(arr2[j])\n        j += 1\n    return merged\n\n# Test cases\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([1, 2, 3], [4, 5, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([], [1, 2, 3]) == [1, 2, 3]",
+          "wall_time_ms": 11411.0,
+          "load_time_ms": 2005.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 407.334,
+          "gen_tokens": 299,
+          "gen_eval_ms": 8997.279,
+          "tokens_per_sec": 33.232269445017764,
+          "ttft_ms": 2412.334,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "def merge_sorted_arrays(arr1, arr2):\n    \"\"\"\n    Merges two sorted arrays into a single sorted array.\n\n    :param arr1: List of sorted elements\n    :param arr2: List of sorted elements\n    :return: Merged list containing all elements from arr1 and arr2, sorted\n    \"\"\"\n    merged = []\n    i, j = 0, 0\n    \n    while i < len(arr1) and j < len(arr2):\n        if arr1[i] < arr2[j]:\n            merged.append(arr1[i])\n            i += 1\n        else:\n            merged.append(arr2[j])\n            j += 1\n    \n    # Add remaining elements\n    merged.extend(arr1[i:])\n    merged.extend(arr2[j:])\n    \n    return merged\n\n# Testing the function with assert statements\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([1, 2, 3], []) == [1, 2, 3]\nassert merge_sorted_arrays([], [4, 5, 6]) == [4, 5, 6]",
+          "wall_time_ms": 7940.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 30.217,
+          "gen_tokens": 260,
+          "gen_eval_ms": 7895.954,
+          "tokens_per_sec": 32.92825667424101,
+          "ttft_ms": 30.217,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 33.232269445017764,
+        "tokens_per_sec_p50": 33.232269445017764,
+        "tokens_per_sec_p95": 33.232269445017764,
+        "load_time_ms_mean": 2005.0,
+        "ttft_ms_mean": 2412.334,
+        "ttft_ms_p95": 2412.334,
+        "wall_time_ms_mean": 11411.0,
+        "gen_tokens_mean": 299.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 32.92825667424101,
+        "tokens_per_sec_p50": 32.92825667424101,
+        "tokens_per_sec_p95": 32.92825667424101,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 30.217,
+        "ttft_ms_p95": 30.217,
+        "wall_time_ms_mean": 7940.0,
+        "gen_tokens_mean": 260.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Phi-4-mini-instruct-Q4_K_M",
+      "workload_id": "assistant",
+      "workload_label": "Generic Assistant",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "List the top five most important things to organize or purchase before your hiking trip, including the reason for each and an often overlooked gear suggestion:\n\n1. **Water Supply System**: Hydration is crucial when hiking, especially in mountainous regions where access to water might be limited. A portable water filter or purification tablets can ensure safe drinking water from natural sources. *Overlooked Gear*: Collapsible water bottles that can fit into your backpack without taking up much space.\n\n2. **Navigation Tools**: Reliable maps, a compass, and a GPS device or smartphone with a hiking app can prevent getting lost. Knowing how to read topographic maps is also essential. *Overlooked Gear*: A lightweight, waterproof notebook and pen for jotting down observations and navigation notes in case electronic devices fail.\n\n3. **Proper Footwear**: Invest in a good pair of hiking boots that suit the terrain. Proper footwear can prevent injuries and ensure comfort during long hikes. *Overlooked Gear*: An extra pair of socks to prevent blisters and maintain foot hygiene.\n\n4. **Weather-appropriate Clothing**: Check the weather forecast and pack layers that can be adjusted to changing conditions. Waterproof and breathable materials are recommended for protection against rain and wind. *Overlooked Gear*: A",
+          "wall_time_ms": 9989.0,
+          "load_time_ms": 2050.0,
+          "prompt_tokens": 90,
+          "prompt_eval_ms": 290.987,
+          "gen_tokens": 256,
+          "gen_eval_ms": 7645.939,
+          "tokens_per_sec": 33.48182610402725,
+          "ttft_ms": 2340.987,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "My response to the hiking trip planning:\n\n1. **Water Filtration System**: Hydration is crucial. A reliable water filtration system will ensure I have access to clean drinking water, reducing the need to carry water weight and allowing me to refill at natural water sources.\n\n2. **Comprehensive First-Aid Kit**: Safety first. A well-stocked first-aid kit will prepare me for minor injuries and emergencies, making it possible to self-manage before needing professional help.\n\n3. **Navigation Tools**: Accurate navigation is essential. A topographic map of the region and a GPS device will help me stay on course and avoid getting lost, especially in remote areas where cell service is unavailable.\n\n4. **Weather-Appropriate Clothing**: Climate unpredictability can catch hikers off guard. Layered, moisture-wicking, and weather-resistant clothing will keep me comfortable and protected against changing conditions.\n\n5. **High-Energy Nutrition**: Sustained energy is vital for endurance. Non-perishable, high-energy snacks like trail mix, energy bars, and dehydrated meals will keep my energy levels high throughout the journey.\n\n**Overlooked Gear**: **Headlamp with Extra Batteries**: Often overlooked by intermediate hikers are headlamps. These are essential for visibility",
+          "wall_time_ms": 7747.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 90,
+          "prompt_eval_ms": 30.314,
+          "gen_tokens": 256,
+          "gen_eval_ms": 7704.607,
+          "tokens_per_sec": 33.22687322013959,
+          "ttft_ms": 30.314,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 33.48182610402725,
+        "tokens_per_sec_p50": 33.48182610402725,
+        "tokens_per_sec_p95": 33.48182610402725,
+        "load_time_ms_mean": 2050.0,
+        "ttft_ms_mean": 2340.987,
+        "ttft_ms_p95": 2340.987,
+        "wall_time_ms_mean": 9989.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 33.22687322013959,
+        "tokens_per_sec_p50": 33.22687322013959,
+        "tokens_per_sec_p95": 33.22687322013959,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 30.314,
+        "ttft_ms_p95": 30.314,
+        "wall_time_ms_mean": 7747.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Phi-4-mini-instruct-Q4_K_M",
+      "workload_id": "summarize",
+      "workload_label": "Summarization",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "The field of artificial intelligence, particularly in natural language",
+          "wall_time_ms": 2152.0,
+          "load_time_ms": 2020.0,
+          "prompt_tokens": 381,
+          "prompt_eval_ms": 93.425,
+          "gen_tokens": 10,
+          "gen_eval_ms": 34.727,
+          "tokens_per_sec": 287.9603766521727,
+          "ttft_ms": 2113.425,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "The field of artificial intelligence, particularly in natural language",
+          "wall_time_ms": 31.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 381,
+          "prompt_eval_ms": 3.281,
+          "gen_tokens": 10,
+          "gen_eval_ms": 25.997,
+          "tokens_per_sec": 384.6597684348194,
+          "ttft_ms": 3.281,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 287.9603766521727,
+        "tokens_per_sec_p50": 287.9603766521727,
+        "tokens_per_sec_p95": 287.9603766521727,
+        "load_time_ms_mean": 2020.0,
+        "ttft_ms_mean": 2113.425,
+        "ttft_ms_p95": 2113.425,
+        "wall_time_ms_mean": 2152.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 384.6597684348194,
+        "tokens_per_sec_p50": 384.6597684348194,
+        "tokens_per_sec_p95": 384.6597684348194,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 3.281,
+        "ttft_ms_p95": 3.281,
+        "wall_time_ms_mean": 31.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Phi-4-mini-instruct-Q4_K_M",
+      "workload_id": "code",
+      "workload_label": "Code Generation",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "def merge_sorted_arrays(arr1, arr2):\n    \"\"\"\n    Merges two sorted arrays into a single sorted array.\n\n    :param arr1: First sorted list of comparable elements\n    :param arr2: Second sorted list of comparable elements\n    :return: Merged sorted list of elements from both inputs\n    \"\"\"\n    merged = []\n    i, j = 0, 0\n    while i < arr1.length and j < arr2.length:\n        if arr1[i] < arr2[j]:\n            merged.append(arr1[i])\n            i += 1\n        else:\n            merged.append(arr2[j])\n            j += 1\n    while i < arr1.length:\n        merged.append(arr1[i])\n        i += 1\n    while j < arr2.length:\n        merged.append(arr2[j])\n        j += 1\n    return merged\n\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([-1, 0, 1], [-0.5, 0.5, 1.5]) == [-1, -0.5, 0, 0.5, 1, 1.5]\nassert merge_sorted_arrays([2, 4, 6], [1, 3, 5]) == [1, 2, 3, 4, 5, 6]",
+          "wall_time_ms": 2998.0,
+          "load_time_ms": 2020.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 72.724,
+          "gen_tokens": 317,
+          "gen_eval_ms": 903.582,
+          "tokens_per_sec": 350.82593500091855,
+          "ttft_ms": 2092.724,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Sure! Here's the Python code for the `merge_sorted_arrays` function along with the assert statements:\n\n```python\ndef merge_sorted_arrays(arr1, arr2):\n    \"\"\"\n    Merges two sorted arrays into a single sorted array without using built-in sort functions.\n    \n    :param arr1: List of comparable elements, sorted in ascending order.\n    :param arr2: List of comparable elements, sorted in ascending order.\n    :return: A new list containing all elements from arr1 and arr2, sorted in ascending order.\n    \"\"\"\n    merged = []\n    i, j = 0, 0\n\n    while i < len(arr1) and j < len(arr2):\n        if arr1[i] < arr2[j]:\n            merged.append(arr1[i])\n            i += 1\n        else:\n            merged.append(arr2[j])\n            j += 1\n\n    while i < len(arr1):\n        merged.append(arr1[i])\n        i += 1\n\n    while j < len(arr2):\n        merged.append(arr2[j])\n        j += 1\n\n    return merged\n\n# Assert statements to test the function\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([1, 2, 3], [4, 5, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([], [1, 2, 3]) == [1, 2, 3]\nassert merge_sorted_arrays([1, 2, 3], []) == [1, 2, 3]\n```",
+          "wall_time_ms": 1063.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 6.602,
+          "gen_tokens": 366,
+          "gen_eval_ms": 1040.113,
+          "tokens_per_sec": 351.8848432814511,
+          "ttft_ms": 6.602,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 350.82593500091855,
+        "tokens_per_sec_p50": 350.82593500091855,
+        "tokens_per_sec_p95": 350.82593500091855,
+        "load_time_ms_mean": 2020.0,
+        "ttft_ms_mean": 2092.724,
+        "ttft_ms_p95": 2092.724,
+        "wall_time_ms_mean": 2998.0,
+        "gen_tokens_mean": 317.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 351.8848432814511,
+        "tokens_per_sec_p50": 351.8848432814511,
+        "tokens_per_sec_p95": 351.8848432814511,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 6.602,
+        "ttft_ms_p95": 6.602,
+        "wall_time_ms_mean": 1063.0,
+        "gen_tokens_mean": 366.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Phi-4-mini-instruct-Q4_K_M",
+      "workload_id": "assistant",
+      "workload_label": "Generic Assistant",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "List the top five most important things to organize or purchase before your hiking trip, including the reason for each and a specific piece of overlooked gear:\n\n1. **Map and Trail Guide**: Familiarize yourself with the area, trails, and any potential hazards. Having detailed maps and a guidebook will help you navigate unknown terrain and understand the difficulty level of different sections of the trail.\n\n2. **GPS Device or Smartphone with Offline Maps**: Technology can be a lifesaver in the mountains. Even with excellent knowledge of the area, unexpected situations can arise. A GPS or a smartphone with downloaded maps ensures you can always find your way.\n\n3. **Water Filtration System or Purification Tablets**: Access to clean water is crucial. Boiling water kills pathogens but isn't always practical. A portable filter or purification tablets can safely provide water from streams or lakes.\n\n4. **Multi-tool or Knife**: A versatile tool can be used for a multitude of tasks, including gear repairs, preparing food, and first aid. A sturdy knife is also essential for cutting ropes, food preparation, and potentially life-saving situations.\n\n5. **Insulated Sleeping Bag and Sleeping Pad**: Comfort and protection from the elements are vital for a good night's sleep. Insulated sleeping bags and pads",
+          "wall_time_ms": 2840.0,
+          "load_time_ms": 2033.0,
+          "prompt_tokens": 90,
+          "prompt_eval_ms": 68.058,
+          "gen_tokens": 256,
+          "gen_eval_ms": 737.955,
+          "tokens_per_sec": 346.9046215555149,
+          "ttft_ms": 2101.058,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "```json\n{\n  \"items\": [\n    {\n      \"item\": \"Water purification system\",\n      \"reason\": \"Reliable access to safe drinking water is crucial in the mountains to avoid dehydration or illness.\"\n    },\n    {\n      \"item\": \"Quality hiking boots\",\n      \"reason\": \"Comfortable, well-fitting boots can prevent blisters and injuries, and are essential for rocky terrain.\"\n    },\n    {\n      \"item\": \"First aid kit\",\n      \"reason\": \"Accidents can happen; having a first aid kit prepared for minor injuries is essential for solo trips.\"\n    },\n    {\n      \"item\": \"Map and compass or GPS device\",\n      \"reason\": \"Navigation tools are vital for staying on course and ensuring safety.\"\n    },\n    {\n      \"item\": \"Lightweight and waterproof jacket\",\n      \"reason\": \"A reliable jacket protects against weather elements and is important for warmth.\"\n    },\n    {\n      \"item\": \"Emergency shelter\",\n      \"reason\": \"An extra layer of safety in case of unexpected weather changes or emergencies.\"\n    },\n    {\n      \"item\": \"High-calorie snacks and energy bars\",\n      \"reason\": \"Sustained energy is crucial for maintaining energy levels throughout the hike.\"\n    },\n    {",
+          "wall_time_ms": 752.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 90,
+          "prompt_eval_ms": 6.603,
+          "gen_tokens": 256,
+          "gen_eval_ms": 731.392,
+          "tokens_per_sec": 350.0175008750437,
+          "ttft_ms": 6.603,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 346.9046215555149,
+        "tokens_per_sec_p50": 346.9046215555149,
+        "tokens_per_sec_p95": 346.9046215555149,
+        "load_time_ms_mean": 2033.0,
+        "ttft_ms_mean": 2101.058,
+        "ttft_ms_p95": 2101.058,
+        "wall_time_ms_mean": 2840.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 350.0175008750437,
+        "tokens_per_sec_p50": 350.0175008750437,
+        "tokens_per_sec_p95": 350.0175008750437,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 6.603,
+        "ttft_ms_p95": 6.603,
+        "wall_time_ms_mean": 752.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-8B-Q4_K_M",
+      "workload_id": "summarize",
+      "workload_label": "Summarization",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "The field of artificial intelligence has evolved from rule-based",
+          "wall_time_ms": 7340.0,
+          "load_time_ms": 4541.0,
+          "prompt_tokens": 393,
+          "prompt_eval_ms": 2257.409,
+          "gen_tokens": 10,
+          "gen_eval_ms": 538.302,
+          "tokens_per_sec": 18.576932651188365,
+          "ttft_ms": 6798.409,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "The field of artificial intelligence has evolved from rule-based",
+          "wall_time_ms": 559.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 393,
+          "prompt_eval_ms": 55.815,
+          "gen_tokens": 10,
+          "gen_eval_ms": 502.169,
+          "tokens_per_sec": 19.913614739261085,
+          "ttft_ms": 55.815,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 18.576932651188365,
+        "tokens_per_sec_p50": 18.576932651188365,
+        "tokens_per_sec_p95": 18.576932651188365,
+        "load_time_ms_mean": 4541.0,
+        "ttft_ms_mean": 6798.409,
+        "ttft_ms_p95": 6798.409,
+        "wall_time_ms_mean": 7340.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 19.913614739261085,
+        "tokens_per_sec_p50": 19.913614739261085,
+        "tokens_per_sec_p95": 19.913614739261085,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 55.815,
+        "ttft_ms_p95": 55.815,
+        "wall_time_ms_mean": 559.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-8B-Q4_K_M",
+      "workload_id": "code",
+      "workload_label": "Code Generation",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "Also, ensure that the function does not use any additional libraries beyond the standard library. Here is an example of how the function might be called:\n\nmerge_sorted_arrays([3, 4, 5], [1, 2, 6]) → [1, 2, 3, 4, 5, 6] \n\nThe function should not mutate the input lists. Here is an example of a correct implementation:\n\ndef merge_sorted_arrays(a, b):\n    \"\"\"Merge two sorted arrays into a single sorted array.\"\"\"\n    result = []\n    i = j = 0\n    while i < len(a) and j < len(b):\n        if a[i] < b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    # Add remaining elements\n    result.extend(a[i:])\n    result.extend(b[j:])\n    return result\n\ndef merge_sorted_arrays(a, b):\n    \"\"\"Merge two sorted arrays into a single sorted array.\"\"\"\n    result = []\n    i = j = 0\n    while i < len(a) and j < len(b):\n        if a[i] < b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    # Add remaining elements\n    result.extend(a[i:])\n    result.extend(b[j:])\n    return result\n\nassert merge_sorted_arrays([3, 4, 5], [1, 2, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([], [1, 2, 3]) == [1, 2, 3]\n\nYes, that's correct. The function uses a two-pointer approach to merge the arrays in linear time, and the asserts check for different cases including empty lists.\n\nHere's the code with the function and asserts:\nOkay, I need to write a Python function called merge_sorted_arrays that merges two sorted arrays into one sorted array without using the built-in sorted or list.sort. Let me think about how to approach this.\n\nThe problem says the function should run in O(n + m) time, so the two-pointer approach is the way to go. That's the",
+          "wall_time_ms": 33167.0,
+          "load_time_ms": 3541.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 670.092,
+          "gen_tokens": 512,
+          "gen_eval_ms": 28955.497,
+          "tokens_per_sec": 17.682307438894938,
+          "ttft_ms": 4211.092,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "The function must not use any built-in sorting functions. Also, the function should not use the `extend()` method or `+` operator for combining lists. The function should not modify the input lists. Additionally, the function must not use any additional data structures except for the result list.\n\nHere is an example of what the function should do:\n\nInput: [1, 3, 5], [2, 4, 6]\nOutput: [1, 2, 3, 4, 5, 6]\n\nAnother example: [1], [2]\nOutput: [1, 2]\n\nAnother example: [2], [1]\nOutput: [1, 2]\n\nAnother example: [], [1, 2, 3]\nOutput: [1, 2, 3]\n\nAnother example: [1, 2, 3], []\nOutput: [1, 2, 3]\n\nAnother example: [3, 4, 5], [1, 2, 6]\nOutput: [1, 2, 3, 4, 5, 6]\n\nAnother example: [1, 3, 5], [2, 4, 6, 7]\nOutput: [1, 2, 3, 4, 5, 6, 7]\n\nNow, write the function and the test cases. Here's the start of the code:\n\ndef merge_sorted_arrays(arr1, arr2):\n    \"\"\"\n    Merges two sorted arrays into a single sorted array.\n    \"\"\"\n    # Your implementation here\n\ndef merge_sorted_arrays(arr1, arr2):\n    \"\"\"\n    Merges two sorted arrays into a single sorted array.\n    \"\"\"\n    result = []\n    i = j = 0\n    while i < len(arr1) and j < len(arr2):\n        if arr1[i] <= arr2[j]:\n            result.append(arr1[i])\n            i += 1\n        else:\n            result.append(arr2[j])\n            j += 1\n    # Add remaining elements\n    while i < len(arr1):\n        result.append(arr1[i])\n        i += 1\n    while j < len(arr2):\n        result.append(arr2[j])\n        j += 1\n    return result\n\nassert merge_sorted_arrays([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4,",
+          "wall_time_ms": 28897.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 55.601,
+          "gen_tokens": 512,
+          "gen_eval_ms": 28813.998,
+          "tokens_per_sec": 17.769141234756802,
+          "ttft_ms": 55.601,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 17.682307438894938,
+        "tokens_per_sec_p50": 17.682307438894938,
+        "tokens_per_sec_p95": 17.682307438894938,
+        "load_time_ms_mean": 3541.0,
+        "ttft_ms_mean": 4211.092,
+        "ttft_ms_p95": 4211.092,
+        "wall_time_ms_mean": 33167.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 17.769141234756802,
+        "tokens_per_sec_p50": 17.769141234756802,
+        "tokens_per_sec_p95": 17.769141234756802,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 55.601,
+        "ttft_ms_p95": 55.601,
+        "wall_time_ms_mean": 28897.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-8B-Q4_K_M",
+      "workload_id": "assistant",
+      "workload_label": "Generic Assistant",
+      "device": "cpu",
+      "cold_samples": [
+        {
+          "completion": "Organize the answer in markdown format.\n```markdown\n## Five Essential Preparations for Your 7-Day Solo Hiking Trip\n\n### 1. **Navigation Tools and Maps**\n- **Reason:** Accurate maps and navigation tools are crucial for staying on course in remote areas where GPS signals can be unreliable. A physical map with topographic details and a compass are essential for route planning and emergency situations.\n\n### 2. **Weather-Appropriate Clothing**\n- **Reason:** Mountain weather can change rapidly. Layering with moisture-wicking fabrics, waterproof outer shells, and thermal layers ensures comfort and protection from unpredictable conditions.\n\n### 3. **Proper Nutrition and Hydration Plan**\n- **Reason:** Sustaining energy over seven days requires a balanced mix of calories, electrolytes, and hydration. Planning meals and snacks that are lightweight, non-perishable, and easy to prepare is vital for maintaining stamina and preventing illness.\n\n### 4. **First Aid Kit and Emergency Supplies**\n- **Reason:** A well-stocked first aid kit, including blister treatments, antiseptics, and emergency shelter, is necessary for handling minor injuries and unexpected situations. Including a whistle, fire starter, and extra food supplies adds to your safety margin.\n\n### 5",
+          "wall_time_ms": 17722.0,
+          "load_time_ms": 3040.0,
+          "prompt_tokens": 94,
+          "prompt_eval_ms": 549.646,
+          "gen_tokens": 256,
+          "gen_eval_ms": 14131.539,
+          "tokens_per_sec": 18.11550744756109,
+          "ttft_ms": 3589.6459999999997,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Organize the gear list in bullet points with brief explanations.\nTo prepare for your 7-day solo hiking trip, prioritize these five essentials:\n\n- **Navigation Tools**: A detailed map and compass are critical for route-finding in areas with spotty cell service. GPS devices can be useful but are not always reliable in remote regions.\n- **Weather-Appropriate Clothing**: Layering is key for unpredictable mountain weather. Include moisture-wicking base layers, insulating mid-layers, and waterproof outer shells.\n- **Water Filtration System**: A portable filter or purification tablets ensure safe drinking water from natural sources without relying on bottled water.\n- **Emergency Shelter**: A compact, lightweight emergency bivy or space blanket can be lifesaving if you encounter unexpected weather or injuries.\n- **First Aid Kit**: A well-stocked kit is essential for treating minor injuries, blisters, or emergencies while alone in the wilderness.\n\n**Overlooked Gear**: A **headlamp with extra batteries** is often neglected. It's crucial for navigating at dawn/dusk, reading in the tent, and emergencies. Always carry spare batteries and a small solar charger if available. \n\nThis setup ensures safety, comfort, and preparedness for your solo adventure. Adjust based on specific trail conditions and season",
+          "wall_time_ms": 14227.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 94,
+          "prompt_eval_ms": 55.435,
+          "gen_tokens": 256,
+          "gen_eval_ms": 14158.688,
+          "tokens_per_sec": 18.080771325704756,
+          "ttft_ms": 55.435,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 18.11550744756109,
+        "tokens_per_sec_p50": 18.11550744756109,
+        "tokens_per_sec_p95": 18.11550744756109,
+        "load_time_ms_mean": 3040.0,
+        "ttft_ms_mean": 3589.6459999999997,
+        "ttft_ms_p95": 3589.6459999999997,
+        "wall_time_ms_mean": 17722.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 18.080771325704756,
+        "tokens_per_sec_p50": 18.080771325704756,
+        "tokens_per_sec_p95": 18.080771325704756,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 55.435,
+        "ttft_ms_p95": 55.435,
+        "wall_time_ms_mean": 14227.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-8B-Q4_K_M",
+      "workload_id": "summarize",
+      "workload_label": "Summarization",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "The field of artificial intelligence has evolved from rule-based",
+          "wall_time_ms": 2647.0,
+          "load_time_ms": 2515.0,
+          "prompt_tokens": 393,
+          "prompt_eval_ms": 79.331,
+          "gen_tokens": 10,
+          "gen_eval_ms": 51.856,
+          "tokens_per_sec": 192.84171551990127,
+          "ttft_ms": 2594.331,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "The field of artificial intelligence has evolved from rule-based",
+          "wall_time_ms": 49.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 393,
+          "prompt_eval_ms": 5.76,
+          "gen_tokens": 10,
+          "gen_eval_ms": 41.898,
+          "tokens_per_sec": 238.6748770824383,
+          "ttft_ms": 5.76,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 192.84171551990127,
+        "tokens_per_sec_p50": 192.84171551990127,
+        "tokens_per_sec_p95": 192.84171551990127,
+        "load_time_ms_mean": 2515.0,
+        "ttft_ms_mean": 2594.331,
+        "ttft_ms_p95": 2594.331,
+        "wall_time_ms_mean": 2647.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 238.6748770824383,
+        "tokens_per_sec_p50": 238.6748770824383,
+        "tokens_per_sec_p95": 238.6748770824383,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 5.76,
+        "ttft_ms_p95": 5.76,
+        "wall_time_ms_mean": 49.0,
+        "gen_tokens_mean": 10.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-8B-Q4_K_M",
+      "workload_id": "code",
+      "workload_label": "Code Generation",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "The function must not use any built-in sorting functions. Also, the function should not use the `heapq` module.\n\nHere is an example of the input and expected output:\nInput: [2, 3, 5] and [1, 4, 6]\nExpected Output: [1, 2, 3, 4, 5, 6] Here's the Python code that meets all the requirements:\n\n```python\ndef merge_sorted_arrays(arr1, arr2):\n    \"\"\"\n    Merges two sorted arrays into a single sorted array without using built-in sort functions.\n    \n    Args:\n        arr1: First sorted list\n        arr2: Second sorted list\n        \n    Returns:\n        A new sorted list containing all elements from both inputs\n    \"\"\"\n    merged = []\n    i = j = 0\n    \n    while i < len(arr1) and j < len(arr2):\n        if arr1[i] <= arr2[j]:\n            merged.append(arr1[i])\n            i += 1\n        else:\n            merged.append(arr2[j])\n            j += 1\n    \n    # Add remaining elements from either array\n    while i < len(arr1):\n        merged.append(arr1[i])\n        i += 1\n    \n    while j < len(arr2):\n        merged.append(arr2[j])\n        j += 1\n    \n    return merged\n\nassert merge_sorted_arrays([2, 3, 5], [1, 4, 6]) == [1, 2, 3, 4, 5, 6]\nassert merge_sorted_arrays([], [1, 2, 3]) == [1, 2, 3]\nassert merge_sorted_arrays([1, 2, 3], []) == [1, 2, 3]\n```\n```python\ndef merge_sorted_arrays(arr1, arr2):\n    \"\"\"\n    Merges two sorted arrays into a single sorted array without using built-in sort functions.\n    \n    Args:\n        arr1: First sorted list\n        arr2: Second sorted list\n        \n    Returns:\n        A new sorted list containing all elements from both inputs\n    \"\"\"\n    merged = []\n    i = j = 0\n    \n    while i < len(arr1) and j < len(arr2):\n        if arr1[i] <= arr2[j]:\n            merged.append(arr1[i])\n            i += 1\n        else:\n            merged.append(arr2[j])\n            j += 1",
+          "wall_time_ms": 4914.0,
+          "load_time_ms": 2512.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 62.661,
+          "gen_tokens": 512,
+          "gen_eval_ms": 2339.056,
+          "tokens_per_sec": 218.8917238407289,
+          "ttft_ms": 2574.661,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "The function must not use any built-in sorting functions. Also, the function should not use list comprehensions or generator expressions for the final merge, but can use them for intermediate steps.\nHere is a sample input and expected output:\nInput: [1, 3, 5], [2, 4, 6]\nOutput: [1, 2, 3, 4, 5, 6]\nHere is another sample input and expected output:\nInput: [1, 2, 3], [4, 5, 6]\nOutput: [1, 2, 3, 4, 5, 6]\nHere is another sample input and expected output:\nInput: [1, 4, 5], [2, 3, 6]\nOutput: [1, 2, 3, 4, 5, 6]\nHere is a test case with duplicate elements:\nInput: [1, 2, 2, 3], [2, 3, 4, 5]\nOutput: [1, 2, 2, 2, 3, 3, 4, 5]\nHere is a test case with one empty array:\nInput: [], [1, 2, 3]\nOutput: [1, 2, 3]\nHere is a test case with both arrays empty:\nInput: [], []\nOutput: []\nHere is a test case with one array containing all elements:\nInput: [1, 2, 3], []\nOutput: [1, 2, 3]\nHere is a test case with one array being longer than the other:\nInput: [1, 3, 5], [2, 4, 6, 8, 10]\nOutput: [1, 2, 3, 4, 5, 6, 8, 10]\nHere is a test case with one array being longer than the other and containing duplicates:\nInput: [1, 2, 2, 3], [2, 3, 4, 5, 5, 6]\nOutput: [1, 2, 2, 2, 3, 3, 4, 5, 5, 6]\nHere is a test case with one array being longer than the other and with some elements in the middle:\nInput: [1, 2, 4,",
+          "wall_time_ms": 2404.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 116,
+          "prompt_eval_ms": 9.258,
+          "gen_tokens": 512,
+          "gen_eval_ms": 2368.253,
+          "tokens_per_sec": 216.19311788056427,
+          "ttft_ms": 9.258,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 218.8917238407289,
+        "tokens_per_sec_p50": 218.8917238407289,
+        "tokens_per_sec_p95": 218.8917238407289,
+        "load_time_ms_mean": 2512.0,
+        "ttft_ms_mean": 2574.661,
+        "ttft_ms_p95": 2574.661,
+        "wall_time_ms_mean": 4914.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 216.19311788056427,
+        "tokens_per_sec_p50": 216.19311788056427,
+        "tokens_per_sec_p95": 216.19311788056427,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 9.258,
+        "ttft_ms_p95": 9.258,
+        "wall_time_ms_mean": 2404.0,
+        "gen_tokens_mean": 512.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    },
+    {
+      "model_name": "Qwen3-8B-Q4_K_M",
+      "workload_id": "assistant",
+      "workload_label": "Generic Assistant",
+      "device": "gpu",
+      "cold_samples": [
+        {
+          "completion": "Here's the breakdown:\n\n1. Navigation tools (map, compass, GPS device or app). Without proper navigation, you could get lost, especially in areas with poor cell service. A physical map and compass are reliable backups to electronic devices.\n\n2. First aid kit. Injuries can happen even on moderate hikes, and having a well-stocked first aid kit ensures you can handle minor injuries and wait for help if needed.\n\n3. Weather-appropriate clothing. Mountain weather can change rapidly, and being prepared for various conditions prevents hypothermia and discomfort.\n\n4. Food and water supply. Carrying enough food and water is crucial for survival and maintaining energy levels. It's also important to have a method for purifying water if needed.\n\n5. Emergency shelter. While you have a tent, having an emergency bivy sack or tarp can provide additional protection in case of unexpected weather or equipment failure.\n\nThe often-overlooked gear is a headlamp with extra batteries. Many hikers rely on phone flashlights, which can die quickly and aren't reliable in emergencies. A dedicated headlamp ensures you can navigate safely in the dark and during emergencies.\nOkay, so I need to plan a 7-day solo hiking trip through a mountainous region. Let me start by breaking",
+          "wall_time_ms": 3741.0,
+          "load_time_ms": 2516.0,
+          "prompt_tokens": 94,
+          "prompt_eval_ms": 61.154,
+          "gen_tokens": 256,
+          "gen_eval_ms": 1163.165,
+          "tokens_per_sec": 220.08915330155224,
+          "ttft_ms": 2577.154,
+          "success": true
+        }
+      ],
+      "warm_samples": [
+        {
+          "completion": "Here's the plan:\n\n1. **Navigation Tools**: A detailed map and compass or GPS device is essential for orienteering and safety, especially in case of poor cell reception. A physical map is reliable and doesn't require charging.\n2. **Weather-Appropriate Clothing**: Layering is key to adapt to changing temperatures and conditions. Moisture-wicking base layers, insulating mid-layers, and waterproof outer layers will ensure comfort and prevent hypothermia.\n3. **Food and Water Supply**: Sufficient food and water are critical for survival. High-calorie, lightweight meals and a water filter or purification tablets will keep you hydrated and nourished without adding bulk.\n4. **Tent and Shelter**: A reliable tent is a must for overnight stays. Ensure it's suitable for the weather and terrain, and bring a sleeping bag and pad for comfort and insulation.\n5. **First Aid Kit and Emergency Supplies**: A well-stocked first aid kit and emergency supplies like a whistle, fire starter, and extra clothing are vital for handling injuries or unexpected situations.\n\n**Overlooked Gear**: A **headlamp with extra batteries** is often neglected by intermediate hikers. It's crucial for visibility during early mornings, late evenings, and in case of emergencies, and",
+          "wall_time_ms": 1178.0,
+          "load_time_ms": 0.0,
+          "prompt_tokens": 94,
+          "prompt_eval_ms": 9.123,
+          "gen_tokens": 256,
+          "gen_eval_ms": 1152.223,
+          "tokens_per_sec": 222.17921357237273,
+          "ttft_ms": 9.123,
+          "success": true
+        }
+      ],
+      "cold_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 220.08915330155224,
+        "tokens_per_sec_p50": 220.08915330155224,
+        "tokens_per_sec_p95": 220.08915330155224,
+        "load_time_ms_mean": 2516.0,
+        "ttft_ms_mean": 2577.154,
+        "ttft_ms_p95": 2577.154,
+        "wall_time_ms_mean": 3741.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "warm_metrics": {
+        "n": 1,
+        "tokens_per_sec_mean": 222.17921357237273,
+        "tokens_per_sec_p50": 222.17921357237273,
+        "tokens_per_sec_p95": 222.17921357237273,
+        "load_time_ms_mean": 0.0,
+        "ttft_ms_mean": 9.123,
+        "ttft_ms_p95": 9.123,
+        "wall_time_ms_mean": 1178.0,
+        "gen_tokens_mean": 256.0,
+        "success_rate": 1.0
+      },
+      "batch_results": []
+    }
+  ]
+}

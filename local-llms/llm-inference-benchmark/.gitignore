@@ -1,0 +1,8 @@
+/target
+
+# Local/ephemeral benchmark runs (--out defaults here; gitignored except samples/).
+reports/*
+!reports/samples/
+!reports/samples/**
+e2e-out.txt
+scripts/README-cross-machine-snippet.generated.md

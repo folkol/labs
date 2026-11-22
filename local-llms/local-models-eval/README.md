@@ -69,3 +69,10 @@ Each task scores 0–100; overall quality = mean of task scores.
 - **tok/s**: MoE A3B/A4B models should beat the 27B dense by 2–4× — that's the 5090 doing its job.
 - **TTFT**: first-token latency; matters for interactive use.
 - A model within ~5 pts on quality at 2–3× the speed usually wins for local use.
+
+## Misc
+
+```
+nvidia-smi dmon -i 0 -s putcm
+llama-server -hf ggml-org/Inkling-2-Mini-GGUF:IQ4_NL -c 65536 -np 1 -ngl 99 --reasoning-effort medium
+```

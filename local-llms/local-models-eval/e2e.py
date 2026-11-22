@@ -2,13 +2,17 @@
 # requires-python = ">=3.10"
 # dependencies = ["huggingface_hub", "requests", "pyyaml"]
 # ///
-"""End-to-end eval: deps -> llama.cpp -> model downloads -> run -> judge -> report.
+"""End-to-end eval: deps -> llama.cpp -> model weights -> run -> judge -> report.
 
 Usage:  uv run e2e.py        (deps auto-installed by uv)
-Requires: Python 3.10+, ~90 GB free disk, NVIDIA GPU + CUDA 12 runtime.
-Idempotent: re-runs skip finished downloads.
+Requires: Python 3.10+, NVIDIA GPU + CUDA 12 runtime.
+Weights are taken from Ollama or the Hugging Face hub cache. A download
+happens only when neither already has the file, and it lands in the hub
+cache rather than models/.
 """
+import fnmatch
 import json
+import os
 import re
 import subprocess
 import sys
@@ -92,32 +96,138 @@ def step_llama():
     return exe
 
 
-def step_models(cfg):
+def gguf_ref(path):
+    """Path for config.yaml. Absolute when the file lives outside this checkout."""
+    path = path.resolve()
+    try:
+        return path.relative_to(HERE).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+def ollama_api_base(cfg):
+    base = ((cfg.get("ollama") or {}).get("base_url") or "").rstrip("/")
+    if base.endswith("/v1"):
+        base = base[:-3]
+    return base
+
+
+def ollama_tags(cfg):
+    base = ollama_api_base(cfg)
+    if not base:
+        return []
+    try:
+        with urllib.request.urlopen(base + "/api/tags", timeout=5) as r:
+            return json.load(r).get("models") or []
+    except Exception:
+        return []
+
+
+def ollama_weight(name):
+    """Largest GGUF blob behind an Ollama tag. Ollama stores the file once."""
+    r = subprocess.run(["ollama", "show", name, "--modelfile"],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        return None
+    files = []
+    for line in r.stdout.splitlines():
+        if not line.startswith("FROM "):
+            continue
+        p = Path(line[5:].strip())
+        if p.is_file():
+            files.append(p)
+    return max(files, key=lambda p: p.stat().st_size) if files else None
+
+
+def matching_ollama_tags(m, tags):
+    repo = (m.get("repo") or "").lower()
+    inc = m.get("include") or "*"
+    hits = []
+    for t in tags:
+        name = t.get("name") or ""
+        leaf = name.split("/")[-1].split(":")[0]
+        wanted = m.get("ollama_name")
+        if wanted and (name == wanted or name.startswith(wanted + ":")):
+            hits.append(name)
+        elif leaf == m["name"]:
+            hits.append(name)
+        elif repo and repo in name.lower() and fnmatch.fnmatch(name, inc):
+            hits.append(name)
+    return hits
+
+
+def llama_cpp_cached(m):
+    """A GGUF llama-server already downloaded into its own cache, if any."""
+    inc = m.get("include") or "*"
+    repo = (m.get("repo") or "").lower()
+    roots = []
+    if os.environ.get("LLAMA_CACHE"):
+        roots.append(Path(os.environ["LLAMA_CACHE"]))
+    local = os.environ.get("LOCALAPPDATA")
+    if local:
+        roots.append(Path(local) / "llama.cpp")
+    roots.append(Path.home() / ".cache" / "llama.cpp")
+    found = []
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for p in root.rglob("*.gguf"):
+            if not fnmatch.fnmatch(p.name, inc):
+                continue
+            if repo and repo not in p.as_posix().lower():
+                continue
+            found.append(p)
+    return max(found, key=lambda p: p.stat().st_size) if found else None
+
+
+def hf_cached_or_download(m):
+    """Hugging Face hub cache. Download there only when the file is not cached."""
     from huggingface_hub import snapshot_download
+    log(f"resolving {m['repo']} ({m['include']}) from the Hugging Face cache")
+    snap = Path(snapshot_download(repo_id=m["repo"], allow_patterns=[m["include"]]))
+    files = list(snap.glob("*.gguf"))
+    return max(files, key=lambda p: p.stat().st_size) if files else None
+
+
+def resolve_gguf(m, cfg):
+    """Find a GGUF without copying it into models/."""
+    local = list((MODELS / m["name"]).glob("*.gguf"))
+    if local:
+        return max(local, key=lambda p: p.stat().st_size), "project models/"
+    for name in matching_ollama_tags(m, ollama_tags(cfg)):
+        weight = ollama_weight(name)
+        if weight:
+            return weight, f"Ollama ({name})"
+    cached = llama_cpp_cached(m)
+    if cached:
+        return cached, "llama.cpp cache"
+    if m.get("repo"):
+        got = hf_cached_or_download(m)
+        if got:
+            return got, "Hugging Face cache"
+    return None, ""
+
+
+def step_models(cfg):
     for m in cfg["models"]:
         if m.get("ollama_name"):
             log(f"{m['name']}: using Ollama's {m['ollama_name']} — no download")
             continue
-        d = MODELS / m["name"]
-        d.mkdir(parents=True, exist_ok=True)
-        files = list(d.glob("*.gguf"))
-        if not files:
-            log(f"downloading {m['repo']} ({m['include']}) -> {d.relative_to(HERE)}")
-            snapshot_download(repo_id=m["repo"], allow_patterns=[m["include"]], local_dir=str(d))
-            files = list(d.glob("*.gguf"))
-        if not files:
-            raise SystemExit(f"no gguf for {m['name']} in {d} — check repo/include in config.yaml")
-        best = max(files, key=lambda p: p.stat().st_size)
-        m["gguf"] = str(best.relative_to(HERE)).replace("\\", "/")
-        log(f"{m['name']}: {best.name} ({best.stat().st_size/1e9:.1f} GB)")
-    # judge gguf: explicit, or default to the baseline
+        path, where = resolve_gguf(m, cfg)
+        if not path:
+            raise SystemExit(f"no gguf for {m['name']} — not in Ollama, the llama.cpp cache, or the Hugging Face cache")
+        m["gguf"] = gguf_ref(path)
+        log(f"{m['name']}: {path.name} ({path.stat().st_size/1e9:.1f} GB) from {where}")
+    # judge gguf: explicit, or default to the baseline when that baseline has a file
     j = cfg.get("judge") or {}
-    jg = Path(j.get("gguf", ""))
-    if not jg.exists():
+    jg = Path(j.get("gguf") or "")
+    if jg and not jg.is_absolute():
+        jg = HERE / jg
+    if not jg or not jg.exists():
         base = next((x for x in cfg["models"] if x["name"] == "qwen3.8-27b"), None)
-        if base:
+        if base and base.get("gguf"):
             j["gguf"] = base["gguf"]
-        elif not re.match(r"https?://(?!127\.0\.0\.1|localhost)", j.get("base_url", "")):
+        elif not re.match(r"https?://(?!127\.0\.0\.1|localhost)", j.get("base_url", "")) and not j.get("model"):
             raise SystemExit("no local judge gguf and judge.base_url isn't a remote API — set one in config.yaml")
     cfg["judge"] = j
     CFG.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")

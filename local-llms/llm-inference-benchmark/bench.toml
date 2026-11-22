@@ -1,0 +1,122 @@
+# llmb default benchmark configuration
+# Copy this to bench.toml and edit as needed.
+# Run `llmb init` to place a copy in the current directory.
+
+# Devices to benchmark.
+#   "cpu"   — all layers on CPU (--n-gpu-layers 0)
+#   "gpu"   — all layers on GPU (--n-gpu-layers -1)
+#   "mixed" — explicit partial offload (--n-gpu-layers = mixed_gpu_layers below)
+#   "auto"  — let llama.cpp decide based on available VRAM
+#
+# On a CPU-only machine keep ["cpu"].
+# On a stable GPU machine use ["cpu", "gpu"] for the standard comparison.
+# Add "mixed" manually if you want to test partial GPU offload.
+devices = ["cpu", "gpu"]
+
+# Warm repetitions per (model × workload × device) scenario
+warm_runs = 1
+
+# Concurrent batch benchmarks are intentionally disabled.
+# Each scenario measures:
+#   1. first request after model load
+#   2. warm_runs sequential requests on the already-loaded model
+batch_sizes = []
+
+# Tokens to generate per completion (can be overridden per workload)
+max_tokens = 256
+
+# CPU threads (0 = auto-detect)
+cpu_threads = 0
+
+# GPU layers to offload when device = "gpu" (-1 = all layers)
+gpu_layers = -1
+
+# GPU layers to offload when device = "mixed".
+# Tune to sit just below your VRAM limit for the most interesting results.
+#
+# Rough total layers per architecture (Q4_K_M):
+#   0.5–1.5B  ~22–28    7–8B  ~32    14B  ~40    32B  ~64
+#
+# Example: 16 puts the first 16 layers on GPU, the rest on CPU.
+mixed_gpu_layers = 16
+
+# ─── Models ──────────────────────────────────────────────────────────────────
+# Models are ordered small → large so the VRAM cliff is visible in plots.
+# Mix Qwen3 with a few similarly sized non-Qwen families so machine rankings are
+# not based on one architecture alone.
+#
+# Confirmed Q4_K_M sizes (bartowski GGUFs):
+#
+#   Model                    Size      16 GB GPU   32 GB CPU   Mac mini 16 GB
+#   ───────────────────────  ────────  ─────────   ─────────   ──────────────
+#   Qwen3-0.6B               0.48 GB   fits        fits        fits
+#   SmolLM3-3B               1.92 GB   fits        fits        fits
+#   Qwen3-4B                 2.50 GB   fits        fits        fits
+#   Gemma-3-4B-IT            2.49 GB   fits        fits        fits
+#   Phi-4-mini-instruct      2.49 GB   fits        fits        fits
+#   Qwen3-8B                 5.03 GB   fits        fits        fits
+#
+# When a model overflows VRAM, llama.cpp shuffles layers between GPU and CPU,
+# causing a sharp throughput drop — the "cliff" you want to see in the plots.
+#
+# Comment out any models you don't want to download or benchmark.
+# Run `llmb models fetch` to download all active models.
+
+# ── Small anchor ────────────────────────────────────────────────────────────
+[[models]]
+name         = "Qwen3-0.6B-Q4_K_M"
+filename     = "Qwen_Qwen3-0.6B-Q4_K_M.gguf"
+url          = "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf"
+params       = "0.6B"
+quantization = "Q4_K_M"
+context_length = 1024
+
+# ── 3–4B comparison band ───────────────────────────────────────────────────
+[[models]]
+name         = "SmolLM3-3B-Q4_K_M"
+filename     = "HuggingFaceTB_SmolLM3-3B-Q4_K_M.gguf"
+url          = "https://huggingface.co/bartowski/HuggingFaceTB_SmolLM3-3B-GGUF/resolve/main/HuggingFaceTB_SmolLM3-3B-Q4_K_M.gguf"
+params       = "3B"
+quantization = "Q4_K_M"
+context_length = 1024
+
+[[models]]
+name         = "Qwen3-4B-Q4_K_M"
+filename     = "Qwen_Qwen3-4B-Q4_K_M.gguf"
+url          = "https://huggingface.co/bartowski/Qwen_Qwen3-4B-GGUF/resolve/main/Qwen_Qwen3-4B-Q4_K_M.gguf"
+params       = "4B"
+quantization = "Q4_K_M"
+context_length = 1024
+
+[[models]]
+name         = "Gemma-3-4B-IT-Q4_K_M"
+filename     = "google_gemma-3-4b-it-Q4_K_M.gguf"
+url          = "https://huggingface.co/bartowski/google_gemma-3-4b-it-GGUF/resolve/main/google_gemma-3-4b-it-Q4_K_M.gguf"
+params       = "4B"
+quantization = "Q4_K_M"
+context_length = 1024
+
+[[models]]
+name         = "Phi-4-mini-instruct-Q4_K_M"
+filename     = "microsoft_Phi-4-mini-instruct-Q4_K_M.gguf"
+url          = "https://huggingface.co/bartowski/microsoft_Phi-4-mini-instruct-GGUF/resolve/main/microsoft_Phi-4-mini-instruct-Q4_K_M.gguf"
+params       = "3.8B"
+quantization = "Q4_K_M"
+context_length = 1024
+
+# ── Larger Qwen size ────────────────────────────────────────────────────────
+[[models]]
+name         = "Qwen3-8B-Q4_K_M"
+filename     = "Qwen_Qwen3-8B-Q4_K_M.gguf"
+url          = "https://huggingface.co/bartowski/Qwen_Qwen3-8B-GGUF/resolve/main/Qwen_Qwen3-8B-Q4_K_M.gguf"
+params       = "8B"
+quantization = "Q4_K_M"
+context_length = 1024
+
+# ─── Workloads (optional – defaults are used if this section is omitted) ──────
+# [[workloads]]
+# id         = "custom"
+# label      = "My Custom Task"
+# system     = "You are a helpful assistant."
+# prompt     = "Explain quantum entanglement in one paragraph."
+# max_tokens = 200
