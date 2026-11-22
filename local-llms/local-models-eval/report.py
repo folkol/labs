@@ -10,8 +10,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 RESULTS = HERE / "results.json"
 TASK_ORDER = ["json_extract", "constraints", "math_word", "coding", "reasoning",
-              "summarize", "rewrite_tone"]
-JUDGED = {"summarize", "rewrite_tone"}
+              "reasoning", "fix_it", "summarize", "rewrite_tone", "triage"]
+JUDGED = {"summarize", "rewrite_tone", "triage"}
 
 
 def main():
@@ -24,7 +24,7 @@ def main():
         "# Local model eval — candidates vs qwen3.8-27b baseline",
         "",
         f"*{datetime.now():%Y-%m-%d} — RTX 5090 32 GB, Ollama 0.40.16, 3 runs, "
-        "best-of-3 per task, 2 LLM-judged (judge: qwen3.8)*",
+        "best-of-3 per task, 3 LLM-judged (judge: qwen3.8)*",
         "",
         "## Speed",
         "",

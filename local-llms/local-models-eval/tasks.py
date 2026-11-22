@@ -174,6 +174,48 @@ def _check_tests_pass(r):
         return p.returncode == 0 and "PASS" in p.stdout
 
 
+# ---------- fix_it: here is buggy code, make the hidden regression suite pass ----------
+# The given function misses a value that appears 3+ times because it never
+# de-dupes the result. The hidden suite asserts the de-duped,
+# second-appearance-order contract; a patch that only "cleans up" the visible
+# bug but ignores multi-occurrence still fails.
+_CODE_FIXTESTS = r'''
+import importlib.util
+spec = importlib.util.spec_from_file_location("sol", __PATH__)
+mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+f = mod.first_duplicates
+
+assert f([1, 2, 3]) == []
+assert f([1, 2, 1]) == [1]
+assert f([1, 2, 1, 2]) == [1, 2]
+assert f([1, 2, 2, 1]) == [2, 1]
+assert f(['a', 'b', 'a', 'c', 'b']) == ['a', 'b']
+assert f([5, 5, 5, 7, 7]) == [5, 7]
+assert f([]) == []
+assert f(["x"]) == []
+print("PASS")
+'''
+
+
+def _check_fix_code_present(r):
+    return "def first_duplicates" in r
+
+
+def _check_fix_tests_pass(r):
+    m = re.search(r"```(?:python)?\s*(.*?)(?:```|\Z)", r, re.DOTALL)
+    src = (m.group(1) if m else r).strip()
+    if "def first_duplicates" not in src:
+        return False
+    with tempfile.TemporaryDirectory() as d:
+        path = Path(d) / "sol.py"
+        path.write_text(src, encoding="utf-8")
+        p = subprocess.run(
+            [sys.executable, "-I", "-c", _CODE_FIXTESTS.replace("__PATH__", repr(str(path)))],
+            capture_output=True, text=True, timeout=30,
+        )
+        return p.returncode == 0 and "PASS" in p.stdout
+
+
 # ---------- reasoning ----------
 # 1 Ana, 2 Ben. Cara is 3 or 4. Elia adjacent to Cara. Dev left of Elia and
 # not at an end. Only Ana, Ben, Dev, Cara, Elia works, so the middle is Dev.
@@ -290,6 +332,62 @@ Write the summary only.""",
             ("facts_preserved", "Keeps item #A-118, $2,140, the Thursday deadline, the second late delivery this quarter, and the cancellation consequence"),
             ("no_decoy", "Does not mention $50 or a bike courier"),
             ("tone", "Professional, no insults, and the cancellation is a consequence rather than a threat"),
+        ],
+    },
+    {
+        "id": "fix_it",
+        "prompt": """The function below is supposed to return the values that
+appear more than once in a list, in the order of each value's second (not
+first) occurrence.
+
+```python
+def first_duplicates(items):
+    seen = []
+    result = []
+    for it in items:
+        if it in seen:
+            result.append(it)
+        else:
+            seen.append(it)
+    return result
+```
+
+It passes a visible suite of common cases but fails on input where a value
+occurs three or more times. Fix it so it is correct for all inputs.
+Respond with a single Python code block containing just the corrected function.""",
+        "checks": [
+            ("code_present", _check_fix_code_present),
+            ("tests_pass", _check_fix_tests_pass),
+        ],
+    },
+    {
+        "id": "triage",
+        "prompt": """Below are two candidate answers to a single question, given by
+two models:
+
+Question: Which streetlights corridor saw the biggest drop in nighttime
+incidents after the city brightened them?
+
+Answer A: The three corridors where dimming had been set 40% below city
+standard; after those were brightened, incident rates returned to baseline.
+
+Answer B: Main Street, where the city had the largest share of smart-dimming
+LEDs installed.
+
+Pick the answer that is actually supported by the passage. Reply with ONLY
+'A' or 'B', then one sentence of why.
+
+Passage: A city replaced 12% of its streetlights with smart-dimming LEDs.
+Electricity use for lighting fell 34%, but reported nighttime traffic
+incidents rose 9% in the first two quarters. A follow-up audit found the
+incident increase concentrated on three arterials where dimming had been set
+40% lower than the city standard; after those three corridors were
+brightened, the incident rate returned to baseline within one quarter. The
+city now treats dimming level as a safety parameter, not a cost lever.""",
+        "criteria": [
+            ("accuracy", "Chose Answer A. The passage names exactly the three arterials as where incidents rose and fell; no single 'Main Street' exists in the text."),
+            ("selection", "Picks exactly one letter, no hedging and no picking both."),
+            ("no_hallucination", "The one-sentence reason cites the passage (3 arterials / 40% dimming), not an invented 'Main Street' or the 12% figure."),
         ],
     },
 ]

@@ -17,6 +17,18 @@ GOOD = {
     "constraints": "Hybrid systems cut diesel use by 61 percent. Inverters failed about once every 18 months. Field work covered 14 sites. Local owners saw higher uptime than outside operators.",
     "math_word": "Draft 2000/200=10. Quality 2000/100=20. Reprint 200/100=2. ANSWER: 32",
     "reasoning": "Only Ana, Ben, Dev, Cara, Elia fits. The middle seat is Dev. ANSWER: Dev",
+    "fix_it": (
+        "```python\n"
+        "def first_duplicates(items):\n"
+        "    counts = {}\n"
+        "    order = []\n"
+        "    for it in items:\n"
+        "        counts[it] = counts.get(it, 0) + 1\n"
+        "        if counts[it] == 2:\n"
+        "            order.append(it)\n"
+        "    return order\n"
+        "```\n"
+    ),
     "coding": (
         "```python\n"
         "def fold_ledger(lines, rates):\n"
@@ -54,6 +66,19 @@ BAD = {
     "math_word": "The quote says 40 minutes. ANSWER: 40",
     "reasoning": "I think it is Cara. ANSWER: Cara",
     "coding": "def fold_ledger(lines, rates):\n    return []",
+    "fix_it": (
+        "```python\n"
+        "def first_duplicates(items):\n"
+        "    seen = []\n"
+        "    result = []\n"
+        "    for it in items:\n"
+        "        if it in seen:\n"
+        "            result.append(it)\n"
+        "        else:\n"
+        "            seen.append(it)\n"
+        "    return result\n"
+        "```\n"
+    ),
 }
 
 fails = 0

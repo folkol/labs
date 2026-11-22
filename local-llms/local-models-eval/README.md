@@ -1,6 +1,6 @@
 # Local model eval (RTX 5090, 32 GB)
 
-Evaluates GGUF models on **speed** (TTFT, tokens/s) and **quality** (7 tasks).
+Evaluates GGUF models on **speed** (TTFT, tokens/s) and **quality** (9 tasks).
 
 ## Quick start (end-to-end)
 
@@ -64,8 +64,10 @@ Each task scores 0–100; overall quality = mean of task scores.
 | `math_word` | two speeds plus a reprint pass (answer: 32 min) | answer line present + exact value |
 | `coding` | `fold_ledger` with voids, comments, and currency conversion | hidden 5-case unit test actually executed |
 | `reasoning` | 5-seat ordering puzzle with one valid arrangement (answer: Dev) | answer present + correct name |
+| `fix_it` | given function with a subtle bug (misses 3rd+ occurrence) | hidden 8-case unit test executed — a cleanup that doesn't address the bug still fails |
 | `summarize` | 2-sentence summary that must drop a rejected proposal and a decoy statistic | judge ×3: accuracy, coverage, selection (0/1/2 each) |
 | `rewrite_tone` | facts buried in insults; a sarcastic $50 must be dropped | judge ×3: facts preserved, decoy omitted, tone (0/1/2 each) |
+| `triage` | two candidate answers, one passage-supported, one plausible-but-invented | judge ×3: accuracy, selection, no-hallucination (0/1/2 each) |
 
 ## Reading the results
 
