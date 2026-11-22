@@ -29,15 +29,37 @@ Inkling matched the exact-check tasks and the rewrite, and tied Ornith on the su
 
 Inkling 2 Mini is a 26B looped mixture-of-experts model (about 3B active per token) from Thinking Machines Lab, released 2026-11-20. The weights are `thinkingmachines/Inkling-2-Mini`. This eval runs ggml-org's `Inkling-2-Mini-IQ4_NL.gguf`: Pedro Cuenca's conversion, with the NVFP4 experts in layers 0–19 at 4-bit and the other matrices at Q8_0.
 
+### Linux, same PC
+
+The same three models on the same PC booted into Ubuntu 25.10, 2026-11-22. All candidates ran on llama-server with the same GGUF files, and the judge ran on llama-server too. The full table, with gemma-4-26b-a4b and tiel-coder-35b-a3b, is in [REPORT-linux.md](REPORT-linux.md).
+
+| | qwen3.8-27b | ornith-1.5-35b-a3b | inkling-2-mini |
+|---|---|---|---|
+| TTFT | 102 ms | 62 ms | 93 ms |
+| tok/s | 79.8 | 288.6 (3.6× faster) | 95.1 (1.2× faster) |
+| turn, thinking off | 0.2 s | 0.1 s | 0.6 s |
+| turn, medium | 0.8 s | 0.2 s | 1.1 s |
+| json, constraints, math, coding, reasoning, fix_it, triage | 100 | 100 | 100 |
+| summarize | 83* | 67* | 83* |
+| rewrite_tone | 67* | 100* | 100* |
+| ifeval | 90† | 80† | 70† |
+| gsm8k | 95† | 90† | 90† |
+| humaneval | 100† | 100† | 100† |
+
+Linux decodes faster for every model: qwen 80 vs 66 tok/s, Ornith 289 vs 202, Inkling 95 vs 34. Inkling gains the most, from 1.9× slower than qwen on Windows to 1.2× faster on Linux. First-token times are also lower, and the short edit is faster across the board.
+
+The quality scores are not comparable one-to-one. The 20-sample tasks run once per sample, and the judged tasks were scored by a separate judge instance, so qwen's own summary moved from 67 to 83 and its rewrite from 100 to 67. The exact-check tasks are identical on both systems. Read the judged and 20-sample rows as noise of a point or two per sample, not as an OS effect.
+
 ## Machine
 
-The report dated 2026-11-22 was measured on this PC:
+Both reports dated 2026-11-22 were measured on this PC, dual-booted:
 
-- Windows 11 26H2 (build 10.0.26300)
+- Windows 11 26H2 (build 10.0.26300) for `REPORT.md`
+- Ubuntu 25.10, kernel 6.17, NVIDIA driver 595.71 for `REPORT-linux.md`
 - Intel Core Ultra 9 285K, 24 cores
 - 32 GB Corsair DDR5-4800 (2×16 GB)
 - NVIDIA GeForce RTX 5090, 32 GB VRAM
-- llama-server for every candidate; the qwen3.8 judge stays on Ollama 0.40.16
+- llama-server for every candidate; on Windows the qwen3.8 judge stays on Ollama 0.40.16, on Linux it runs on llama-server
 - Context 16384, 12 threads, one model loaded at a time
 
 ## Reading the report
@@ -94,7 +116,7 @@ Phase 1 is speed and deterministic tasks. Phase 2 is the qwen3.8 judge on the th
 
 Every candidate is served by llama-server, including qwen, whose GGUF is the large blob already in Ollama's store. The judge stays on Ollama. One run writes `results.json` and `REPORT.md`; nothing is pasted in by hand.
 
-## Linux, official Inkling
+## Linux
 
 Boot the Linux install and run this from the same checkout:
 
@@ -102,8 +124,8 @@ Boot the Linux install and run this from the same checkout:
 uv run e2e-linux.py
 ```
 
-Inkling is the official `thinkingmachines/Inkling-2-Mini` checkpoint, NVFP4 and MXFP8, served by SGLang from `lmsysorg/sglang:inkling-2-mini`. Decode is plain: the bundled draft head stays unloaded. The other four models stay on llama-server and the same GGUF files. Context stays 16384.
+Every candidate, Inkling included, is served by llama-server with the same GGUF files as on Windows. The judge runs on llama-server too, since the Linux Ollama is too old for qwen3.8. Context stays 16384.
 
-The script writes `results-linux.json` and `REPORT-linux.md`. The Windows measurements stay in `results.json` and `REPORT.md`.
+The script writes `results-linux.json`, `REPORT-linux.md` and `external_logs_linux/`. The Windows measurements stay in `results.json` and `REPORT.md`. Setup notes and pitfalls are in [README.linux.md](README.linux.md).
 
-`nvidia-smi` has to see the 5090, and Docker needs the NVIDIA container toolkit. The qwen GGUF is the blob on the Windows `E:` drive, so that disk has to be mounted (often `/mnt/e/.ollama/...`). The first run downloads the SGLang image and the 20 GB checkpoint.
+`nvidia-smi` has to see the 5090. The qwen GGUF is the blob on the Windows `E:` drive, so that disk has to be mounted; the script mounts it read-only through `udisksctl`.
